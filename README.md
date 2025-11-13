@@ -1,10 +1,15 @@
 # webdesk
 Hopefully this year 🙏🙏
 
+## Notes
+Window and app launchers are components
+Spaces are components?
+
+
 ## WBS
 1. **Desktop**
 	- Add the cool Desktop image
-	- Different divs for different layers
+	- ~~Different divs for different layers~~
 
 2. **App Launchers**
 	- Make the Default Icon System
