@@ -1,0 +1,10 @@
+{
+	"editor.fontSize": 16,
+	"files.autoSave": "afterDelay",
+	"files.exclude": {
+		"**/*.spec.*": true
+	},
+	"editor.tabSize": 8,
+	"editor.detectIndentation": false,
+	"editor.insertSpaces": false
+}
