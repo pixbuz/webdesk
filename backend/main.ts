@@ -1,5 +1,9 @@
+import { ResponseFormat, Manifest } from "../utils/utils.ts";
+import * as functions from "./functions.ts";
+
+/* Run a Deno Server that acts as a backend for Angular */
 Deno.serve({
-	port: 8000,
+	port: 8000,	// Prob will change
 	hostname: "0.0.0.0",
 	handler: Server,
 	onListen({ port, hostname }) {
@@ -7,62 +11,25 @@ Deno.serve({
 	}
 })
 
-interface ResponseFormat {
-	message: unknown,
-	responseFunction: string,
-	returnedError: boolean
-}
-
-interface Manifest {
-	name: string,
-	index: string
-}
-
 async function Server(UserRequest: Request): Promise<Response> {
-	const RequestURL = new URL(UserRequest.url)
-	let Reply: ResponseFormat = { message: null, responseFunction: "", returnedError: false }
+	/* Main Function that checks if the API request is a valid
+	function and returns the response of said function */
+	const RequestURL = new URL(UserRequest.url)	// Ez pathname isolation
+	let reply: ResponseFormat = new ResponseFormat
 
-	switch (RequestURL.pathname) {
-		case "/api/":
-		case "/api": Reply.message = "This is the Webdesk Backend!"; break
-
-		case "/api/getAppManifests/":
-		case "/api/getAppManifests": await getAppManifests(Reply); break
-
-		default: 
-			Reply.message = `${RequestURL.pathname} is not mapped to any command`;
-			Reply.returnedError = true
+	if (RequestURL.pathname.slice(5) in functions) {
+		// If the function name exists then run it
+		reply = functions[RequestURL.pathname.slice(5) as keyof typeof functions](reply)
+	} else { // Otherwise send a error message
+		reply.message = `${RequestURL.pathname.slice(5)} is not a Function`
+		reply.returnedError = true
 	}
 
-	return new Response(JSON.stringify(Reply), {
-		status: (Reply.returnedError ? 400 : 200),
-		headers: { "Content-Type": "application/json" }
+	return new Response(JSON.stringify(await reply), {	// Ship "reply" as JSON as the response
+		// ^ await is needed because the function that replies could be async
+		status: (reply.returnedError ? 400 : 200),	// Nifty Error Code trick
+		headers: { "Content-Type": "application/json" } // Specify that the response is JSON
 	})
-}
-
-async function getAppManifests(Reply: ResponseFormat): Promise<ResponseFormat> {
-	Reply.responseFunction = "getAppManifests"
-	const ApplicationManifests: string[] = [];
-	let WaitNum = 0
-
-	try {
-		for await (const Manifest of Deno.readDirSync("./applications/manifests")) {
-			WaitNum++;
-			Deno.readTextFile(`./applications/manifests/${Manifest.name}`)
-				.then(ManifestText => ApplicationManifests.push(JSON.parse(ManifestText)))
-		}
-
-		while (ApplicationManifests.length != WaitNum) 
-			await new Promise<void>(r => setTimeout(r))
-
-		Reply.message = ApplicationManifests
-	} catch(error) {
-		Reply.returnedError = true
-		Reply.message = JSON.stringify(error)
-	} finally {
-		// deno-lint-ignore no-unsafe-finally
-		return Reply 
-	}
 }
 
 console.log("===================================================")
