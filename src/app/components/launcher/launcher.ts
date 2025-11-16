@@ -11,8 +11,5 @@ export class Launcher {
 	@Input() AppName!: string
 	constructor(private events: LauncherClickRelay) {}
 
-	onClick() {
-		console.log("click")
-		this.events.emitClick({ appName: this.AppName });
-	}
+	onClick() { this.events.emitClick({ appName: this.AppName }) }
 }

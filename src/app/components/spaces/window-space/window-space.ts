@@ -14,10 +14,12 @@ export class WindowSpace {
 	constructor(private events: LauncherClickRelay) {}
 
 	ngOnInit() {
-		this.events.clicked$.subscribe((data) => {
-			console.log(data)
-			const bRef: ComponentRef<Window> = this.container.createComponent(Window)
-			bRef.instance.test = data
-		})
+		this.events.clicked$.subscribe(data => this.spawnWindow(data))
+	}
+
+	spawnWindow(stuff: any) {
+		console.log(stuff)
+		const spawnedWindow: ComponentRef<Window> = this.container.createComponent(Window)
+		spawnedWindow.instance.test = stuff.appName
 	}
 }
