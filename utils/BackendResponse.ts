@@ -4,7 +4,6 @@ export class ResponseFormat {
 
 	constructor() {
 		this.message = null
-		this.responseFunction = ""
 		this.returnedError = false
 	}
 }

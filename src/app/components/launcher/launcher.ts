@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 @Component({
 	selector: 'launcher',
@@ -6,5 +6,5 @@ import { Component } from '@angular/core';
 	templateUrl: './launcher.html',
 })
 export class Launcher {
-
+	@Input() AppName!: string
 }

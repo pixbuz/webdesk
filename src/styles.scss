@@ -16,7 +16,8 @@ body {
 	top: 0;
 }
 
-main {
+root {
+	display: block;
 	height: 100%;
 	width: 100%;
 }
@@ -24,6 +25,7 @@ main {
 .Space {
 	pointer-events: none;
 	position: absolute;
+	display: block;
 	inset: 0;
 	left: 0;
 	top: 0;
