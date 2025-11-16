@@ -1,10 +1,9 @@
 import { Component, ViewChild, ViewContainerRef } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import { Launcher } from "../../components/launcher/launcher";
-import { ResponseFormat, Manifest} from "../../../../utils/utils";
-import { FetchAppManifests } from "../../services/fetch-app-manifests"
-
+import { Launcher } from "../../launcher/launcher";
+import { ResponseFormat } from "../../../../../utils/utils";
+import { FetchAppManifests } from "../../../fetchAppsManifests.service"
 
 @Component({
 	selector: 'app-space',
@@ -14,7 +13,7 @@ import { FetchAppManifests } from "../../services/fetch-app-manifests"
 export class AppSpace {
 	@ViewChild('launchers', { read: ViewContainerRef, static: false }) container!: ViewContainerRef
 
-	data: object[] = [];
+	data: object[] = []
 
 	constructor(private fetchAPI: FetchAppManifests) {}
 
@@ -24,10 +23,9 @@ export class AppSpace {
 		this.container.clear()
 
 		for (const manifest of AppManifests.message) {
-			console.log(manifest)
 			const AppLauncher = this.container.createComponent(Launcher)
-			AppLauncher.location.nativeElement.classList.add("Launcher")
 			AppLauncher.instance.AppName = manifest.name
+			AppLauncher.changeDetectorRef.detectChanges()
 		}
 	}
 }

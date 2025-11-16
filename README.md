@@ -11,14 +11,10 @@ webdesk
 │   ├── functions
 │   ├── functions.ts
 │   └── main.ts
-├── proxy.conf.json
 ├── public
 ├── src
 │   ├── app
-│   ├── components
-│   ├── index.html
-│   ├── spaces
-│   └── styles.scss
+│   │   └── components
 └── utils
     └── utils.ts
 ```
@@ -34,9 +30,7 @@ webdesk
 * ```public```: Static files folder
 * ```src```: Contains all the necessary Angular Files
 	* ```src/app```: Contains the root application
-	* ```src/components```: Contains the Angular components of webdesk
-	* ```src/index.html```: HTML file with html, head and body wrapper
-	* ```src/style.scss```: Contains the main styling sheet for the application
+		* ```src/app/components```: Contains the Angular Components
 * ```utils```: Contains different classes, functions and interfaces that are used by both Front-end and Back-end (Angular and Deno)  
 	* ```utils/utils.ts```: A Typescript files that helps with a clean codebas 
 
@@ -46,14 +40,14 @@ Based on the workflow of the app this time:
 1. **User loads the Page**
 	- ~~Load the Desktop~~
 	- ~~Load the App Spaces~~
-	- Load the App Launchers
+	- ~~Load the App Launchers~~
 	- Restore any Customization
 	- Restore any Widgets
 
 2. **User Interacts with a Launcher**
-	- App Launcher calls the WM
-	- WM Spawns the Correct App
-	- WM Loads the Index Page of said App
+	- App Launcher calls Window Space
+	- Window Space Spawns the Correct App
+	- Window Space Loads the Index Page of said App
 
 3. **User Interacts with a Window**
 	- Ensure it is Movable by the Handle
@@ -65,6 +59,4 @@ Based on the workflow of the app this time:
 	- Update the Page in Real Time
 
 ## **Notes**
-Window and app launchers are components
-
-Spaces are components?
+I am a total noob at Angular

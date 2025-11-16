@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { FetchAppManifests } from './fetch-app-manifests';
+import { LauncherClickRelay } from './launcherClickRelay.service';
 
-describe('FetchAppManifests', () => {
-  let service: FetchAppManifests;
+describe('LauncherClickRelay', () => {
+  let service: LauncherClickRelay;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(FetchAppManifests);
+    service = TestBed.inject(LauncherClickRelay);
   });
 
   it('should be created', () => {

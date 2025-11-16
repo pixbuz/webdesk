@@ -1,4 +1,6 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input,  } from '@angular/core';
+
+import { LauncherClickRelay } from '../../launcherClickRelay.service';
 
 @Component({
 	selector: 'launcher',
@@ -7,4 +9,10 @@ import { Component, Input } from '@angular/core';
 })
 export class Launcher {
 	@Input() AppName!: string
+	constructor(private events: LauncherClickRelay) {}
+
+	onClick() {
+		console.log("click")
+		this.events.emitClick({ appName: this.AppName });
+	}
 }

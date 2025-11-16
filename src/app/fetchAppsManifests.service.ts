@@ -1,14 +1,13 @@
-import { Injectable, PLATFORM_ID, Inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { Observable } from 'rxjs';
 
-import { ResponseFormat } from '../../../utils/BackendResponse';
+import { ResponseFormat } from '../../utils/BackendResponse';
 
 @Injectable({ providedIn: 'root' })
 export class FetchAppManifests {
 	constructor(
-		private http: HttpClient,
-		@Inject(PLATFORM_ID) private platformId: Object
+		private http: HttpClient
 	) {}
 
 	getData(): Observable<ResponseFormat> {
