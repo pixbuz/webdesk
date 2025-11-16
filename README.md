@@ -45,7 +45,7 @@ Based on the workflow of the app this time:
 	- Restore any Widgets
 
 2. **User Interacts with a Launcher**
-	- App Launcher calls Window Space
+	- ~~App Launcher calls Window Space~~
 	- Window Space Spawns the Correct App
 	- Window Space Loads the Index Page of said App
 
