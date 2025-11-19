@@ -16,12 +16,13 @@ async function Server(UserRequest: Request): Promise<Response> {
 	function and returns the response of said function */
 	const RequestURL = new URL(UserRequest.url)	// Ez pathname isolation
 	let reply: ResponseFormat = new ResponseFormat
+	const RequestedFunction: string = RequestURL.pathname.slice(1)
 
-	if (RequestURL.pathname.slice(5) in functions) {
+	if (RequestedFunction in functions) {
 		// If the function name exists then run it
-		reply = functions[RequestURL.pathname.slice(5) as keyof typeof functions](reply)
+		reply = functions[RequestedFunction as keyof typeof functions](reply)
 	} else { // Otherwise send a error message
-		reply.message = `${RequestURL.pathname.slice(5)} is not a Function`
+		reply.message = `${RequestedFunction} is not a Function`
 		reply.returnedError = true
 	}
 
