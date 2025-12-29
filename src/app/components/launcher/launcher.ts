@@ -1,4 +1,4 @@
-import { Component, Input,  } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 import { LauncherClickRelay } from '../../launcherClickRelay.service';
 
@@ -11,5 +11,10 @@ export class Launcher {
 	@Input() AppName!: string
 	constructor(private events: LauncherClickRelay) {}
 
-	onClick() { this.events.emitClick({ appName: this.AppName }) }
+	onClick() {
+		/* Everytime a app launcher gets clicked,
+		the event is relayed to Window Space in
+		order to spawn the associated Window */
+		this.events.emitClick({ appName: this.AppName })
+	}
 }

@@ -18,6 +18,7 @@ export class AppSpace {
 	constructor(private fetchAPI: FetchAppManifests) {}
 
 	async ngOnInit() {
+		/*  */
 		const AppManifests: ResponseFormat = await firstValueFrom(this.fetchAPI.getData())
 		
 		this.container.clear()
