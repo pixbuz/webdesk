@@ -1,0 +1,9 @@
+export const port = 3720
+export const hostname = "localhost"
+export const ssl = false
+export let comment: string = ""
+comment += "<!--┌────────────────────────────────────────────┐-->\n"
+comment += "<!--│ ALT! This is the Compiled Webdesk Index.   │-->\n"
+comment += "<!--│      Any modification of this file will be │-->\n"
+comment += "<!--│      discarted at the next initialization. │-->\n"
+comment += "<!--└────────────────────────────────────────────┘-->\n"

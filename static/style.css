@@ -1,0 +1,94 @@
+* {
+	margin: 0;
+	padding: 0;
+	position: relative;
+	box-sizing: border-box;
+	font-family: system-ui, -apple-system;
+}
+
+html,
+body {
+	background: oklch(0.40 .03 266);
+	position: static;
+	overflow: hidden;
+	height: 100svh;
+	width: 100svw;
+	z-index: -1;
+}
+
+body {
+	justify-content: center;
+	position: relative;
+	display: flex;
+}
+
+.Space {
+	pointer-events: none;
+	position: absolute;
+	inset: 0;
+}
+
+.Space > * { pointer-events: all; }
+
+.Background { z-index: 0; }
+.Launcher { z-index: 1; }
+.Window { z-index: 2; }
+.Error { z-index: 4; }
+
+.StatusBar {
+	background: oklch(0.38 0.03 265 / 0.85);
+	backdrop-filter: blur(2px);
+	flex-flow: row nowrap;
+	position: absolute;
+	overflow-y: hidden;
+	border-radius: 6px;
+	overflow-x: auto;
+	min-width: 20%;
+	max-width: 80%;
+	display: flex;
+	bottom: 16px;
+	height: 32px;
+	z-index: 3;
+}
+
+.Background svg {
+	filter: invert(1);
+	height: 100%;
+	width: 100%;
+}
+
+.Launcher {
+	align-items: flex-start;
+	justify-content: flex-start;
+	align-content: flex-start;
+	flex-flow: column wrap;
+	display: flex;
+	padding: 8px;
+	gap: 4px 8px;
+}
+
+.Assets {
+	position: absolute;
+	display: none;
+}
+
+div[name="Launcher"] {
+	flex-flow: column nowrap;
+	width: 5vmin;
+	color: white;
+	display: flex;
+	justify-content: center;
+	align-self: center;
+	cursor: pointer;
+}
+
+div[name="Launcher"] img {
+	aspect-ratio: 1;
+	max-width: 100%;
+}
+
+div[name="Launcher"] h6 {
+	flex: 1;
+	text-align: center;
+	text-transform: uppercase;
+}
