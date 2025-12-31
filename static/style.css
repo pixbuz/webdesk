@@ -6,9 +6,46 @@
 	font-family: system-ui, -apple-system;
 }
 
+:root {
+	/* POLAR NIGHT
+		Used for base background colors and dark UI elements.
+		nord0: Darkest (Main Background) -> nord3: Lightest (Comments/Secondary)
+	*/
+	--nord0: #2E3440;
+	--nord1: #3B4252;
+	--nord2: #434C5E;
+	--nord3: #4C566A;
+
+	/* SNOW STORM
+		Used for text and bright UI elements.
+		nord4: Darkest (faded text) -> nord6: Lightest (Main Text)
+	*/
+	--nord4: #D8DEE9;
+	--nord5: #E5E9F0;
+	--nord6: #ECEFF4;
+
+	/* FROST
+		Used for primary UI elements, buttons, and links.
+		Teal & Blues.
+	*/
+	--nord7: #8FBCBB; /* Teal */
+	--nord8: #88C0D0; /* Cyan */
+	--nord9: #81A1C1; /* Light Blue */
+	--nord10: #5E81AC; /* Dark Blue */
+
+	/* AURORA
+		Used for errors, warnings, success, and syntax highlighting.
+	*/
+	--nord11: #BF616A; /* Red (Error) */
+	--nord12: #D08770; /* Orange (Warning/Regex) */
+	--nord13: #EBCB8B; /* Yellow (Warning/Class) */
+	--nord14: #A3BE8C; /* Green (Success/String) */
+	--nord15: #B48EAD; /* Purple (Number/Type) */
+}
+
 html,
 body {
-	background: oklch(0.40 .03 266);
+	background: var(--nord0);
 	position: static;
 	overflow: hidden;
 	height: 100svh;
@@ -36,7 +73,7 @@ body {
 .Error { z-index: 4; }
 
 .StatusBar {
-	background: oklch(0.38 0.03 265 / 0.85);
+	background: rgb(from var(--nord7) r g b / .85);
 	backdrop-filter: blur(2px);
 	flex-flow: row nowrap;
 	position: absolute;
@@ -52,13 +89,11 @@ body {
 }
 
 .Background svg {
-	filter: invert(1);
 	height: 100%;
 	width: 100%;
 }
 
 .Launcher {
-	align-items: flex-start;
 	justify-content: flex-start;
 	align-content: flex-start;
 	flex-flow: column wrap;
@@ -74,12 +109,13 @@ body {
 
 div[name="Launcher"] {
 	flex-flow: column nowrap;
-	width: 5vmin;
-	color: white;
-	display: flex;
 	justify-content: center;
-	align-self: center;
+	color: var(--nord6);
+	user-select: none;
+	overflow: hidden;
 	cursor: pointer;
+	display: flex;
+	width: 5vmin;
 }
 
 div[name="Launcher"] img {
@@ -88,7 +124,72 @@ div[name="Launcher"] img {
 }
 
 div[name="Launcher"] h6 {
-	flex: 1;
-	text-align: center;
 	text-transform: uppercase;
+	text-align: center;
+	font-weight: 1000;
+	flex: 1;
+}
+
+div[name="Window"] {
+	background: var(--nord0);
+	will-change: transform;
+	color: var(--nord6);
+	position: absolute;
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+div[name="Window"].moving,
+div[name="Window"].smooth {
+	transition-duration: 100ms;
+}
+
+div[name="Window"] .Titlebar {
+	justify-content: space-between;
+	background: var(--nord6);
+	padding: 2px 4px 2px 8px;
+	align-content: center;
+	flex-flow: row nowrap;
+	display: flex;
+	height: 2vmin;
+	width: 100%;
+}
+
+div[name="Window"].moving .Titlebar {
+	cursor: grabbing;
+}
+
+div[name="Window"] .Titlebar img {
+	user-select: none;
+	aspect-ratio: 1;
+	height: 100%;
+}
+
+div[name="Window"] .Titlebar .Buttons {
+	align-content: center;
+	flex-flow: row nowrap;
+	overflow: hidden;
+	display: flex;
+	height: 100%;
+	gap: 8px;
+}
+
+div[name="Window"] .Titlebar button {
+	aspect-ratio: 1;
+	height: 100%;
+	border: 0;
+	border-radius: 4px;
+}
+
+div[name="Window"] .Titlebar button:nth-child(1) { background: var(--nord14); }
+div[name="Window"] .Titlebar button:nth-child(2) { background: var(--nord11); }
+
+div[name="Window"] .Content {
+	height: 37.5vmin;
+	width: 37.5vmax;
+}
+
+div[name="Window"].moving .Content {
+	pointer-events: none;
+	user-select: none;
 }

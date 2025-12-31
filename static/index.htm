@@ -12,8 +12,8 @@
 			<svg xmlns="http://www.w3.org/2000/svg">
 				<filter id="cool">
 					<feTurbulence baseFrequency='0.01' result='noise' />
-					<feDiffuseLighting in='noise' lighting-color='background: oklab(100% 0 0);' surfaceScale='5'>
-						<feDistantLight azimuth='315' elevation='60' />
+					<feDiffuseLighting in='noise' lighting-color='var(--nord0)' surfaceScale='6'>
+						<feDistantLight azimuth='45' elevation='60' />
 					</feDiffuseLighting>
 				</filter>
 				<rect width="100%" height="100%" filter="url(#cool)" />

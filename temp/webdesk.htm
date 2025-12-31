@@ -5,36 +5,47 @@
 <!--└────────────────────────────────────────────┘-->
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="style.css">
-<title>Webdesk!</title>
-<script async src="script.js"></script>
-</head>
-<body>
-<section class="Background Space">
-<svg xmlns="http://www.w3.org/2000/svg">
-<filter id="cool">
-<feTurbulence baseFrequency='0.01' result='noise' />
-<feDiffuseLighting in='noise' lighting-color='background: oklab(100% 0 0);' surfaceScale='5'>
-<feDistantLight azimuth='315' elevation='60' />
-</feDiffuseLighting>
-</filter>
-<rect width="100%" height="100%" filter="url(#cool)" />
-</svg>
-</section>
-<section class="Launcher Space"></section>
-<section class="Window Space"></section>
-<section class="Error Space"></section>
-<section class="StatusBar"></section>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="stylesheet" href="style.css">
+		<title>Webdesk!</title>
+		<script async src="script.js"></script>
+	</head>
+	<body>
+		<section class="Background Space">
+			<svg xmlns="http://www.w3.org/2000/svg">
+				<filter id="cool">
+					<feTurbulence baseFrequency='0.01' result='noise' />
+					<feDiffuseLighting in='noise' lighting-color='var(--nord0)' surfaceScale='6'>
+						<feDistantLight azimuth='45' elevation='60' />
+					</feDiffuseLighting>
+				</filter>
+				<rect width="100%" height="100%" filter="url(#cool)" />
+			</svg>
+		</section>
+		<section class="Launcher Space"></section>
+		<section class="Window Space"></section>
+		<section class="Error Space"></section>
+		<section class="StatusBar"></section>
 
-<section class="Assets">
+		<section class="Assets">
+			
 <div name="Launcher" onclick="openWindow(this)">
-<img class="Icon" src=""/>
-<h6 class="Name"></h6>
+	<img class="Icon"/>
+	<h6 class="Name"></h6>
+</div>
+<div name="Window">
+	<div class="Titlebar">
+		<img class="Icon"/>
+		<div class="Buttons">
+			<button class="Minimize"></button>
+			<button class="Close"></button>
+		</div>
+	</div>
+	<iframe class="Content" src="#" frameborder="0"></iframe>
 </div>
 
-</section>
-</body>
+		</section>
+	</body>
 </html>

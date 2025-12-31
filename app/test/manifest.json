@@ -1,3 +1,5 @@
 {
-	"iconPath": "icon.png"
+	"icon": "icon.png",
+	"index": "test.html",
+	"desc": "Test Application AHJSHAGAJHSDSAJDBSAJHJHSADFHJSDBHJGFHJBDREBGJHRGBJHSJHDBFJHBFJBHSDF"
 }

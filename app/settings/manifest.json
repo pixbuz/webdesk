@@ -1,3 +1,5 @@
 {
-	"iconPath": "icon/icon.svg"
+	"icon": "icon/icon.svg",
+	"index": "index.html",
+	"desc": "Customize Webdesk"
 }

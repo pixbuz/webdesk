@@ -1,0 +1,16 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@std/media-types@^1.1.0": "1.1.0"
+  },
+  "jsr": {
+    "@std/media-types@1.1.0": {
+      "integrity": "c9d093f0c05c3512932b330e3cc1fe1d627b301db33a4c2c2185c02471d6eaa4"
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "jsr:@std/media-types@^1.1.0"
+    ]
+  }
+}

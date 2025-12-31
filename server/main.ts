@@ -1,36 +1,17 @@
-import * as settings from "../server.settings.ts"
-import { WebdeskApplication } from "./application.ts"
+import { config } from "../server.settings.ts"
+import * as resources from "./resourceMapper.ts"
 
 let websockets: WebSocket[] = []
-const base: string = Deno.readTextFileSync("static/index.htm").replaceAll("\t", "")
-const split: string[] = base.split("<!--Assets-->")
-const appList: Record<string, WebdeskApplication> = {}
 const _encoder: TextEncoder = new TextEncoder()
 const _decoder: TextDecoder = new TextDecoder()
 const _server = Deno.serve({
-	port: settings.port,
-	hostname: settings.hostname,
+	port: config.port,
+	hostname: config.hostname,
 	handler: requestResponder
 })
 
-for await (const dir of Deno.readDir("app")) {
-	const manifest: WebdeskApplication = JSON.parse(Deno.readTextFileSync(`app/${dir.name}/manifest.json`))
-	appList[dir.name] = manifest
-	appList[dir.name].iconPath = `app/${dir.name}/${manifest.iconPath}`
-}
-
-Deno.writeTextFileSync("temp/webdesk.htm", settings.comment, { append: false })
-Deno.writeTextFileSync("temp/webdesk.htm", split[0], { append: true })
-for await (const component of Deno.readDir("static/components")) {
-	const HTML = Deno.readTextFileSync(`static/components/${component.name}`)
-	Deno.writeTextFileSync("temp/webdesk.htm", `${ HTML.replaceAll("\t", "") }\n`, { append: true })
-}
-Deno.writeTextFileSync("temp/webdesk.htm", split[1], { append: true })
-
-// const index = Deno.readFileSync("temp/webdesk.htm")
-// const css = Deno.readFileSync("static/style.css")
-// const js = Deno.readFileSync("static/script.js")
-function requestResponder(request: Request, _connInfo: object) {
+async function requestResponder(request: Request, _connInfo: object) {
+	await resources.ready
 	const url = new URL(request.url)
 
 	if (request.headers.get("upgrade") === "websocket") {
@@ -38,39 +19,31 @@ function requestResponder(request: Request, _connInfo: object) {
 		
 		upgrade.socket.addEventListener("close", event => { websockets = websockets.filter(socket => socket === (event.target as WebSocket)) })
 		upgrade.socket.addEventListener("open", event => { websockets.push(event.target as WebSocket) })
-		upgrade.socket.addEventListener("message", socketInterpreter)
+		upgrade.socket.addEventListener("message", socketResponder)
 
 		return upgrade.response
 	}
 
-	if (url.pathname.slice(1, 5) == "apps") return assetsManager(url.pathname)
+	console.log(`Request from Client: "${ url.pathname }"`)
+	if (resources.routes[url.pathname]) {
+		return new Response(await Deno.readFile(resources.routes[url.pathname]), resources.headers[url.pathname])
+	} else return new Response("", { status: 400 })
+}
 
-	switch(url.pathname) {
-		case "/": return new Response(Deno.readFileSync("temp/webdesk.htm"), { status: 200, headers: {"content-type": "text/html; charset=utf-8"} })
-		case "/style.css": return new Response(Deno.readFileSync("static/style.css"), { status: 200, headers: {"content-type": "text/css; charset=utf-8"} })
-		case "/script.js": return new Response(Deno.readFileSync("static/script.js"), { status: 200, headers: {"content-type": "text/js; charset=utf-8"} })
+function socketResponder(event: MessageEvent) {
+	console.log(`Request from Client Websocket: "${ event.data }"`)
+	const command = event.data.split(" ")
 
-		default: return new Response("bruh", { status: 400 })
+	switch (command[0]) {
+		case "app": return socketAppHandle(command, event.target as WebSocket)
+
+		default: return (event.target as WebSocket).send("what")
 	}
 }
 
-function assetsManager(pathname: string) {
-	const info = pathname.slice(6).split("/")
-	const target = info[0]
-	console.log(info)
-	switch (info[1]) {
-		case "icon": return new Response(Deno.readFileSync(appList[target].iconPath), { headers: {"content-type": "image/svg+xml"} })
-
-		default: return new Response("brud", { status: 400 })
-	}
-}
-
-function socketInterpreter(event: MessageEvent) {
-	if (event.data[0] == "?") { console.log(`Request from Client: "${ event.data }"`) }
-	switch (event.data.slice(1)) {
-		case "apps": (event.target as WebSocket).send(`!${Object.keys(appList).toString()}`)
-			break
-
-		default: (event.target as WebSocket).send("!wym")
+function socketAppHandle(command: string[], socket: WebSocket) {
+	switch(command[1]) {
+		case "list": return socket.send(Object.keys(resources.appProprieties).toString())
+		case "desc": return socket.send(resources.appProprieties[command[2]].desc)
 	}
 }
