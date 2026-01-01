@@ -17,6 +17,9 @@ export const ready: Promise<void> =
 
 	routes["/script.js"] = config.frontendScriptPath
 	headers["/script.js"] = { status: 200, headers: {"content-type": "text/js; charset=utf-8;"} }
+
+	// routes["/desktop"] = config.backgroundPath
+	// headers["/desktop"] = { status: 200, headers: {"content-type": "image/svg+xml"} }
 })()
 
 async function addAppsToRoutes() {

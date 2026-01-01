@@ -45,12 +45,11 @@
 
 html,
 body {
-	background: var(--nord0);
 	position: static;
 	overflow: hidden;
 	height: 100svh;
 	width: 100svw;
-	z-index: -1;
+	z-index: 0;
 }
 
 body {
@@ -59,6 +58,7 @@ body {
 	display: flex;
 }
 
+.Background,
 .Space {
 	pointer-events: none;
 	position: absolute;
@@ -67,13 +67,21 @@ body {
 
 .Space > * { pointer-events: all; }
 
-.Background { z-index: 0; }
-.Launcher { z-index: 1; }
-.Window { z-index: 2; }
-.Error { z-index: 4; }
+.Background	{ z-index: 00; }
+.Launcher	{ z-index: 10; }
+.Window 	{ z-index: 20; }
+.StatusBar	{ z-index: 30; }
+.Error		{ z-index: 40; }
+
+.Background {
+	height: 4320px;
+	width: 7680px;
+}
 
 .StatusBar {
-	background: rgb(from var(--nord7) r g b / .85);
+	background: rgb(from var(--nord3) r g b / .50);
+	transition-timing-function: cubic-bezier(1, 0, 1, 0);
+	transition-duration: 2500ms;
 	backdrop-filter: blur(2px);
 	flex-flow: row nowrap;
 	position: absolute;
@@ -85,12 +93,11 @@ body {
 	display: flex;
 	bottom: 16px;
 	height: 32px;
-	z-index: 3;
 }
 
-.Background svg {
-	height: 100%;
-	width: 100%;
+.StatusBar:hover {
+	background: rgb(from var(--nord3) r g b / 1);
+	transition-duration: 100ms;
 }
 
 .Launcher {
@@ -131,32 +138,51 @@ div[name="Launcher"] h6 {
 }
 
 div[name="Window"] {
-	background: var(--nord0);
 	will-change: transform;
+	background: var(--nord0);
 	color: var(--nord6);
 	position: absolute;
 	border-radius: 8px;
-	overflow: hidden;
+	padding: 6px;
 }
 
 div[name="Window"].moving,
 div[name="Window"].smooth {
+	transition-duration: 50ms;
+	cursor: grabbing;
+}
+
+div[name="Window"].closing {
 	transition-duration: 100ms;
+	pointer-events: none;
+	filter: blur(50px);
+}
+
+div[name="Window"].focus { background: var(--nord6); }
+
+div[name="Window"]::before {
+	background: var(--nord1);
+	position: absolute;
+	border-radius: 7px;
+	content: "";
+	inset: 2px;
+}
+
+div[name="Window"] > * {
+	z-index: 22;
+	background: var(--nord1);
 }
 
 div[name="Window"] .Titlebar {
+	padding: .5vmin 1vmin .5vmin 2vmin;
 	justify-content: space-between;
-	background: var(--nord6);
-	padding: 2px 4px 2px 8px;
+	border-radius: 4px 4px;
 	align-content: center;
 	flex-flow: row nowrap;
+	user-select: none;
+	height: 2.5vmin;
 	display: flex;
-	height: 2vmin;
 	width: 100%;
-}
-
-div[name="Window"].moving .Titlebar {
-	cursor: grabbing;
 }
 
 div[name="Window"] .Titlebar img {
@@ -175,21 +201,27 @@ div[name="Window"] .Titlebar .Buttons {
 }
 
 div[name="Window"] .Titlebar button {
+	border-radius: 4px;
 	aspect-ratio: 1;
 	height: 100%;
 	border: 0;
-	border-radius: 4px;
 }
 
 div[name="Window"] .Titlebar button:nth-child(1) { background: var(--nord14); }
 div[name="Window"] .Titlebar button:nth-child(2) { background: var(--nord11); }
 
-div[name="Window"] .Content {
+div[name="Window"] .ContentWrapper {
+	user-select: none;
 	height: 37.5vmin;
+	overflow: hidden;
 	width: 37.5vmax;
 }
 
-div[name="Window"].moving .Content {
+div[name="Window"] .ContentWrapper iframe {
+	border-radius: 4px;
+}
+
+div[name="Window"]:not(.focus) .ContentWrapper,
+.Window:has(.moving) .ContentWrapper {
 	pointer-events: none;
-	user-select: none;
 }

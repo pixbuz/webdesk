@@ -1,13 +1,17 @@
 const socket = new WebSocket("http://localhost:3720")
-const launcherSpace = document.getElementsByClassName("Launcher")[0]
-const windowSpace = document.getElementsByClassName("Window")[0]
+const launcherSpace = document.querySelector(".Launcher.Space")
+const windowSpace = document.querySelector(".Window.Space")
+const statusBar = document.querySelector(".StatusBar")
 
 const assetsLauncher = document.getElementsByName("Launcher")[0]
 const assetsWindow = document.getElementsByName("Window")[0]
 
+
 let movingWindow = null
+let focusedWindow = null
 let clickOffsets = []
 let lastPosition = []
+let openWindows = []
 
 function serverQuery(message) {
 	socket.send(message)
@@ -31,22 +35,40 @@ async function addLauncher(appName) {
 }
 
 function openWindow(launcher) {
-	const appName = launcher.getAttribute("app")
 	const appWindow = assetsWindow.cloneNode(true)
+	const appName = launcher.getAttribute("app")
 	windowSpace.appendChild(appWindow)
+	focusWindow(appWindow)
+	openWindows.push(appWindow)
+
+	const boundingBox = appWindow.getBoundingClientRect()
+	const center = [ (window.innerWidth - boundingBox.width) / 2 , (window.innerHeight - boundingBox.height) / 2 ]
+
+	appWindow.setAttribute("x", center[0])
+	appWindow.setAttribute("y", center[1])
+	appWindow.setAttribute("bx", center[0])
+	appWindow.setAttribute("by", center[1])
+	appWindow.style.transform = `translate(${center[0]}px , ${center[1]}px)`
 
 	appWindow.setAttribute("app", appName)
-	appWindow.setAttribute("x", 0)
-	appWindow.setAttribute("y", 0)
 	appWindow.querySelector(".Icon").src = `apps/${appName}/icon`
+}
+
+function closeWindow(button) {
+	const appWindow = button.parentElement.parentElement.parentElement
+	appWindow.classList.add("closing")
+	setTimeout(() => appWindow.remove(), 100)
+	openWindows = openWindows.filter(openAppWindow => openAppWindow != appWindow)
 }
 
 function enableMovementCheck(event) {
 	if (event.target.classList.contains("Titlebar")) {
 		const appWindow = event.target.parentElement
+		clickOffsets = [ event.x , event.y ]
+		appWindow.classList.add("moving")
+		focusWindow(appWindow)
+
 		movingWindow = appWindow
-		movingWindow.classList.add("moving")
-		clickOffsets = [ event.x, event.y ]
 	}
 }
 
@@ -78,11 +100,12 @@ function windowBoundryCheck(target) {
 	if (boundingBox.left < 0) { x = 0 }
 	if (boundingBox.top < 0) { y = 0 }
 
-	return [ x, y ]
+	return [ x , y ]
 }
 
 function resizeEvent(event) {
 	const openWindows = document.getElementsByName("Window")
+
 	for (appWindow of openWindows) {
 		lastPosition = windowBoundryCheck(appWindow)
 		appWindow.style.transform = `translate(${lastPosition[0]}px, ${lastPosition[1]}px)`
@@ -97,7 +120,7 @@ function disableMovement(event) {
 	lastPosition = windowBoundryCheck(movingWindow)
 	movingWindow.classList.add("smooth")
 	movingWindow.style.transform = `translate(${lastPosition[0]}px, ${lastPosition[1]}px)`
-	setTimeout(() => document.getElementsByClassName("smooth")[0].classList.remove("smooth"), 100)
+	setTimeout(() => document.querySelector(".smooth").classList.remove("smooth"), 100)
 
 	movingWindow.setAttribute("x", lastPosition[0])
 	movingWindow.setAttribute("y", lastPosition[1])
@@ -112,6 +135,19 @@ socket.addEventListener("open", async () => {
 
 	for (appName of sortedApps) await addLauncher(appName)
 })
+
+function focusWindow(appWindow) {
+	for (openAppWindow of openWindows) {
+		if (!openAppWindow) continue
+		openAppWindow.classList.remove("focus")
+		const zIndex = parseInt(openAppWindow.style.zIndex)
+		if (zIndex > 20) openAppWindow.style.zIndex = zIndex - 1
+	}
+
+	appWindow.classList.add("focus")
+	appWindow.style.zIndex = 29
+	focusedWindow = appWindow
+}
 
 document.addEventListener("mousemove", moveWindow)
 document.addEventListener("mousedown", enableMovementCheck)

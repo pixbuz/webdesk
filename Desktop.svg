@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg">
-	<filter id="marble">
-		<feTurbulence baseFrequency="0.005" result="noise" octaves="4" seed="5656.748392732038"></feTurbulence>
-		<feDiffuseLighting in="noise" surfaceScale="5">
-			<feDistantLight azimuth="60" elevation="1.25"></feDistantLight>
-		</feDiffuseLighting>
-	</filter>
-	<rect width="100%" height="100%" filter="url(#marble)"></rect>
-</svg>

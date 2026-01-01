@@ -1,10 +1,12 @@
-<div name="Window">
+<div name="Window" x="0" y="0" bx="0" by="0">
 	<div class="Titlebar">
 		<img class="Icon"/>
 		<div class="Buttons">
-			<button class="Minimize"></button>
-			<button class="Close"></button>
+			<button class="Minimize" onclick="minimizeWindow(this)"></button>
+			<button class="Close" onclick="closeWindow(this)"></button>
 		</div>
 	</div>
-	<iframe class="Content" src="#" frameborder="0"></iframe>
+	<div class="ContentWrapper">
+		<iframe src="#" width="100%" height="100%" frameborder="0"></iframe>
+	</div>
 </div>

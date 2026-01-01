@@ -12,6 +12,7 @@ comment += "<!--└────────────────────�
 const cssFilePath = "static/style.css"
 const frontendScriptPath = "static/script.js"
 const compiledIndexPath = "temp/webdesk.htm"
+const backgroundPath = "static/desktop.svg"
 
 export const config = Object.freeze({
 	port,
@@ -20,5 +21,6 @@ export const config = Object.freeze({
 	comment,
 	cssFilePath,
 	frontendScriptPath,
-	compiledIndexPath
+	compiledIndexPath,
+	backgroundPath,
 } as const)
