@@ -4,23 +4,7 @@ import { contentType, getCharset } from "@std/media-types";
 export const routes: Record<string, string> = {}
 export const headers: Record<string, object> = {}
 export const appProprieties: Record<string, WebdeskApplication> = {}
-export const ready: Promise<void> =
-(async () => {
-	await addAppsToRoutes()
-	await compileIndex()
-
-	routes["/"] = config.compiledIndexPath
-	headers["/"] = { status: 200, headers: {"content-type": "text/html; charset=utf-8;"} }
-
-	routes["/style.css"] = config.cssFilePath
-	headers["/style.css"] = { status: 200, headers: {"content-type": "text/css; charset=utf-8;"} }
-
-	routes["/script.js"] = config.frontendScriptPath
-	headers["/script.js"] = { status: 200, headers: {"content-type": "text/js; charset=utf-8;"} }
-
-	// routes["/desktop"] = config.backgroundPath
-	// headers["/desktop"] = { status: 200, headers: {"content-type": "image/svg+xml"} }
-})()
+export const ready: Promise<void> = init()
 
 async function addAppsToRoutes() {
 	const applicationNames: string[] = []
@@ -36,19 +20,23 @@ async function addAppsToRoutes() {
 			const manifestJSON: WebdeskApplication = JSON.parse(textManifest)
 			appProprieties[appName] = manifestJSON
 
-			routes[`/apps/${appName}/index`] = `app/${appName}/${manifestJSON.index}`
+			routes[`/apps/${appName}/`] = `app/${appName}/${manifestJSON.index.toLocaleLowerCase()}`
+			mimeType = manifestJSON.index.toLocaleLowerCase().slice(manifestJSON.index.toLocaleLowerCase().lastIndexOf(".") + 1)
+			headers[`/apps/${appName}/`] = { status: 200, headers: {"content-type": `${contentType(mimeType)}; charset=${getCharset(mimeType)}`} }
 
-			mimeType = routes[`/apps/${appName}/index`].slice(routes[`/apps/${appName}/index`].lastIndexOf(".") + 1)
-			headers[`/apps/${appName}/index`] = { status: 200, headers: {"content-type": `${contentType(mimeType)}; charset=${getCharset(mimeType)}`} }
-
-			routes[`/apps/${appName}/icon`] = `app/${appName}/${manifestJSON.icon}`
-
-			mimeType = routes[`/apps/${appName}/icon`].slice(routes[`/apps/${appName}/icon`].lastIndexOf(".") + 1)
+			routes[`/apps/${appName}/icon`] = `app/${appName}/${manifestJSON.icon.toLocaleLowerCase()}`
+			mimeType = manifestJSON.icon.toLocaleLowerCase().slice(manifestJSON.icon.toLocaleLowerCase().lastIndexOf(".") + 1)
 			headers[`/apps/${appName}/icon`] = { status: 200, headers: {"content-type": `${contentType(mimeType)}`} }
+
+			for (const route of Object.keys(manifestJSON.routes)) {
+				routes[`/apps/${appName}/${route.toLocaleLowerCase()}`] = `app/${appName}/${manifestJSON.routes[route].toLocaleLowerCase()}`
+				mimeType = manifestJSON.routes[route].toLocaleLowerCase().slice(manifestJSON.routes[route].toLocaleLowerCase().lastIndexOf(".") + 1)
+				headers[`/apps/${appName}/${route.toLocaleLowerCase()}`] = { status: 200, headers: {"content-type": `${contentType(mimeType)}`} }
+			}
 		} catch (err) { console.error(`Failed to load app ${appName}:`, err) }
 	})
 
-	return await Promise.all(processingQueue)
+	await Promise.all(processingQueue)
 }
 
 async function compileIndex() {
@@ -56,20 +44,62 @@ async function compileIndex() {
 	const webdeskBaseIndex: string = config.comment + (await Deno.readTextFile("static/index.htm"))
 	const webdeskSplitIndex: string[] = webdeskBaseIndex.split("<!--Assets-->")
 
-	for await (const component of Deno.readDir("static/components")) {
+	for await (const component of Deno.readDir(config.componentsPath)) {
 		if (component.isFile) componentNames.push(component.name)
 	}
 
 	const processingQueue = componentNames.map(async componentName => {
-		return await Deno.readTextFile(`static/components/${componentName}`)
+		return await Deno.readTextFile(`${config.componentsPath}/${componentName}`)
 	})
 
-	const componentsHTMLArray = await Promise.all(processingQueue)
-	await Deno.writeTextFile(config.compiledIndexPath, [webdeskSplitIndex[0], componentsHTMLArray.join("\n"), ...webdeskSplitIndex.slice(1)].join("\n"))
+	const compiledHTMLComponents = (await Promise.all(processingQueue)).join("\n")
+	await Deno.writeTextFile(config.compiledIndexPath, [webdeskSplitIndex[0], compiledHTMLComponents, ...webdeskSplitIndex.slice(1)].join("\n"))
+}
+
+async function compileScripts() {
+	const scriptNames: string[] = []
+	for await (const script of Deno.readDir(config.frontendScriptsPath)) {
+		if (script.isFile) scriptNames.push(script.name)
+	}
+
+	const processingQueue = scriptNames.map(async scriptName => {
+		return `//./ ${scriptName}\n` + (await Deno.readTextFile(`${config.frontendScriptsPath}/${scriptName}`))
+	})
+
+	const compiledScripts = (await Promise.all(processingQueue)).join("\n")
+	await Deno.writeTextFile(config.compiledScriptPath, compiledScripts)
+}
+
+async function init() {
+	const dependencies: Promise<void>[] = [
+		addAppsToRoutes(),
+		compileScripts(),
+		compileIndex(),
+	]
+
+	await Promise.all(dependencies)
+
+	routes["/"] = config.compiledIndexPath
+	headers["/"] = { status: 200, headers: {"content-type": "text/html; charset=utf-8;"} }
+
+	routes["/style.css"] = config.cssFilePath
+	headers["/style.css"] = { status: 200, headers: {"content-type": "text/css; charset=utf-8;"} }
+
+	routes["/script.js"] = config.compiledScriptPath
+	headers["/script.js"] = { status: 200, headers: {"content-type": "text/js; charset=utf-8;"} }
+}
+
+if (config.serverDebugMode) {
+	(async () => {
+		for await (const _event of Deno.watchFs("static")) {
+			init()
+		}
+	})()
 }
 
 interface WebdeskApplication {
 	icon: string
 	index: string
 	desc: string
+	routes: Record<string, string>
 }
