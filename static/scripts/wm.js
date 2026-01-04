@@ -1,13 +1,23 @@
+/*
+ * Contains all the functions
+ * needed by the wm
+*/
+
 const assetsWindow = document.getElementsByName("Window")[0]
 const windowSpace = document.querySelector(".Window.Space")
 
-const openWindowsProprieties = new WeakMap()
+// Pairs a open window with its boundry box
+const windowsBox = new WeakMap()
+// Used for interpreting mouse movements during a window resize
 let grabPos = [ false, false, false, false ]
 let resizingWindow = null
 let movingWindow = null
+// Contains the offsets to remove from a mouse click during a window movement
 let clickOffsets = []
 
 function openWindow(launcher) {
+	// Spawns a window and sets all the appropriate proprieties
+	// also maps the newly opened window in 'windowsBox'
 	const appWindow = assetsWindow.cloneNode(true)
 	const appName = launcher.getAttribute("app")
 
@@ -20,13 +30,14 @@ function openWindow(launcher) {
 	windowSpace.appendChild(appWindow)
 	focusWindow(appWindow)
 
-	openWindowsProprieties.set(appWindow, appWindow.getBoundingClientRect())
+	windowsBox.set(appWindow, appWindow.getBoundingClientRect())
 
-	const center = [ ( window.innerWidth - openWindowsProprieties.get(appWindow).width )/2 , ( window.innerHeight - openWindowsProprieties.get(appWindow).width.height )/2 ]
+	const center = [ ( window.innerWidth - windowsBox.get(appWindow).width )/2 , ( window.innerHeight - windowsBox.get(appWindow).width.height )/2 ]
 	appWindow.style.transform = `translate(${center[0]}px,${center[1]}px)`
 }
 
 function enableMovement(event) {
+	// Register the window for movement status
 	if (event.target.tagName === "BUTTON") return
 
 	const appWindow = event.target.closest(`[name="Window"]`)
@@ -41,15 +52,19 @@ function enableMovement(event) {
 }
 
 function moveWindow(moveX, moveY) {
+	// Move the window applying the current mouse position
+	// - the click offset + the old position
 	if (!movingWindow) return
 
-	const xPos = moveX - clickOffsets[0] + openWindowsProprieties.get(movingWindow).x
-	const yPos = moveY - clickOffsets[1] + openWindowsProprieties.get(movingWindow).y
+	const xPos = moveX - clickOffsets[0] + windowsBox.get(movingWindow).x
+	const yPos = moveY - clickOffsets[1] + windowsBox.get(movingWindow).y
 
 	movingWindow.style.transform = `translate(${xPos}px,${yPos}px)`
 }
 
 function updateWindowPosition(target) {
+	// Checks if the current window is in a valid position
+	// inside webdesk and corrects it if needed
 	const boundingBox = target.getBoundingClientRect()
 
 	if (boundingBox.right > window.innerWidth) boundingBox.x = ( window.innerWidth - boundingBox.width )
@@ -59,12 +74,14 @@ function updateWindowPosition(target) {
 	else if (boundingBox.top < 0) boundingBox.y = 0
 
 	target.style.transform = `translate(${boundingBox.x}px,${boundingBox.y}px)`
-	openWindowsProprieties.set(target, boundingBox)
+	windowsBox.set(target, boundingBox)
 }
 
 function windowInteraction(event) {
+	// Checks where the user clicked in
+	// a Window and enables resizing
 	if (event.target.getAttribute("name") == "Window") {
-		const boundingBox = openWindowsProprieties.get(event.target)
+		const boundingBox = windowsBox.get(event.target)
 		clickOffsets = [ event.x, event.y ]
 		focusWindow(event.target)
 
@@ -89,9 +106,11 @@ function windowInteraction(event) {
 }
 
 function resizeWindow(moveX, moveY) {
-	const boundingBox = openWindowsProprieties.get(resizingWindow)
+	// Interprets where a user clicked and runs
+	// the appropriate rescaling of a Window
+	const boundingBox = windowsBox.get(resizingWindow)
 
-	if (grabPos[0] && grabPos[3]) {
+	if (grabPos[0] && grabPos[3]) { // Top Right corner special treatment
 		resizingWindow.style.transform = `translate(${boundingBox.x + moveX - clickOffsets[0]}px , ${boundingBox.y + moveY - clickOffsets[1]}px)`
 		resizingWindow.style.height = `${boundingBox.height - moveY + clickOffsets[1]}px`
 		resizingWindow.style.width = `${boundingBox.width - moveX + clickOffsets[0]}px`
@@ -110,6 +129,7 @@ function resizeWindow(moveX, moveY) {
 }
 
 function focusWindow(appWindow) {
+	// Makes a window go in focus
 	for (openAppWindow of document.getElementsByName("Window")) {
 		openAppWindow.classList.remove("focus")
 		const zIndex = parseInt(openAppWindow.style.zIndex)

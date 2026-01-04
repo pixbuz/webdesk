@@ -1,6 +1,12 @@
-let oldBoundryBox = null
+/*
+ * Contains the main interactions
+ * that the user can have with an open
+ * window that doesn't bother the wm
+*/
 
 function closeWindow(button) {
+	// Function called by the close button
+	// of a window used to close it
 	const appWindow = button.parentElement.parentElement.parentElement
 	openWindowsProprieties.delete(appWindow)
 
@@ -9,6 +15,8 @@ function closeWindow(button) {
 }
 
 function maximiseWindow(button) {
+	// Function called by the maximise button
+	// of a window used to make it full screen
 	const appWindow = button.parentElement.parentElement.parentElement
 
 	if (!appWindow.classList.contains("maximised")) {
@@ -25,6 +33,8 @@ function maximiseWindow(button) {
 }
 
 function minimizeWindow(button) {
+	// Function called by the minimize button
+	// of a window used to make it disappear
 	const appWindow = button.parentElement.parentElement.parentElement
 	appWindow.style.display = "none"
 }

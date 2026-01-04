@@ -1,14 +1,49 @@
 import { config } from "../server.settings.ts"
 import { contentType, getCharset } from "@std/media-types";
 
+// Contains the endpoints of the server, and the answare associated
 export const routes: Record<string, Uint8Array<ArrayBuffer> | string> = {}
+// Contains the endpoints' headers
 export const headers: Record<string, object> = {}
-export const appProprieties: Record<string, WebdeskApplication> = {}
+// Contains all the successfully installed apps and associated manifest
+export const installedApps: Record<string, WebdeskApplication> = {}
 export const ready: Promise<void> = init()
 
+interface WebdeskApplication {
+	icon: string
+	index: string
+	desc: string
+	routes: Record<string, string>
+}
+
+async function init() {
+	const dependencies: Promise<void>[] = [
+		addAppsToRoutes(),
+		compileScripts(),
+		compileIndex(),
+	]
+
+	await Promise.all(dependencies)
+
+	registerRoute("/style.css", config.cssFilePath)
+	registerHeaders("/style.css", "css")
+}
+
+async function registerRoute(endpoint: string, resourcePath: string) {
+	// Caches an endpoint associeted resource on said endpoint
+	routes[endpoint] = await Deno.readFile(resourcePath)
+}
+
+function registerHeaders(endpoint: string, mime: string, custom?: object) {
+	// Registers the headers of an endpoint
+	const mimeType = mime.toLocaleLowerCase().slice(mime.toLocaleLowerCase().lastIndexOf(".") + 1)
+	headers[endpoint] = { status: 200, headers: {"content-type": `${contentType(mimeType)}; charset=${getCharset(mimeType)}`}, ...custom }
+}
+
 async function addAppsToRoutes() {
-	// TO ADD: Route all files in folder with proper paths
-	//		Add "do not index" list
+	// Used to index all the assets of each app
+	// TODO: Route all files in folder with proper paths
+	//	 Add "do not index" list
 	const applicationNames: string[] = []
 	for await (const entry of Deno.readDir("app")) {
 		if (entry.isDirectory) applicationNames.push(entry.name.toLowerCase())
@@ -18,7 +53,6 @@ async function addAppsToRoutes() {
 		try {
 			const textManifest = await Deno.readTextFile(`app/${appName}/manifest.json`)
 			const manifestJSON: WebdeskApplication = JSON.parse(textManifest)
-			appProprieties[appName] = manifestJSON
 
 			registerRoute(`/apps/${appName}/`, `app/${appName}/${manifestJSON.index}`)
 			registerHeaders(`/apps/${appName}/`, manifestJSON.index)
@@ -30,22 +64,17 @@ async function addAppsToRoutes() {
 				registerRoute(customRoute, manifestJSON.routes[customRoute])
 				registerHeaders(customRoute, manifestJSON.routes[customRoute])
 			}
+
+			installedApps[appName] = manifestJSON
 		} catch (err) { console.error(`Failed to load app ${appName}:`, err) }
 	})
 
 	await Promise.all(processingQueue)
 }
 
-async function registerRoute(endpoint: string, resourcePath: string) {
-	routes[endpoint] = await Deno.readFile(resourcePath)
-}
-
-function registerHeaders(endpoint: string, mime: string, custom?: object) {
-	const mimeType = mime.toLocaleLowerCase().slice(mime.toLocaleLowerCase().lastIndexOf(".") + 1)
-	headers[endpoint] = { status: 200, headers: {"content-type": `${contentType(mimeType)}; charset=${getCharset(mimeType)}`}, ...custom }
-}
-
 async function compileIndex() {
+	// Adds all the components in the index page
+	// TODO: Discontinue it
 	const componentNames: string[] = []
 	const webdeskSplitIndex: string[] = (await Deno.readTextFile("static/index.htm")).split("<!--Assets-->")
 
@@ -62,6 +91,7 @@ async function compileIndex() {
 }
 
 async function compileScripts() {
+	// Bundles all the scripts in one
 	const scriptNames: string[] = []
 	for await (const script of Deno.readDir(config.frontendScriptsPath)) {
 		if (script.isFile) scriptNames.push(script.name)
@@ -73,38 +103,4 @@ async function compileScripts() {
 
 	routes["/script.js"] = (await Promise.all(processingQueue)).join("\n")
 	registerHeaders("/script.js", "js")
-}
-
-async function init() {
-	const dependencies: Promise<void>[] = [
-		addAppsToRoutes(),
-		compileScripts(),
-		compileIndex(),
-	]
-
-	await Promise.all(dependencies)
-
-	// routes["/"] = config.compiledIndexPath
-	// headers["/"] = { status: 200, headers: {"content-type": "text/html; charset=utf-8;"} }
-
-	registerRoute("/style.css", config.cssFilePath)
-	registerHeaders("/style.css", "css")
-
-	// routes["/script.js"] = config.compiledScriptPath
-	// headers["/script.js"] = { status: 200, headers: {"content-type": "text/js; charset=utf-8;"} }
-}
-
-if (config.serverDebugMode) {
-	(async () => {
-		for await (const _event of Deno.watchFs("static")) {
-			init()
-		}
-	})()
-}
-
-interface WebdeskApplication {
-	icon: string
-	index: string
-	desc: string
-	routes: Record<string, string>
 }
