@@ -26,7 +26,7 @@ async function requestResponder(request: Request, _connInfo: object) {
 
 	console.log(`Request from Client: "${ url.pathname }"`)
 	if (resources.routes[url.pathname]) {
-		return new Response(await Deno.readFile(resources.routes[url.pathname]), resources.headers[url.pathname])
+		return new Response(resources.routes[url.pathname], resources.headers[url.pathname])
 	} else return new Response("", { status: 400 })
 }
 

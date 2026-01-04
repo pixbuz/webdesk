@@ -48,6 +48,8 @@ function enableMovement(event) {
 
 	const appWindow = event.target.closest(`[name="Window"]`)
 
+	if (appWindow.classList.contains("maximised")) return
+
 	clickOffsets = [ event.x , event.y ]
 	appWindow.classList.add("moving")
 	focusWindow(appWindow)
@@ -92,8 +94,6 @@ function windowInteraction(event) {
 			(boundingBox.height - relClickY <= 6), // Bottom
 			(relClickX <= 6) // Right
 		]
-
-		console.log(grabPos)
 
 		if (grabPos[1] || grabPos[3]) event.target.classList.add("resizeX")
 		if (grabPos[0] || grabPos[2]) event.target.classList.add("resizeY")
@@ -148,12 +148,10 @@ function moveEvent(event) {
 	else if (resizingWindow) resizeWindow(event.x , event.y)
 }
 
-function mouseupEvent() {
+function mouseupEvent(event) {
 	if (movingWindow) {
-		movingWindow.classList.add("smooth")
-		setTimeout(() => document.querySelector(".smooth").classList.remove("smooth"), 100)
-		updateWindowPosition(movingWindow)
 		movingWindow.classList.remove("moving")
+		updateWindowPosition(movingWindow)
 		movingWindow = null
 	}
 
@@ -203,25 +201,15 @@ function maximiseWindow(button) {
 	const appWindow = button.parentElement.parentElement.parentElement
 
 	if (!appWindow.classList.contains("maximised")) {
+		appWindow.classList.add("max-transition")
 		appWindow.classList.add("maximised")
 
-		setTimeout(() => {
-			appWindow.style.transform = "translate(0px,0px)"
-			appWindow.style.width = "100%"
-			appWindow.style.height = "100%"
-		}, 100)
-
-		oldBoundryBox = openWindowsProprieties.get(appWindow)
+		setTimeout(() => appWindow.classList.remove("max-transition"), 50)
 	} else {
+		appWindow.classList.add("min-transition")
 		appWindow.classList.remove("maximised")
-
-		appWindow.style.transform = `translate(${oldBoundryBox.x}px,${oldBoundryBox.y}px)`
-		appWindow.style.width = `${oldBoundryBox.width}px`
-		appWindow.style.height = `${oldBoundryBox.height}px`
 		
-		setTimeout(() => updateWindowPosition(appWindow), 100)
-
-		oldBoundryBox = null
+		setTimeout(() => appWindow.classList.remove("min-transition"), 50)
 	}
 }
 
@@ -231,3 +219,4 @@ function minimizeWindow(button) {
 }
 //./ statusbar.js
 const statusBar = document.querySelector(".StatusBar")
+

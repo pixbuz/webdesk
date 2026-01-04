@@ -154,13 +154,17 @@ div[name="Window"] {
 }
 
 div[name="Window"].moving,
-div[name="Window"].smooth {
+div[name="Window"].min-transition,
+div[name="Window"].max-transition {
 	transition-duration: 50ms;
-	cursor: grabbing;
+	transition-timing-function: cubic-bezier(.25, .5, 1, 1);
 }
 
 div[name="Window"].maximised {
-	animation: transitionMaximised 100ms linear;
+	transform: translate(0px, 0px) !important;
+	height: 100% !important;
+	width: 100% !important;
+
 	max-height: 100%;
 	max-width: 100%;
 	padding: 0px;
@@ -264,18 +268,19 @@ div[name="Window"] .ContentWrapper {
 
 div[name="Window"].focus .ContentWrapper { pointer-events: all; }
 
-.Window:has(.moving) .ContentWrapper,
-.Window:has(.resizeX) .ContentWrapper,
-.Window:has(.resizeY) .ContentWrapper,
-.Window:has(.resizeXY1) .ContentWrapper,
-.Window:has(.resizeXY2) .ContentWrapper {
+.Window:has(div[name="Window"].moving) .ContentWrapper,
+.Window:has(div[name="Window"].resizeX) .ContentWrapper,
+.Window:has(div[name="Window"].resizeY) .ContentWrapper,
+.Window:has(div[name="Window"].resizeXY1) .ContentWrapper,
+.Window:has(div[name="Window"].resizeXY2) .ContentWrapper {
 	pointer-events: none !important;
 }
 
-body:has(.resizeX) { cursor: e-resize; }
-body:has(.resizeY) { cursor: n-resize; }
-body:has(.resizeXY1) { cursor: nw-resize; }
-body:has(.resizeXY2) { cursor: ne-resize; }
+body:has(div[name="Window"].moving) { cursor: grabbing; }
+body:has(div[name="Window"].resizeX) { cursor: e-resize; }
+body:has(div[name="Window"].resizeY) { cursor: n-resize; }
+body:has(div[name="Window"].resizeXY1) { cursor: nw-resize; }
+body:has(div[name="Window"].resizeXY2) { cursor: ne-resize; }
 
 @keyframes transitionMaximised {
 	to {

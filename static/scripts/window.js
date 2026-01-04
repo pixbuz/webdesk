@@ -12,25 +12,15 @@ function maximiseWindow(button) {
 	const appWindow = button.parentElement.parentElement.parentElement
 
 	if (!appWindow.classList.contains("maximised")) {
+		appWindow.classList.add("max-transition")
 		appWindow.classList.add("maximised")
 
-		setTimeout(() => {
-			appWindow.style.transform = "translate(0px,0px)"
-			appWindow.style.width = "100%"
-			appWindow.style.height = "100%"
-		}, 100)
-
-		oldBoundryBox = openWindowsProprieties.get(appWindow)
+		setTimeout(() => appWindow.classList.remove("max-transition"), 50)
 	} else {
+		appWindow.classList.add("min-transition")
 		appWindow.classList.remove("maximised")
-
-		appWindow.style.transform = `translate(${oldBoundryBox.x}px,${oldBoundryBox.y}px)`
-		appWindow.style.width = `${oldBoundryBox.width}px`
-		appWindow.style.height = `${oldBoundryBox.height}px`
 		
-		setTimeout(() => updateWindowPosition(appWindow), 100)
-
-		oldBoundryBox = null
+		setTimeout(() => appWindow.classList.remove("min-transition"), 50)
 	}
 }
 

@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" preserveAspectRatio="none">
-	<filter id="cool">
-		<feTurbulence baseFrequency='0.01' result='noise' filterRes="1000"/>
-		<feDiffuseLighting in='noise' lighting-color='#F00' surfaceScale='6'>
-			<feDistantLight azimuth='45' elevation='60' />
-		</feDiffuseLighting>
-	</filter>
-	<rect width="100%" height="100%" filter="url(#cool)" />
-</svg>

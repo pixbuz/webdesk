@@ -31,6 +31,8 @@ function enableMovement(event) {
 
 	const appWindow = event.target.closest(`[name="Window"]`)
 
+	if (appWindow.classList.contains("maximised")) return
+
 	clickOffsets = [ event.x , event.y ]
 	appWindow.classList.add("moving")
 	focusWindow(appWindow)
@@ -75,8 +77,6 @@ function windowInteraction(event) {
 			(boundingBox.height - relClickY <= 6), // Bottom
 			(relClickX <= 6) // Right
 		]
-
-		console.log(grabPos)
 
 		if (grabPos[1] || grabPos[3]) event.target.classList.add("resizeX")
 		if (grabPos[0] || grabPos[2]) event.target.classList.add("resizeY")
@@ -131,12 +131,10 @@ function moveEvent(event) {
 	else if (resizingWindow) resizeWindow(event.x , event.y)
 }
 
-function mouseupEvent() {
+function mouseupEvent(event) {
 	if (movingWindow) {
-		movingWindow.classList.add("smooth")
-		setTimeout(() => document.querySelector(".smooth").classList.remove("smooth"), 100)
-		updateWindowPosition(movingWindow)
 		movingWindow.classList.remove("moving")
+		updateWindowPosition(movingWindow)
 		movingWindow = null
 	}
 

@@ -1,37 +1,34 @@
 import { config } from "../server.settings.ts"
 import { contentType, getCharset } from "@std/media-types";
 
-export const routes: Record<string, string> = {}
+export const routes: Record<string, Uint8Array<ArrayBuffer> | string> = {}
 export const headers: Record<string, object> = {}
 export const appProprieties: Record<string, WebdeskApplication> = {}
 export const ready: Promise<void> = init()
 
 async function addAppsToRoutes() {
+	// TO ADD: Route all files in folder with proper paths
+	//		Add "do not index" list
 	const applicationNames: string[] = []
 	for await (const entry of Deno.readDir("app")) {
-		if (entry.isDirectory) applicationNames.push(entry.name)
+		if (entry.isDirectory) applicationNames.push(entry.name.toLowerCase())
 	}
 
 	const processingQueue = applicationNames.map(async appName => {
-		appName = appName.toLocaleLowerCase()
-		let mimeType: string
 		try {
 			const textManifest = await Deno.readTextFile(`app/${appName}/manifest.json`)
 			const manifestJSON: WebdeskApplication = JSON.parse(textManifest)
 			appProprieties[appName] = manifestJSON
 
-			routes[`/apps/${appName}/`] = `app/${appName}/${manifestJSON.index.toLocaleLowerCase()}`
-			mimeType = manifestJSON.index.toLocaleLowerCase().slice(manifestJSON.index.toLocaleLowerCase().lastIndexOf(".") + 1)
-			headers[`/apps/${appName}/`] = { status: 200, headers: {"content-type": `${contentType(mimeType)}; charset=${getCharset(mimeType)}`} }
+			registerRoute(`/apps/${appName}/`, `app/${appName}/${manifestJSON.index}`)
+			registerHeaders(`/apps/${appName}/`, manifestJSON.index)
 
-			routes[`/apps/${appName}/icon`] = `app/${appName}/${manifestJSON.icon.toLocaleLowerCase()}`
-			mimeType = manifestJSON.icon.toLocaleLowerCase().slice(manifestJSON.icon.toLocaleLowerCase().lastIndexOf(".") + 1)
-			headers[`/apps/${appName}/icon`] = { status: 200, headers: {"content-type": `${contentType(mimeType)}`} }
+			registerRoute(`/apps/${appName}/icon`, `app/${appName}/${manifestJSON.icon}`)
+			registerHeaders(`/apps/${appName}/icon`, manifestJSON.icon)
 
-			for (const route of Object.keys(manifestJSON.routes)) {
-				routes[`/apps/${appName}/${route.toLocaleLowerCase()}`] = `app/${appName}/${manifestJSON.routes[route].toLocaleLowerCase()}`
-				mimeType = manifestJSON.routes[route].toLocaleLowerCase().slice(manifestJSON.routes[route].toLocaleLowerCase().lastIndexOf(".") + 1)
-				headers[`/apps/${appName}/${route.toLocaleLowerCase()}`] = { status: 200, headers: {"content-type": `${contentType(mimeType)}`} }
+			for (const customRoute of Object.keys(manifestJSON.routes)) {
+				registerRoute(customRoute, manifestJSON.routes[customRoute])
+				registerHeaders(customRoute, manifestJSON.routes[customRoute])
 			}
 		} catch (err) { console.error(`Failed to load app ${appName}:`, err) }
 	})
@@ -39,10 +36,18 @@ async function addAppsToRoutes() {
 	await Promise.all(processingQueue)
 }
 
+async function registerRoute(endpoint: string, resourcePath: string) {
+	routes[endpoint] = await Deno.readFile(resourcePath)
+}
+
+function registerHeaders(endpoint: string, mime: string, custom?: object) {
+	const mimeType = mime.toLocaleLowerCase().slice(mime.toLocaleLowerCase().lastIndexOf(".") + 1)
+	headers[endpoint] = { status: 200, headers: {"content-type": `${contentType(mimeType)}; charset=${getCharset(mimeType)}`}, ...custom }
+}
+
 async function compileIndex() {
 	const componentNames: string[] = []
-	const webdeskBaseIndex: string = config.comment + (await Deno.readTextFile("static/index.htm"))
-	const webdeskSplitIndex: string[] = webdeskBaseIndex.split("<!--Assets-->")
+	const webdeskSplitIndex: string[] = (await Deno.readTextFile("static/index.htm")).split("<!--Assets-->")
 
 	for await (const component of Deno.readDir(config.componentsPath)) {
 		if (component.isFile) componentNames.push(component.name)
@@ -52,8 +57,8 @@ async function compileIndex() {
 		return await Deno.readTextFile(`${config.componentsPath}/${componentName}`)
 	})
 
-	const compiledHTMLComponents = (await Promise.all(processingQueue)).join("\n")
-	await Deno.writeTextFile(config.compiledIndexPath, [webdeskSplitIndex[0], compiledHTMLComponents, ...webdeskSplitIndex.slice(1)].join("\n"))
+	routes["/"] = [webdeskSplitIndex[0], (await Promise.all(processingQueue)).join("\n"), webdeskSplitIndex[1]].join("\n")
+	registerHeaders("/", "html")
 }
 
 async function compileScripts() {
@@ -66,8 +71,8 @@ async function compileScripts() {
 		return `//./ ${scriptName}\n` + (await Deno.readTextFile(`${config.frontendScriptsPath}/${scriptName}`))
 	})
 
-	const compiledScripts = (await Promise.all(processingQueue)).join("\n")
-	await Deno.writeTextFile(config.compiledScriptPath, compiledScripts)
+	routes["/script.js"] = (await Promise.all(processingQueue)).join("\n")
+	registerHeaders("/script.js", "js")
 }
 
 async function init() {
@@ -79,14 +84,14 @@ async function init() {
 
 	await Promise.all(dependencies)
 
-	routes["/"] = config.compiledIndexPath
-	headers["/"] = { status: 200, headers: {"content-type": "text/html; charset=utf-8;"} }
+	// routes["/"] = config.compiledIndexPath
+	// headers["/"] = { status: 200, headers: {"content-type": "text/html; charset=utf-8;"} }
 
-	routes["/style.css"] = config.cssFilePath
-	headers["/style.css"] = { status: 200, headers: {"content-type": "text/css; charset=utf-8;"} }
+	registerRoute("/style.css", config.cssFilePath)
+	registerHeaders("/style.css", "css")
 
-	routes["/script.js"] = config.compiledScriptPath
-	headers["/script.js"] = { status: 200, headers: {"content-type": "text/js; charset=utf-8;"} }
+	// routes["/script.js"] = config.compiledScriptPath
+	// headers["/script.js"] = { status: 200, headers: {"content-type": "text/js; charset=utf-8;"} }
 }
 
 if (config.serverDebugMode) {
