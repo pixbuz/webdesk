@@ -1,8 +1,12 @@
 {
 	"icon": "settings.svg",
-	"index": "index.html",
+	"index": "settings.html",
 	"desc": "Customize Webdesk",
 
-	"skip-routing": [],
-	"routes": {}
+	"ignore": [
+		"settings.css"
+	],
+	"routes": {
+		"style": "settings.css"
+	}
 }

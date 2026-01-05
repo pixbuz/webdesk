@@ -79,25 +79,99 @@ body {
 }
 
 .StatusBar {
-	background: rgb(from var(--nord3) r g b / .50);
-	transition-timing-function: cubic-bezier(1, 0, 1, 0);
-	transition-duration: 2500ms;
-	backdrop-filter: blur(2px);
+	animation: statusbar-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
+	background: var(--nord3);
+	justify-content: center;
+	will-change: translate;
 	flex-flow: row nowrap;
+	align-content: center;
+	color: var(--nord4);
 	position: absolute;
 	overflow-y: hidden;
 	border-radius: 6px;
 	overflow-x: auto;
 	min-width: 20%;
-	max-width: 80%;
+	max-width: 90%;
 	display: flex;
 	bottom: 16px;
 	height: 32px;
 }
 
-.StatusBar:hover {
-	background: rgb(from var(--nord3) r g b / 1);
-	transition-duration: 100ms;
+body:has(.maximised) .StatusBar {
+	opacity: 0;
+	animation: statusbar-maximised-down 250ms cubic-bezier(.25, -0.25, .5, 0) normal none;
+}
+
+body:has(.maximised) .StatusBar.up {
+	opacity: 1;
+	animation: statusbar-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
+}
+
+body:has(.maximised) .StatusBar.up:hover { opacity: 1; }
+
+.StatusBar .Menu {
+	height: calc(100% - 8px);
+	border-radius: 4px;
+	background: red;
+	margin-left: 4px;
+	margin-top: 4px;
+	aspect-ratio: 1;
+	border: none;
+}
+
+.StatusBar .Open {
+	padding: 4px;
+	display: flex;
+	height: 100%;
+	flex: 1;
+}
+
+.StatusBar .Open div[name="StatusIcon"] {
+	border-radius: 4px;
+	overflow: hidden;
+	aspect-ratio: 1;
+	height: 100%;
+}
+
+.StatusBar .Open div[name="StatusIcon"] img {
+	max-height: 100%;
+	aspect-ratio: 1;
+}
+
+.StatusBar .Clock {
+	flex-flow: column nowrap;
+	justify-content: center;
+	align-content: center;
+	aspect-ratio: 2 / 1;
+	user-select: none;
+	margin-right: 4px;
+	display: flex;
+	height: 100%;
+}
+
+.StatusBar .Clock p {
+	background: var(--nord4);
+	background-clip: text;
+	font-size: 75%;
+}
+
+.StatusBar .Clock .Time,
+.StatusBar .Clock .Date {
+	justify-content: center;
+	align-content: start;
+	display: flex;
+	height: 50%;
+	width: 100%;
+}
+
+.StatusBar .Clock .Time :nth-last-child(1),
+.StatusBar .Clock .Time :nth-last-child(2) {
+	display: none;
+}
+
+.StatusBar .Clock.showSeconds .Time :nth-last-child(1),
+.StatusBar .Clock.showSeconds .Time :nth-last-child(2) {
+	display: inline;
 }
 
 .Launcher {
@@ -153,37 +227,6 @@ div[name="Window"] {
 	height: 37.5vmin;
 }
 
-div[name="Window"].moving,
-div[name="Window"].min-transition,
-div[name="Window"].max-transition {
-	transition-duration: 50ms;
-	transition-timing-function: cubic-bezier(.25, .5, 1, 1);
-}
-
-div[name="Window"].maximised {
-	transform: translate(0px, 0px) !important;
-	height: 100% !important;
-	width: 100% !important;
-
-	max-height: 100%;
-	max-width: 100%;
-	padding: 0px;
-}
-
-div[name="Window"].maximised .Titlebar,
-div[name="Window"].maximised .ContentWrapper {
-	border-radius: 0;
-	clip-path: none;
-}
-
-div[name="Window"].closing {
-	transition-duration: 100ms;
-	pointer-events: none;
-	filter: blur(50px);
-}
-
-div[name="Window"].focus { background: var(--nord6); }
-
 div[name="Window"]::before {
 	background: var(--nord1);
 	position: absolute;
@@ -200,12 +243,56 @@ div[name="Window"]::after {
 	margin-left: calc(50% - 10px);
 	pointer-events: none;
 	position: absolute;
-	opacity: 37.5%;
+	opacity: 25%;
 	width: 12px;
 	content: "";
 	height: 4px;
 	bottom: 2px;
 }
+
+div[name="Window"].moving,
+div[name="Window"].min-transition,
+div[name="Window"].max-transition {
+	transition-duration: 50ms;
+	transition-timing-function: cubic-bezier(.25, .5, 1, 1);
+}
+
+div[name="Window"].maximised {
+	transform: translate(0px, 0px) !important;
+	height: 100% !important;
+	width: 100% !important;
+
+	max-height: 100%;
+	max-width: 100%;
+	padding: 0;
+}
+
+div[name="Window"].maximised .Titlebar,
+div[name="Window"].maximised .ContentWrapper {
+	border-radius: 0;
+	clip-path: none;
+}
+
+div[name="Window"].maximised .Titlebar {
+	padding: 0 1vmin 0 1.5vmin;
+}
+
+div[name="Window"].maximised .Titlebar .Buttons {
+	padding: .375vmin;
+}
+
+div[name="Window"].minimized {
+	display: none;
+}
+
+div[name="Window"].closing {
+	transition-duration: 100ms;
+	pointer-events: none;
+	filter: blur(50px);
+	opacity: 0;
+}
+
+div[name="Window"].focus { background: var(--nord6); }
 
 div[name="Window"].focus::after {
 	opacity: 100%;
@@ -217,11 +304,11 @@ div[name="Window"] > * {
 }
 
 div[name="Window"] .Titlebar {
-	padding: .5vmin 1vmin .5vmin 2vmin;
 	justify-content: space-between;
-	border-radius: 4px 4px;
+	padding: 0 1vmin 3px 1.5vmin;
 	align-content: center;
 	flex-flow: row nowrap;
+	border-radius: 4px;
 	user-select: none;
 	height: 2.5vmin;
 	display: flex;
@@ -240,6 +327,7 @@ div[name="Window"] .Titlebar .Buttons {
 	flex-flow: row nowrap;
 	pointer-events: none;
 	overflow: hidden;
+	padding: .25vmin;
 	display: flex;
 	height: 100%;
 	gap: 8px;
@@ -282,10 +370,24 @@ body:has(div[name="Window"].resizeY) { cursor: n-resize; }
 body:has(div[name="Window"].resizeXY1) { cursor: nw-resize; }
 body:has(div[name="Window"].resizeXY2) { cursor: ne-resize; }
 
-@keyframes transitionMaximised {
+@keyframes statusbar-maximised-up {
+	from {
+		opacity: 1;
+		translate: 0 200%;
+	}
 	to {
-		width: 100%;
-		height: 100%;
-		transform: translate(0px, 0px);
+		opacity: 1;
+		translate: 0 0;
+	}
+}
+
+@keyframes statusbar-maximised-down {
+	from {
+		opacity: 1;
+		translate: 0 0;
+	}
+	to {
+		opacity: 1;
+		translate: 0 200%;
 	}
 }

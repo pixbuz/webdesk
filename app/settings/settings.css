@@ -1,0 +1,14 @@
+* {
+	margin: 0;
+	padding: 0;
+	position: relative;
+	box-sizing: border-box;
+	font-family: system-ui, -apple-system;
+}
+
+html,
+body {
+	width: 100svw;
+	height: 100svh;
+	background: red;
+}

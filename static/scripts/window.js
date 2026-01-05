@@ -8,10 +8,12 @@ function closeWindow(button) {
 	// Function called by the close button
 	// of a window used to close it
 	const appWindow = button.parentElement.parentElement.parentElement
-	openWindowsProprieties.delete(appWindow)
+	windowsBox.delete(appWindow)
 
 	appWindow.classList.add("closing")
 	setTimeout(() => appWindow.remove(), 100)
+
+	statusbarUpdate(appWindow, "close")
 }
 
 function maximiseWindow(button) {
@@ -24,11 +26,13 @@ function maximiseWindow(button) {
 		appWindow.classList.add("maximised")
 
 		setTimeout(() => appWindow.classList.remove("max-transition"), 50)
+		hideStatusbar()
 	} else {
 		appWindow.classList.add("min-transition")
 		appWindow.classList.remove("maximised")
 		
 		setTimeout(() => appWindow.classList.remove("min-transition"), 50)
+		showStatusbar()
 	}
 }
 
@@ -36,5 +40,7 @@ function minimizeWindow(button) {
 	// Function called by the minimize button
 	// of a window used to make it disappear
 	const appWindow = button.parentElement.parentElement.parentElement
-	appWindow.style.display = "none"
+	appWindow.classList.add("minimized")
+
+	statusbarUpdate(appWindow, "minimized")
 }

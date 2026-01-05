@@ -28,12 +28,17 @@ function openWindow(launcher) {
 	appWindow.querySelector("iframe").src = `apps/${appName}/`
 	appWindow.setAttribute("app", appName)
 	windowSpace.appendChild(appWindow)
+
+	const boundingBox = appWindow.getBoundingClientRect()
+	windowsBox.set(appWindow, boundingBox)
+
+	statusbarUpdate(appWindow, "open")
 	focusWindow(appWindow)
 
-	windowsBox.set(appWindow, appWindow.getBoundingClientRect())
+	boundingBox.x = ( window.innerWidth - boundingBox.width ) / 2
+	boundingBox.y = ( window.innerHeight - boundingBox.height ) / 2
 
-	const center = [ ( window.innerWidth - windowsBox.get(appWindow).width )/2 , ( window.innerHeight - windowsBox.get(appWindow).width.height )/2 ]
-	appWindow.style.transform = `translate(${center[0]}px,${center[1]}px)`
+	appWindow.style.transform = `translate(${boundingBox.x}px,${boundingBox.y}px)`
 }
 
 function enableMovement(event) {
@@ -138,7 +143,7 @@ function focusWindow(appWindow) {
 
 	appWindow.classList.add("focus")
 	appWindow.style.zIndex = 29
-	focusedWindow = appWindow
+	statusbarUpdate(appWindow, "focus")
 }
 
 function resizeEvent() {
@@ -168,14 +173,6 @@ function mouseupEvent(event) {
 		grabPos = [ false, false, false, false ]
 	}
 }
-
-socket.addEventListener("open", async () => {
-	const apps = (await serverQuery("app list"))
-			.split(",")
-			.sort()
-
-	for (appName of apps) await addLauncher(appName)
-})
 
 document.addEventListener("mousemove", moveEvent)
 document.addEventListener("mouseup", mouseupEvent)
