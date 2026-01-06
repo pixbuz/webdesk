@@ -10,8 +10,8 @@
 	<body>
 		<svg xmlns="http://www.w3.org/2000/svg" class="Background">
 			<filter id="cool">
-				<feTurbulence baseFrequency='0.01' result='noise' filterRes="1000"/>
-				<feDiffuseLighting in='noise' lighting-color='var(--nord0)' surfaceScale='6'>
+				<feTurbulence baseFrequency='0.01' numOctaves="1" result='noise' filterRes="1000"/>
+				<feDiffuseLighting in='noise' lighting-color='var(--nord4)' surfaceScale='6'>
 					<feDistantLight azimuth='45' elevation='60' />
 				</feDiffuseLighting>
 			</filter>
@@ -21,7 +21,6 @@
 		<section class="Window Space"></section>
 		<section class="Error Space"></section>
 		<section class="StatusBar">
-			<button class="Menu"></button>
 			<div class="Open"></div>
 			<div class="Clock">
 				<div class="Time">

@@ -23,22 +23,26 @@ function openWindow(launcher) {
 
 	appWindow.querySelector(".Titlebar").addEventListener("mousedown", enableMovement)
 	appWindow.addEventListener("mousedown", windowInteraction)
+	appWindow.classList.add("opening")
 
 	appWindow.querySelector(".Icon").src = `apps/${appName}/icon`
 	appWindow.querySelector("iframe").src = `apps/${appName}/`
+	appWindow.querySelector(".Title").innerText = appName
 	appWindow.setAttribute("app", appName)
 	windowSpace.appendChild(appWindow)
 
 	const boundingBox = appWindow.getBoundingClientRect()
 	windowsBox.set(appWindow, boundingBox)
 
-	statusbarUpdate(appWindow, "open")
-	focusWindow(appWindow)
-
 	boundingBox.x = ( window.innerWidth - boundingBox.width ) / 2
 	boundingBox.y = ( window.innerHeight - boundingBox.height ) / 2
 
 	appWindow.style.transform = `translate(${boundingBox.x}px,${boundingBox.y}px)`
+
+	statusbarUpdate(appWindow, "open")
+	focusWindow(appWindow)
+
+	setTimeout(() => appWindow.classList.remove("opening"))
 }
 
 function enableMovement(event) {

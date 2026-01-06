@@ -1,5 +1,5 @@
 /*
- * Contains micellanius functions that
+ * Contains miscellaneous functions that
  * aid the execution of other functions
 */
 
@@ -20,8 +20,8 @@ function serverQuery(message) {
 
 socket.addEventListener("open", async () => {
 	const apps = (await serverQuery("app list"))
-			.split(",")
-			.sort()
+		.split(",")
+		.sort()
 
 	for (appName of apps) await addLauncher(appName)
 })

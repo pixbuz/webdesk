@@ -1,4 +1,5 @@
 # Webdesk
+
 ## v1.0 static
 fun fact: the oldest prototype I have of webdesk is from 2022
 ## **Progress**
@@ -22,13 +23,13 @@ fun fact: the oldest prototype I have of webdesk is from 2022
 	- ~~Ensure the Window is Deleted when the User Closes it~~
 
 4. The Statusbar
-	- Make a Clock
+	- ~~Make a Clock~~
 	- Make a Start Button
 	- Make a Start Menu
-	- Make it Display the Open Apps
+	- ~~Make it Display the Open Apps~~
 ---
 ### **Webdesk (making it intresting)**
-- Add settings and customization options
+- Add settings and customization options with CSS variables
 	- Different Color Palettes
 	- Desktop Image
 	- Preferences

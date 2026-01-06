@@ -22,16 +22,25 @@ function maximiseWindow(button) {
 	const appWindow = button.parentElement.parentElement.parentElement
 
 	if (!appWindow.classList.contains("maximised")) {
-		appWindow.classList.add("max-transition")
 		appWindow.classList.add("maximised")
 
-		setTimeout(() => appWindow.classList.remove("max-transition"), 50)
+		focusWindow(appWindow)
+
+		appWindow.style.transform = `translate(0)`
+		appWindow.style.width = `100%`
+		appWindow.style.height = `100%`
+
 		hideStatusbar()
 	} else {
-		appWindow.classList.add("min-transition")
+		const boundingBox = windowsBox.get(appWindow)
 		appWindow.classList.remove("maximised")
+		appWindow.classList.add("from-maximised")
 		
-		setTimeout(() => appWindow.classList.remove("min-transition"), 50)
+		appWindow.style.transform = `translate(${boundingBox.x}px,${boundingBox.y}px)`
+		appWindow.style.width = `${boundingBox.width}px`
+		appWindow.style.height = `${boundingBox.height}px`
+
+		setTimeout(() => { appWindow.classList.remove("from-maximised") }, 100)
 		showStatusbar()
 	}
 }

@@ -8,7 +8,111 @@
 
 html,
 body {
-	width: 100svw;
 	height: 100svh;
-	background: red;
+	width: 100svw;
+}
+
+body {
+	justify-content: center;
+	align-content: center;
+	display: flex;
+}
+
+aside {
+	width: clamp(256px, 33%, 384px);
+	scroll-behavior: smooth;
+	overflow-x: scroll;
+	height: 100%;
+}
+
+aside section {
+	border-bottom: solid 1px #0008;
+	margin: 0 4px 6px 0;
+	padding: 0 4px 4px 0;
+	margin-bottom: 6px;
+}
+
+aside section strong {
+	display: block;
+	font-size: medium;
+}
+
+aside section a {
+	border-bottom: solid 1px #0004;
+	width: calc(100% - 12px);
+	flex-flow: row nowrap;
+	user-select: none;
+	cursor: pointer;
+	padding: 2px 0;
+	display: flex;
+	left: 16px;
+	gap: 4px;
+}
+
+aside section a:hover,
+aside section a:visited,
+aside section a {
+	text-decoration: none;
+	color: #000;
+}
+
+aside section a:last-child {
+	border-bottom: none;
+}
+
+aside a svg {
+	stroke-linejoin: round;
+	stroke-linecap: round;
+	stroke: currentColor;
+	translate: 0 12.5%;
+	stroke-width: 2;
+	aspect-ratio: 1;
+	height: 16px;
+	fill: none;
+}
+
+main {
+	scroll-snap-type: y proximity;
+	scroll-behavior: smooth;
+	overflow-x: hidden;
+	overflow-y: scroll;
+	height: 100%;
+	flex: 1;
+}
+
+main h1 {
+	padding-left: .25rem;
+	font-size: 1.5rem;
+	position: sticky;
+	z-index: 2;
+	height: 0;
+	top: 0;
+}
+
+main h1 span {
+	font-size: 1rem;
+}
+
+main section {
+	width: 100%;
+}
+
+main section div {
+	scroll-snap-align: start;
+}
+
+main section div:nth-child(even) {
+	background: green;
+	height: 50svh;
+	width: 100%;
+}
+
+main section div:nth-child(odd) {
+	background: blue;
+	height: 50svh;
+	width: 100%;
+}
+
+main section:last-child div:last-child {
+	height: 100svh;
 }

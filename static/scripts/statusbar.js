@@ -87,6 +87,9 @@ function updateOpen(appWindow) {
 }
 
 function updateClose(appWindow) {
+	const statusIcon = windowIndicator.get(appWindow)
+
+	statusIcon.remove()
 	windowIndicator.delete(appWindow)
 }
 
