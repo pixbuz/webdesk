@@ -24,8 +24,6 @@ fun fact: the oldest prototype I have of webdesk is from 2022
 
 4. The Statusbar
 	- ~~Make a Clock~~
-	- Make a Start Button
-	- Make a Start Menu
 	- ~~Make it Display the Open Apps~~
 ---
 ### **Webdesk (making it intresting)**
