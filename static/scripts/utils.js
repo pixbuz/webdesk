@@ -3,7 +3,7 @@
  * aid the execution of other functions
 */
 
-const socket = new WebSocket("http://localhost:3720")
+const socket = new WebSocket("/")
 
 function serverQuery(message) {
 	// Sends a message to the backend and waits for a response,

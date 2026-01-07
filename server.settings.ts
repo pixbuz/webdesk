@@ -1,4 +1,4 @@
-const port = 3720
+const port = 8000
 const hostname = "localhost"
 const ssl = false
 
