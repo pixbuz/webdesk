@@ -205,7 +205,7 @@ div[name="Launcher"] h6 {
 }
 
 div[name="Window"] {
-	transition: transform 50ms cubic-bezier(.25, .5, 1, 1);
+	transition: transform 25ms cubic-bezier(.25, .5, 1, 1);
 	background: var(--nord3);
 	will-change: transform;
 	min-height: 12.5vmin;
