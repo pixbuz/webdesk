@@ -226,7 +226,7 @@ div[name="Window"].focus { background: var(--nord0); }
 div[name="Window"]::before {
 	background: var(--nord4);
 	position: absolute;
-	border-radius: 7px;
+	border-radius: 6px;
 	content: "";
 	inset: 2px;
 }
@@ -305,13 +305,10 @@ div[name="Window"] .Titlebar .IconWrapper {
 	align-content: center;
 	pointer-events: none;
 	user-select: none;
+	aspect-ratio: 1;
 	display: flex;
 	height: 100%;
 	flex: 1;
-}
-
-div[name="Window"] .Titlebar .IconWrapper .Icon {
-	aspect-ratio: 1;
 }
 
 div[name="Window"] .Titlebar .Title {
@@ -342,9 +339,9 @@ div[name="Window"] .Titlebar .Buttons button {
 	border: 0;
 }
 
-div[name="Window"] .Titlebar button:nth-child(1) { background: var(--nord14); }
-div[name="Window"] .Titlebar button:nth-child(2) { background: var(--nord13); }
-div[name="Window"] .Titlebar button:nth-child(3) { background: var(--nord12); }
+div[name="Window"] .Titlebar .Buttons button:nth-child(1) { background: var(--nord14); }
+div[name="Window"] .Titlebar .Buttons button:nth-child(2) { background: var(--nord13); }
+div[name="Window"] .Titlebar .Buttons button:nth-child(3) { background: var(--nord12); }
 
 div[name="Window"] .ContentWrapper {
 	height: calc(100% - 2.5vmin);
