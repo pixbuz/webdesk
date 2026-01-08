@@ -4,6 +4,6 @@
 	"editor.tabSize": 8,
 	"editor.detectIndentation": false,
 	"editor.insertSpaces": false,
-	"deno.enable": false,
+	"deno.enable": true,
 	"editor.renderWhitespace": "boundary"
 }

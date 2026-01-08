@@ -19,53 +19,42 @@ body {
 }
 
 aside {
-	background: rgba(0, 0, 0, 5%);
-	width: clamp(256px, 33%, 384px);
+	border-right: solid 2px rgba(0, 0, 0, 10%);
+	width: 192px;
 	scroll-behavior: smooth;
 	overflow-x: scroll;
-	border-radius: 4px;
 	height: 100%;
+	padding: 0 8px;
 }
 
 aside section {
-	border-bottom: solid 1px #0008;
-	margin: 0 4px 6px 0;
-	padding: 0 4px 4px 0;
-	margin-bottom: 6px;
+	margin-bottom: 8px;
 }
 
-aside section strong {
+aside section h6 {
+	color: rgba(0,0,0,37.5%);
+	font-size: 1rem;
 	display: block;
-	font-size: medium;
 }
 
-aside section a {
-	border-bottom: solid 1px #0004;
-	width: calc(100% - 12px);
+aside section button {
 	flex-flow: row nowrap;
+	border-radius: 8px;
 	user-select: none;
+	background: none;
 	cursor: pointer;
 	padding: 2px 0;
 	display: flex;
-	left: 16px;
+	border: none;
+	width: 100%;
 	gap: 4px;
 }
 
-aside section a:hover {
+aside section button:hover {
 	background: rgba(0, 0, 0, 5%);
 }
 
-aside section a:visited,
-aside section a {
-	text-decoration: none;
-	color: #000;
-}
-
-aside section a:last-child {
-	border-bottom: none;
-}
-
-aside a svg {
+aside button svg {
 	stroke-linejoin: round;
 	stroke-linecap: round;
 	stroke: currentColor;
@@ -80,108 +69,31 @@ main {
 	scroll-behavior: smooth;
 	overflow-x: hidden;
 	overflow-y: scroll;
+	padding-left: 4px;
 	height: 100%;
 	flex: 1;
 }
 
-main h1 {
-	padding-left: .25rem;
-	font-size: 1.5rem;
-}
-
-main h2 {
-	padding-left: .75rem;
-	font-size: 1.25rem;
-}
-
-main section,
-main section div {
+main section > div {
 	width: 100%;
+	height: 100%;
+	display: none;
 }
 
-#Colors .Example {
-	height: 37.5vmax;
+main section > div:first-child {
+	display: block;
 }
 
-#Colors .Example .Window {
-	background: #4C566A;
-	position: absolute;
-	border-radius: 8px;
-	color: #2E3440;
-	height: 37.5vmin;
-	width: 37.5vmax;
-	right: 3vmax;
-	top: 5vmin;
-	z-index: 2;
-}
-
-#Colors .Example .Window:before {
-	background: #ECEFF4;
-	position: absolute;
-	border-radius: 6px;
-	content: "";
-	inset: 2px;
-}
-
-#Colors .Example .Window .Titlebar {
+div[name="Colors"] .ColorSelect {
 	justify-content: space-between;
-	padding: 0 1vmin 4px 1vmin;
-	align-content: center;
 	flex-flow: row nowrap;
-	border-radius: 4px;
-	user-select: none;
-	height: 5vmin;
 	display: flex;
 	width: 100%;
+	gap: 4px;
 }
 
-#Colors .Example .Window .Titlebar .IconWrapper {
-	justify-content: flex-start;
-	align-content: center;
-	pointer-events: none;
-	user-select: none;
-	aspect-ratio: 1;
-	display: flex;
-	height: 100%;
-	flex: 1;
-}
-
-#Colors .Example .Window .Titlebar .Buttons {
-	justify-content: flex-end;
-	flex-flow: row nowrap;
-	pointer-events: none;
-	align-items: center;
-	overflow: hidden;
-	display: flex;
-	height: 100%;
-	gap: .5vmin;
-	flex: 1;
-}
-
-#Colors .Example .Window .Titlebar .Buttons div {
-	pointer-events: all;
-	border-radius: 4px;
-	aspect-ratio: 1.25;
-	height: 75%;
-	border: 0;
-}
-
-#Colors .Example .Window .Titlebar .Buttons :nth-child(1) { background: #A3BE8C; }
-#Colors .Example .Window .Titlebar .Buttons :nth-child(2) { background: #EBCB8B; }
-#Colors .Example .Window .Titlebar .Buttons :nth-child(3) { background: #D08770; }
-
-
-#Colors .Example .Window .Titlebar .Title {
-	text-transform: capitalize;
-	font-size: 2.5vmin;
-	text-align: center;
-	margin: auto;
-	flex: 1;
-}
-
-#Colors .Example .Background {
-	position: absolute;
-	height: 100%;
-	width: 100%;
-	z-index: 1;
+div[name="Colors"] .ColorSelect input {
+	background: none;
+	width: 12.5vmax;
+	border: none;
 }

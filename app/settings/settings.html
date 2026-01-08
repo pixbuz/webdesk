@@ -9,8 +9,8 @@
 	<body>
 		<aside>
 			<section>
-				<strong>General</strong>
-				<a href="#Colors">
+				<h6>General</h6>
+				<button onclick="show('Colors')">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-swatch-book">
 						<path d="M11 17a4 4 0 0 1-8 0V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2Z"/>
 						<path d="M16.7 13H19a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7"/>
@@ -18,41 +18,41 @@
 						<path d="m11 8 2.3-2.3a2.4 2.4 0 0 1 3.404.004L18.6 7.6a2.4 2.4 0 0 1 .026 3.434L9.9 19.8"/>
 					</svg>
 					<p>Colors</p>
-				</a>
-				<a href="#Animations">
+				</button>
+				<button onclick="show('Animations')">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-circle-play">
 						<path d="M9 9.003a1 1 0 0 1 1.517-.859l4.997 2.997a1 1 0 0 1 0 1.718l-4.997 2.997A1 1 0 0 1 9 14.996z"/>
 						<circle cx="12" cy="12" r="10"/>
 					</svg>
 					<p>Animations</p>
-				</a>
-				<a href="#Background">
+				</button>
+				<button onclick="show('Background')">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20" class="lucide-wallpaper">
 						<path d="m9 17 6.1-6.1a2 2 0 0 1 2.81.01L22 15"/>
 						<circle cx="8" cy="9" r="2"/>
 						<rect x="2" y="3" width="20" height="14" rx="2"/>
 					</svg>
 					<p>Background</p>
-				</a>
-				<a href="#AppDock">
+				</button>
+				<button onclick="show('AppDock')">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 12" class="lucide-computer">
 						<rect width="20" height="8" x="2" y="2" rx="2" id="rect2" />
 						<path d="M 6,6 H 8" id="path2" />
 						<path d="m 12,6 h 6" id="path3" />
 					</svg>
 					<p>App Dock</p>
-				</a>
-				<a href="#InstalledApps">
+				</button>
+				<button onclick="show('InstalledApps')">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-blocks">
 						<path d="M10 22V7a1 1 0 0 0-1-1H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5a1 1 0 0 0-1-1H2"/>
 						<rect x="14" y="2" width="8" height="8" rx="1"/>
 					</svg>
 					<p>Installed Apps</p>
-				</a>
+				</button>
 			</section>
 			<section>
-				<strong>Windows</strong>
-				<a href="#Style">
+				<h6>Windows</h6>
+				<button onclick="show('Style')">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-app-window-mac">
 						<rect width="20" height="16" x="2" y="4" rx="2"/>
 						<path d="M6 8h.01"/>
@@ -60,58 +60,71 @@
 						<path d="M14 8h.01"/>
 					</svg>
 					<p>Style</p>
-				</a>
-				<a href="#Preferences">
+				</button>
+				<button onclick="show('Preferences')">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-settings-2">
 						<path d="M14 17H5"/><path d="M19 7h-9"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
 					<p>Preferences</p>
-				</a>
+				</button>
 			</section>
 		</aside>
 		<main>
 			<section>
-				<h1>General</h1>
-				<div id="Colors">
-					<h2>Color Palette</h2>
-					<div class="Example">
-						<div class="Window">
-							<div class="Titlebar">
-								<div class="IconWrapper">
-									<img src="icon" alt="Example Window Icon">
-								</div>
-								<h5 class="Title">Window</h5>
-								<div class="Buttons">
-									<div></div>
-									<div></div>
-									<div></div>
-								</div>
-							</div>
-						</div>
-						<div class="Background"></div>
-						<div class="AppDock"></div>
+				<div name="Colors">
+					<div class="ColorSelect">
+						<p>Window Border</p>
+						<input type="color" name="" id="">
 					</div>
-					<div class="Settings">
-
+					<div class="ColorSelect">
+						<p>Focused Window Border</p>
+						<input type="color" name="" id="">
 					</div>
+					<div class="ColorSelect">
+						<p>Window Background</p>
+						<input type="color" name="" id="">
+					</div>
+					<div class="ColorSelect">
+						<p>Focused Window Background</p>
+						<input type="color" name="" id="">
+					</div>
+					<div class="ColorSelect">
+						<p>Close Button</p>
+						<input type="color" name="" id="">
+					</div>
+					<div class="ColorSelect">
+						<p>Maximise Button</p>
+						<input type="color" name="" id="">
+					</div>
+					<div class="ColorSelect">
+						<p>Minimize Button</p>
+						<input type="color" name="" id="">
+					</div>
+					<div class="ColorSelect">
+						<p>Text Color</p>
+						<input type="color" name="" id="">
+					</div>
+					<div class="ColorSelect">
+						<p>Clock Color</p>
+						<input type="color" name="" id="">
+					</div>
+					<div class="ColorSelect">
+						<p>App Dock</p>
+						<input type="color" name="" id="">
+					</div >
 				</div>
-				<div id="Animations">
-					<h2>Animations</h2>
-					<div class=""></div>
+				<div name="Animations">
 				</div>
-				<div id="AppDock">
-					<h2>App Dock</h2>
+				<div name="Background">
 				</div>
-				<div id="InstalledApps">
-					<h2>Installed Apps</h2>
+				<div name="AppDock">
+				</div>
+				<div name="InstalledApps">
 				</div>
 			</section>
 			<section>
-				<h1>Window</h1>
-				<div id="Style">
-					<h2>Style</h2>
+				<div name="Style">
 				</div>
-				<div id="Preferences">
-					<h2>Preferences</h2>
+				<div name="Preferences">
 				</div>
 			</section>
 		</main>
