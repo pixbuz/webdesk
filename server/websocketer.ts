@@ -1,55 +1,55 @@
 import * as resources from "./resourceMapper.ts"
 
 class WebSocketManager {
-	webSocketList: Record<string, WebSocket[]> = {}
-	reverseSockets: WeakMap<WebSocket, string> = new WeakMap()
+	private webSocketRooms: Map<string, WebSocket[]> = new Map()
 
-	public add(ip: string, webSocket: WebSocket) {
-		webSocket.addEventListener("open", () => { sockets.register(ip, webSocket) })
-		webSocket.addEventListener("close", () => { sockets.unregister(ip, webSocket) })
-		webSocket.addEventListener("message", this.socketResponder.bind(this))
+	public addSocket(webSocket: WebSocket, id: string) {
+		if (!this.webSocketRooms.has(id)) this.webSocketRooms.set(id, [])
+		webSocket.addEventListener("open", () => sockets.register(webSocket, id), { once: true })
 	}
 
-	private register(ip: string, webSocket: WebSocket) {
-		if (!this.webSocketList[ip]) this.webSocketList[ip] = []
-		this.webSocketList[ip] = [ webSocket, ...this.webSocketList[ip] ]
-		this.reverseSockets.set(webSocket, ip)
+	private register(webSocket: WebSocket, id: string) {
+		this.webSocketRooms.set(id, [webSocket, ...this.webSocketRooms.get(id)!])
+
+		webSocket.addEventListener("message", (event) => { this.socketResponder(event.target as WebSocket, event.data, id) })
+		webSocket.addEventListener("close", (event) => { sockets.unregister(event.target as WebSocket, id) }, { once: true })
 	}
 
-	private unregister(ip: string, webSocket: WebSocket) {
-		this.reverseSockets.delete(webSocket)
-		delete this.webSocketList[ip]
+	private unregister(closedSocket: WebSocket, id: string) {
+		const oldRoomSockets = this.webSocketRooms.get(id)!
+		const newRoomSockets = oldRoomSockets.filter(socket => socket != closedSocket)
+		this.webSocketRooms.set(id, newRoomSockets)
 	}
 
-	private socketResponder(event: MessageEvent) {
+	private socketResponder(socket: WebSocket, message: string, id: string) {
 		// Websocket messages handler function
-		console.log(`Request from Client Websocket: "${ event.data }"`)
-		// Command format: '[command type] [sub command] [target (if any)] [additional info (if any)]'
-		const command = event.data.split(" ")
+		// Command format: '[command category] [sub command] [info]'
+		console.log(`Message in Room ${id}: "${message}"`)
+		const command = message.split(" ")
 
 		switch (command[0]) {
-			case "app": return this.socketAppHandle(command, event.target as WebSocket)
-			case "settings": return this.socketSettingsHandle(command, event.target as WebSocket)
-
-			default: return (event.target as WebSocket).send("bad request")
+			case "app": socket.send(this.socketAppHandle(command)); break
+			case "client": this.broadcastMessageInRoom(socket, command, id); break
 		}
 	}
 
-	private socketAppHandle(command: string[], socket: WebSocket) {
+	private broadcastMessageInRoom(sendingSocket: WebSocket, command: string[], id: string) {
+		// Replays a message to all the open Web Sockets in a room
+		// but the original Web Socket where the message originated
+		for (const socket of this.webSocketRooms.get(id)!) {
+			if (socket == sendingSocket) continue
+			socket.send(command.join(" "))
+		}
+	}
+
+	private socketAppHandle(command: string[]) {
 		// Websocket "app" command handler function
 		switch(command[1]) {
-			case "list": return socket.send(Object.keys(resources.installedApps).toString())
-			case "desc": return socket.send(resources.installedApps[command[2]].desc)
+			case "manifests": return JSON.stringify(resources.appsManifests)
+
+			default: return ""
 		}
 	}
-
-	private socketSettingsHandle(command: string[], socket: WebSocket) {
-		// Websocket "settings" command handler function
-		switch(command[1]) {
-			case "list": return socket.send("a")
-		}
-	}
-
 }
 
 export const sockets = new WebSocketManager()

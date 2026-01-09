@@ -8,7 +8,7 @@ const debouncer: string[] = []
 // Contains the endpoints' headers
 export const headers: Record<string, object> = {}
 // Contains all the successfully installed apps and associated manifest
-export const installedApps: Record<string, WebdeskApplication> = {}
+export const appsManifests: Record<string, WebdeskApplication> = {}
 export const ready: Promise<void> = init()
 
 interface WebdeskApplication {
@@ -64,7 +64,7 @@ async function addAppsToRoutes() {
 		const manifestJSON: WebdeskApplication = JSON.parse(textManifest)
 		const ignoredFiles: string[] = manifestJSON.ignore
 		ignoredFiles.push("manifest.json", manifestJSON.index, manifestJSON.icon, ...Object.keys(manifestJSON.routes))
-		installedApps[appName] = manifestJSON
+		appsManifests[appName] = manifestJSON
 
 		await asyncFolderIndexer(appName, "/", ignoredFiles)
 

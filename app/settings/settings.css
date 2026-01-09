@@ -32,7 +32,7 @@ aside section {
 }
 
 aside section h6 {
-	color: rgba(0,0,0,37.5%);
+	color: rgba(0, 0, 0, 37.5%);
 	font-size: 1rem;
 	display: block;
 }
@@ -43,22 +43,22 @@ aside section button {
 	user-select: none;
 	background: none;
 	cursor: pointer;
-	padding: 2px 0;
 	display: flex;
+	padding: 2px;
 	border: none;
+	margin: 2px;
 	width: 100%;
 	gap: 4px;
 }
 
 aside section button:hover {
-	background: rgba(0, 0, 0, 5%);
+	background: rgba(0, 0, 0, 10%);
 }
 
 aside button svg {
 	stroke-linejoin: round;
 	stroke-linecap: round;
 	stroke: currentColor;
-	translate: 0 12.5%;
 	stroke-width: 2;
 	aspect-ratio: 1;
 	height: 16px;
