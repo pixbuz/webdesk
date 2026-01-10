@@ -1,36 +1,60 @@
 import { contentType, getCharset } from "@std/media-types";
 import { config } from "../server.settings.ts"
 
-// Contains the endpoints of the server, and the answare associated
-export const routes: Record<string, Uint8Array<ArrayBuffer> | string> = {}
-const routesPaths: Record<string, string> = {}
-const debouncer: string[] = []
-// Contains the endpoints' headers
-export const headers: Record<string, object> = {}
-// Contains all the successfully installed apps and associated manifest
-export const appsManifests: Record<string, WebdeskApplication> = {}
-export const ready: Promise<void> = init()
-
 interface WebdeskApplication {
+	commands: Record<string, string>
 	routes: Record<string, string>
+	commandsFile: string
 	ignore: string[]
 	index: string
 	desc: string
 	icon: string
 }
 
-// TODO: Smart re-indexing of resources when updated
+export type SocketCommandTree = {
+	[name: string]: SocketCommandTree | Function
+}
+
+// Used to dynamically update the endpoints
+const routesPaths: Record<string, string> = {}
+// Used to filter multiple file events when updating a file
+const debouncer: string[] = []
+// Contains the endpoints' headers
+export const headers: Record<string, object> = {}
+// Contains all the successfully installed apps and associated manifest
+export const appsManifests: Record<string, WebdeskApplication> = {}
+// Contains the endpoints of the server, and the answare associated
+export const routes: Record<string, Uint8Array<ArrayBuffer> | string> = {}
+// Contains all the commands that can be sent from a endpoint
+export const socketCommands: SocketCommandTree = {}
+
+// Used by importing files to know when everything has been indexed
+export const ready: Promise<void> = init()
+
+export function registerSocketCommand(command: string[], func: Function) {
+	let current = socketCommands
+	if (!current) { current = {} }
+
+	for (let i = 0; i < command.length; i++) {
+		const part = command[i]
+
+		if (i === command.length - 1) { current[part] = func }
+		else { if (!current[part]) { current[part] = {} } }
+
+		current = current[part] as SocketCommandTree
+	}
+}
 
 async function init() {
 	// Function used to signal when all the routes and headers have been indexed (aka when the server is ready)
-	const dependencies: Promise<void>[] = [
+	const dependencies: (Promise<void> | void)[] = [
 		addAppsToRoutes(),
 		compileScripts(),
 		compileIndex(),
+		compileCSS(),
 	]
 	await Promise.all(dependencies)
 
-	compileCSS()
 	resourceRefresher()
 }
 
@@ -66,7 +90,14 @@ async function addAppsToRoutes() {
 		ignoredFiles.push("manifest.json", manifestJSON.index, manifestJSON.icon, ...Object.keys(manifestJSON.routes))
 		appsManifests[appName] = manifestJSON
 
-		await asyncFolderIndexer(appName, "/", ignoredFiles)
+		asyncFolderIndexer(appName, "/", ignoredFiles)
+
+		const customCommandsFileModule = await import(`../app/${appName}/${manifestJSON.commandsFile}`)
+		for (const commandString of Object.keys(manifestJSON.commands)) {
+			const command = [appName, ...commandString.split(" ")]
+
+			registerSocketCommand(command, customCommandsFileModule[manifestJSON.commands[commandString]])
+		}
 
 		for (const customRoute of Object.keys(manifestJSON.routes)) {
 			registerRoute(`/apps/${appName}/${customRoute}`, `app/${appName}/${manifestJSON.routes[customRoute]}`)
@@ -97,7 +128,7 @@ async function asyncFolderIndexer(appName: string, path: string, ignore: string[
 
 async function compileIndex() {
 	// Adds all the components in the index page
-	// TODO: Discontinue it
+	// TODO: Discontinue it(?)
 	const componentNames: string[] = []
 	const webdeskSplitIndex: string[] = (await Deno.readTextFile(config.indexFilePath)).split("<!--Assets-->")
 
@@ -113,25 +144,25 @@ async function compileIndex() {
 	registerHeaders("/", "html")
 }
 
-function compileCSS() {
-	// Not really compiling anything
-	registerRoute("/style.css", config.cssFilePath)
-	registerHeaders("/style.css", "css")
-}
-
 async function compileScripts() {
-	// Bundles all the scripts into one
+	// Bundles all the JS frontend scripts into one
 	const scriptNames: string[] = []
 	for await (const script of Deno.readDir(config.frontendScriptsPath)) {
 		if (script.isFile) scriptNames.push(script.name)
 	}
 
-	const processingQueue = scriptNames.map(async scriptName => {
+	const processingQueue = scriptNames.map(async (scriptName) => {
 		return `//./ ${scriptName}\n` + (await Deno.readTextFile(`${config.frontendScriptsPath}/${scriptName}`))
 	})
 
 	routes["/script.js"] = (await Promise.all(processingQueue)).join("\n")
 	registerHeaders("/script.js", "js")
+}
+
+function compileCSS() {
+	// Not really compiling anything
+	registerRoute("/style.css", config.cssFilePath)
+	registerHeaders("/style.css", "css")
 }
 
 async function resourceRefresher() {

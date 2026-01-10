@@ -1,15 +1,19 @@
 {
 	"icon": "settings.svg",
 	"index": "settings.html",
+	"commandsFile": "custom.ts",
 	"description": "Customize Webdesk",
 
 	"ignore": [
-		"settings.css"
+		"settings.css",
+		"custom.ts"
 	],
 	"routes": {
 		"style": "settings.css"
 	},
 	"commands": {
-		"test": "testFunction"
+		"foo": "testFunction",
+		"bar 2": "testFunction",
+		"manifests": "testFunction"
 	}
 }

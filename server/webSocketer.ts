@@ -1,25 +1,36 @@
 import * as resources from "./resourceMapper.ts"
 
 class WebSocketManager {
-	public register(webSocket: WebSocket) {
-		// Adds a Message Listener in a newly created Web Socket
-		webSocket.addEventListener("message", (event) => { this.socketResponder(event.target as WebSocket, event.data) })
+	constructor() {
+		resources.registerSocketCommand(["app"], this.socketAppHandle)
 	}
 
-	private socketResponder(socket: WebSocket, message: string) {
-		// Websocket messages handler function
-		// Command format: '[command category] [sub command] [info]'
-		const command = message.split(" ")
+	public register(webSocket: WebSocket) {
+		// Adds a Message Listener in a newly created Web Socket
+		webSocket.addEventListener("message", this.socketResponder.bind(this))
+	}
 
-		switch (command[0]) {
-			case "app": socket.send(this.socketAppHandle(command)); break
+	private socketResponder(event: MessageEvent) {
+		// Websocket messages handler function
+		// Command format: '[target] [command] [additional info]'
+		const command = event.data.split(" ")
+		
+		let current = resources.socketCommands
+		for (let i = 0; i < command.length; i++) {
+			const part = command[i]
+			console.log(current, part, current[part] instanceof Function)
+
+			if (current[part] instanceof Function) { return current[part](event.target, command) }
+			else if (i == command.length - 1) { return console.log("Recived Partial Command:", command) }
+			else if (current[part] == undefined) { return console.log("Recived Unknown Command:", command) }
+			else { current = current[part] as resources.SocketCommandTree }
 		}
 	}
 
-	private socketAppHandle(command: string[]) {
+	private socketAppHandle(socket: WebSocket, command: string[]) {
 		// Websocket "app" command handler function
 		switch(command[1]) {
-			case "manifests": return JSON.stringify(resources.appsManifests)
+			case "manifests": return socket.send(JSON.stringify(resources.appsManifests))
 
 			default: return ""
 		}
