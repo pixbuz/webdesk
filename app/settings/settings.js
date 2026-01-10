@@ -1,10 +1,9 @@
-const roomID = document.location.search.slice(1)
-const socket = new WebSocket(`/${roomID}`)
+const databaseOpenRequest = indexedDB.open("webdesk")
+const broadcastChannel = new BroadcastChannel("settings")
 
-socket.addEventListener("message", event => {
-	console.log(event.data)
-})
+databaseOpenRequest.addEventListener("success", () => { console.log(databaseOpenRequest.result) }, { once: true })
+broadcastChannel.postMessage("lmao")
 
-socket.addEventListener("open", () => {
-	socket.send("client get settings")
-})
+function testFunction() {
+	console.log("aight")
+}

@@ -1,12 +1,15 @@
 {
 	"icon": "settings.svg",
 	"index": "settings.html",
-	"desc": "Customize Webdesk",
+	"description": "Customize Webdesk",
 
 	"ignore": [
 		"settings.css"
 	],
 	"routes": {
 		"style": "settings.css"
+	},
+	"commands": {
+		"test": "testFunction"
 	}
 }

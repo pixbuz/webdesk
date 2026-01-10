@@ -1,5 +1,5 @@
 import { config } from "../server.settings.ts"
-import { sockets } from "./websocketer.ts"
+import { sockets } from "./webSocketer.ts"
 import * as resources from "./resourceMapper.ts"
 
 const _server = Deno.serve({
@@ -9,7 +9,7 @@ const _server = Deno.serve({
 	handler: requestResponder
 })
 
-async function requestResponder(request: Request, connInfo: Deno.ServeHandlerInfo) {
+async function requestResponder(request: Request, _connInfo: Deno.ServeHandlerInfo) {
 	// Main function that replies to incoming browser requests
 	await resources.ready
 	const url = new URL(request.url)
@@ -17,7 +17,8 @@ async function requestResponder(request: Request, connInfo: Deno.ServeHandlerInf
 	if (request.headers.get("upgrade") === "websocket") {
 		// TODO: Make this more secure
 		const upgrade = Deno.upgradeWebSocket(request)
-		sockets.addSocket(upgrade.socket, url.pathname.slice(1))
+		sockets.register(upgrade.socket)
+
 		return upgrade.response
 	}
 

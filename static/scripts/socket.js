@@ -1,59 +1,43 @@
 /*
- * The functions that make the
- * Web Socket Bus System work
+ * Browers root document Web Socket manager
 */
 
-if (null === localStorage.getItem("session")) {
-	localStorage.setItem("session", crypto.randomUUID())
-}
+const webdeskBackend = new WebSocket(`/`)
+const connectionTimeout = setTimeout(connectionError, 10000)
 
-const roomID = localStorage.getItem("session")
-const roomSocket = new WebSocket(`/${roomID}`)
-const errorTimeout = setTimeout(() => { console.log("Unable to connect to Web Socket") }, 10000)
+let socketReadyResolve
+const socketReady = new Promise((resolve) => { socketReadyResolve = resolve })
 
 function serverQuery(message) {
 	// Sends a message to the backend and waits for a response,
 	// returns back the message contents
 	// TODO: Make more robust using IDs, if necessary
-	roomSocket.send(message)
+	webdeskBackend.send(message)
 
-	return new Promise(resolve =>
-		roomSocket.addEventListener("message",
-			response => resolve(response.data), { once: true }
-		)
-	)
+	return new Promise((resolve) => {
+		webdeskBackend.addEventListener("message", (response) => {
+			resolve(response.data)
+		}, { once: true })
+	})
 }
 
-roomSocket.addEventListener("open", async () => {
-	clearTimeout(errorTimeout)
-
-	const apps = (await serverQuery("app manifests"))
-	const appsJSON = JSON.parse(apps)
-	
-	for (appName of Object.keys(appsJSON)) {
-		addLauncher(appName, appsJSON[appName].desc)
-	}
-})
-
-roomSocket.addEventListener("message", socketRoomListener)
-
-function socketRoomListener(event) {
-	console.log(`Recived "${event.data}" from Room`)
-	const command = event.data.split(" ")
-
-	switch(command[0]) {
-		case "client": event.target.send(socketClientCommandHandler(command))
-	}
+function connectionError() {
+	console.log("Unable to connect to Web Desk's Backend")
 }
 
-function socketClientCommandHandler(command) {
-	switch(command[1]) {
-		case "get": return socketClientGetCommandHandler(command)
-	}
+function socketListener(event) {
+	console.log(event)
 }
 
-function socketClientGetCommandHandler(command) {
-	switch(command[2]) {
-		case "settings": return "client settings {stuff: {stuff: []}}"
-	}
-}
+webdeskBackend.addEventListener("error", connectionError, { once: true })
+webdeskBackend.addEventListener("open", async () => {
+	socketReadyResolve()
+	clearTimeout(connectionTimeout)
+
+	const appsManifests = JSON.parse(await serverQuery("app manifests"))
+
+	loadIndexDBChecks(appsManifests)
+	addLaunchers(appsManifests)
+
+	webdeskBackend.addEventListener("message", socketListener)
+}, { once: true })

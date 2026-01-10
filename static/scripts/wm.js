@@ -25,8 +25,8 @@ function openWindow(launcher) {
 	appWindow.addEventListener("mousedown", windowInteraction)
 	appWindow.classList.add("opening")
 
-	appWindow.querySelector("iframe").src = `apps/${appName}/?${roomID}`
 	appWindow.querySelector(".Icon").src = `apps/${appName}/icon`
+	appWindow.querySelector("iframe").src = `apps/${appName}/`
 	appWindow.querySelector(".Title").innerText = appName
 	appWindow.setAttribute("app", appName)
 	windowSpace.appendChild(appWindow)
