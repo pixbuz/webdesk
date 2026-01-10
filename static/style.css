@@ -70,7 +70,7 @@ body {
 .Background	{ z-index: 00; }
 .Launcher	{ z-index: 10; }
 .Window 	{ z-index: 20; }
-.StatusBar	{ z-index: 30; }
+.AppDock	{ z-index: 30; }
 .Error		{ z-index: 40; }
 
 .Background {
@@ -78,8 +78,8 @@ body {
 	width: 7680px;
 }
 
-.StatusBar {
-	animation: statusbar-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
+.AppDock {
+	animation: AppDock-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
 	background: var(--nord3);
 	justify-content: center;
 	will-change: translate;
@@ -97,19 +97,19 @@ body {
 	height: 32px;
 }
 
-body:has(.maximised) .StatusBar {
+body:has(.maximised) .AppDock {
 	opacity: 0;
-	animation: statusbar-maximised-down 250ms cubic-bezier(.25, -0.25, .5, 0) normal none;
+	animation: AppDock-maximised-down 250ms cubic-bezier(.25, -0.25, .5, 0) normal none;
 }
 
-body:has(.maximised) .StatusBar.up {
+body:has(.maximised) .AppDock.up {
 	opacity: 1;
-	animation: statusbar-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
+	animation: AppDock-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
 }
 
-body:has(.maximised) .StatusBar.up:hover { opacity: 1; }
+body:has(.maximised) .AppDock.up:hover { opacity: 1; }
 
-.StatusBar .Open {
+.AppDock .Open {
 	flex-flow: row nowrap;
 	overflow-x: scroll;
 	padding: 4px 4px;
@@ -118,7 +118,7 @@ body:has(.maximised) .StatusBar.up:hover { opacity: 1; }
 	flex: 1;
 }
 
-.StatusBar .Open div[name="StatusIcon"] {
+.AppDock .Open div[name="StatusIcon"] {
 	border-radius: 4px;
 	user-select: none;
 	overflow: hidden;
@@ -127,12 +127,12 @@ body:has(.maximised) .StatusBar.up:hover { opacity: 1; }
 	margin: 0 2px;
 }
 
-.StatusBar .Open div[name="StatusIcon"] img {
+.AppDock .Open div[name="StatusIcon"] img {
 	max-height: 100%;
 	aspect-ratio: 1;
 }
 
-.StatusBar .Clock {
+.AppDock .Clock {
 	flex-flow: column nowrap;
 	justify-content: center;
 	align-content: center;
@@ -142,14 +142,14 @@ body:has(.maximised) .StatusBar.up:hover { opacity: 1; }
 	height: 100%;
 }
 
-.StatusBar .Clock p {
+.AppDock .Clock p {
 	background: var(--nord0);
 	background-clip: text;
 	font-size: 75%;
 }
 
-.StatusBar .Clock .Time,
-.StatusBar .Clock .Date {
+.AppDock .Clock .Time,
+.AppDock .Clock .Date {
 	justify-content: center;
 	align-content: start;
 	display: flex;
@@ -157,13 +157,13 @@ body:has(.maximised) .StatusBar.up:hover { opacity: 1; }
 	width: 100%;
 }
 
-.StatusBar .Clock .Time :nth-last-child(1),
-.StatusBar .Clock .Time :nth-last-child(2) {
+.AppDock .Clock .Time :nth-last-child(1),
+.AppDock .Clock .Time :nth-last-child(2) {
 	display: none;
 }
 
-.StatusBar .Clock.showSeconds .Time :nth-last-child(1),
-.StatusBar .Clock.showSeconds .Time :nth-last-child(2) {
+.AppDock .Clock.showSeconds .Time :nth-last-child(1),
+.AppDock .Clock.showSeconds .Time :nth-last-child(2) {
 	display: inline;
 }
 
@@ -368,7 +368,7 @@ body:has(div[name="Window"].resizeY) { cursor: n-resize; }
 body:has(div[name="Window"].resizeXY1) { cursor: nw-resize; }
 body:has(div[name="Window"].resizeXY2) { cursor: ne-resize; }
 
-@keyframes statusbar-maximised-up {
+@keyframes AppDock-maximised-up {
 	from {
 		opacity: 1;
 		translate: 0 200%;
@@ -379,7 +379,7 @@ body:has(div[name="Window"].resizeXY2) { cursor: ne-resize; }
 	}
 }
 
-@keyframes statusbar-maximised-down {
+@keyframes AppDock-maximised-down {
 	from {
 		opacity: 1;
 		translate: 0 0;

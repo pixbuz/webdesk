@@ -22,7 +22,7 @@ fun fact: the oldest prototype I have of webdesk is from 2022
 	- ~~Ensure the Clicks directly interact with the Content inside the Window~~
 	- ~~Ensure the Window is Deleted when the User Closes it~~
 
-4. The Statusbar
+4. The App Dock
 	- ~~Make a Clock~~
 	- ~~Make it Display the Open Apps~~
 ---

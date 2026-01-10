@@ -1,6 +1,6 @@
 /*
  * Contains all the functions
- * needed by the wm
+ * needed by the window manager
 */
 
 const assetsWindow = document.getElementsByName("Window")[0]
@@ -39,7 +39,7 @@ function openWindow(launcher) {
 
 	appWindow.style.transform = `translate(${boundingBox.x}px,${boundingBox.y}px)`
 
-	statusbarUpdate(appWindow, "open")
+	appDockUpdate(appWindow, "open")
 	focusWindow(appWindow)
 
 	setTimeout(() => appWindow.classList.remove("opening"))
@@ -147,7 +147,7 @@ function focusWindow(appWindow) {
 
 	appWindow.classList.add("focus")
 	appWindow.style.zIndex = 29
-	statusbarUpdate(appWindow, "focus")
+	appDockUpdate(appWindow, "focus")
 }
 
 function resizeEvent() {

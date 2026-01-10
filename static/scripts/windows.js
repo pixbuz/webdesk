@@ -13,7 +13,7 @@ function closeWindow(button) {
 	appWindow.classList.add("closing")
 	setTimeout(() => appWindow.remove(), 100)
 
-	statusbarUpdate(appWindow, "close")
+	appDockUpdate(appWindow, "close")
 }
 
 function maximiseWindow(button) {
@@ -30,7 +30,7 @@ function maximiseWindow(button) {
 		appWindow.style.width = `100%`
 		appWindow.style.height = `100%`
 
-		hideStatusbar()
+		hideappDock()
 	} else {
 		const boundingBox = windowsBox.get(appWindow)
 		appWindow.classList.remove("maximised")
@@ -41,7 +41,7 @@ function maximiseWindow(button) {
 		appWindow.style.height = `${boundingBox.height}px`
 
 		setTimeout(() => { appWindow.classList.remove("from-maximised") }, 100)
-		showStatusbar()
+		showappDock()
 	}
 }
 
@@ -51,5 +51,5 @@ function minimizeWindow(button) {
 	const appWindow = button.parentElement.parentElement.parentElement
 	appWindow.classList.add("minimized")
 
-	statusbarUpdate(appWindow, "minimized")
+	appDockUpdate(appWindow, "minimized")
 }
