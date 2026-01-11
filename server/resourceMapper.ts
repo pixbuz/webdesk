@@ -53,6 +53,7 @@ async function init() {
 		compileIndex(),
 		compileCSS(),
 	]
+
 	await Promise.all(dependencies)
 
 	resourceRefresher()

@@ -18,7 +18,6 @@ class WebSocketManager {
 		let current = resources.socketCommands
 		for (let i = 0; i < command.length; i++) {
 			const part = command[i]
-			console.log(current, part, current[part] instanceof Function)
 
 			if (current[part] instanceof Function) { return current[part](event.target, command) }
 			else if (i == command.length - 1) { return console.log("Recived Partial Command:", command) }
