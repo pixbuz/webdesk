@@ -1,8 +1,40 @@
-# Webdesk
-
-## v1.0 static
-fun fact: the oldest prototype I have of webdesk is from 2022
+# **Webdesk**
+## **Description**
+Webdesk is a passion project of mine with the aim of making an OS type experience in a web app.
 ## **Progress**
+- Make an App Launcher Template
+	- Make it Reflect the App's Information
+	- Make it Open a Window when Clicked
+- Make a Window Template
+	- Make it Closable
+	- Make it Resizable
+	- Make it Maximisable
+	- Make it Minimizable
+	- Add Support for Custom Titlebars
+	- Support Window to Window Comunication   
+	- Support Window to Client Comunication   
+	- Support Window to Backend Comunication   
+- Make a Window Manager
+	- Make Windows Movable
+	- Manage Window Focus
+	- Manage Window Overlapping
+	- Add Keybind Window Switching
+- Make a App Dock
+	- Make it Show the Open Apps' Windows
+	- Add a Clock & Date
+- Add the Settings app
+	- Add Customization for as many aspects of webdesk
+- Add the Blog app
+	- Make it as modular as possible
+- Add the Terminal app
+	- idk
+- Add Security
+	- Make sure Apps can't Intrfere with eachother
+	- Make sure Apps can't Intrfere with the Backend
+	- Make the Backend Resilient to Malicous Commands
+- Icons for apps
+- Finalized Webdesk
+
 ### **User flow**
 1. User loads up the page
 	- ~~Load the Desktop~~
@@ -26,7 +58,7 @@ fun fact: the oldest prototype I have of webdesk is from 2022
 	- ~~Make a Clock~~
 	- ~~Make it Display the Open Apps~~
 ---
-### **Webdesk (making it intresting)**
+### **Notes**
 - Add settings and customization options with CSS variables
 	- Different Color Palettes
 	- Desktop Image
