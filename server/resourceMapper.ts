@@ -199,12 +199,12 @@ async function resourceRefresher() {
 	for await (const event of Deno.watchFs(["app", "static"])) {
 		// Used to not refresh an endpoint too many times in the same moment, corrupting it
 		if (debouncer.indexOf(event.paths[0]) > -1) { continue }
-		else {
-			// Add the file change path to the debouncer
-			debouncer.push(event.paths[0])
-			// Add a timeout to remove it from the debouncer
-			setTimeout(() => delete debouncer[debouncer.indexOf(relativePath)], 100)
-		}
+		// else {
+		// 	// Add the file change path to the debouncer
+		// 	debouncer.push(event.paths[0])
+		// 	// Add a timeout to remove it from the debouncer
+		// 	setTimeout(() => delete debouncer[debouncer.indexOf(relativePath)], 100)
+		// }
 
 		// Extracting the relative path
 		const relativePath = event.paths[0].slice(Deno.cwd().length + 1)

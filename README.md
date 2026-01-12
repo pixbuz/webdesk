@@ -38,8 +38,10 @@ Webdesk is a passion project of mine with the aim of making an OS type experienc
 	- Make a Custom Lock Screen
 	- Make the FS read only up to the app folder
 	- Generate a private ID for each app at server init to authorize certain actions (read/write and indexedb)
-- Icons for apps
 - Finalized Webdesk
+	- Icons for the Apps
+	- Animations for the Opening, Closing, Maximising, Minimizing a Window
+	- Animations for the Opening, Closing, Maximising, Minimizing a Window App Dock Icon
 
 ### **User flow**
 1. User loads up the page

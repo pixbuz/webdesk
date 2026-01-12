@@ -9,10 +9,11 @@ let resizingWindow = null
 let movingWindow = null
 // Contains the offsets to remove from a mouse click during a window movement
 let clickOffsets = []
+// Increasing counter to keep track of different windows
+let windowID = 0
 
 function openWindow(launcher) {
-	// Spawns a window and sets all the appropriate proprieties
-	// also maps the newly opened window in 'windowsBox'
+	// Spawns a window and sets all the appropriate proprieties also maps the newly opened window in 'windowsBox'
 	const appWindow = assetsWindow.cloneNode(true)
 	const appName = launcher.getAttribute("app")
 
@@ -20,10 +21,11 @@ function openWindow(launcher) {
 	appWindow.addEventListener("mousedown", windowInteraction)
 	appWindow.classList.add("opening")
 
+	appWindow.querySelector("iframe").src = `apps/${appName}/?${windowID}`
 	appWindow.querySelector(".Icon").src = `apps/${appName}/icon`
-	appWindow.querySelector("iframe").src = `apps/${appName}/`
 	appWindow.querySelector(".Title").innerText = appName
 	appWindow.setAttribute("app", appName)
+	appWindow.setAttribute("id", windowID)
 	windowSpace.appendChild(appWindow)
 
 	const boundingBox = appWindow.getBoundingClientRect()
@@ -34,10 +36,11 @@ function openWindow(launcher) {
 
 	appWindow.style.transform = `translate(${boundingBox.x}px,${boundingBox.y}px)`
 
-	appDockUpdate(appWindow, "open")
+	appDockUpdateFocusedWindow(appWindow, "open")
 	focusWindow(appWindow)
 
 	setTimeout(() => appWindow.classList.remove("opening"))
+	windowID++
 }
 
 function enableMovement(event) {
@@ -56,8 +59,7 @@ function enableMovement(event) {
 }
 
 function moveWindow(moveX, moveY) {
-	// Move the window applying the current mouse position
-	// - the click offset + the old position
+	// Move the window applying the current mouse position - the click offset + the old position
 	if (!movingWindow) return
 
 	const xPos = moveX - clickOffsets[0] + windowsBox.get(movingWindow).x
@@ -67,8 +69,7 @@ function moveWindow(moveX, moveY) {
 }
 
 function updateWindowPosition(target) {
-	// Checks if the current window is in a valid position
-	// inside webdesk and corrects it if needed
+	// Checks if the current window is in a valid position inside webdesk and corrects it if needed
 	const boundingBox = target.getBoundingClientRect()
 
 	if (boundingBox.right > window.innerWidth) boundingBox.x = ( window.innerWidth - boundingBox.width )
@@ -82,8 +83,7 @@ function updateWindowPosition(target) {
 }
 
 function windowInteraction(event) {
-	// Checks where the user clicked in
-	// a Window and enables resizing
+	// Checks where the user clicked in a Window and enables resizing
 	if (event.target.getAttribute("name") == "Window") {
 		const boundingBox = windowsBox.get(event.target)
 		clickOffsets = [ event.x, event.y ]
@@ -110,8 +110,7 @@ function windowInteraction(event) {
 }
 
 function resizeWindow(moveX, moveY) {
-	// Interprets where a user clicked and runs
-	// the appropriate rescaling of a Window
+	// Interprets where a user clicked and runs the appropriate rescaling of a Window
 	const boundingBox = windowsBox.get(resizingWindow)
 
 	if (grabPos[0] && grabPos[3]) { // Top Right corner special treatment
@@ -124,12 +123,12 @@ function resizeWindow(moveX, moveY) {
 	if (grabPos[0]) {
 		resizingWindow.style.transform = `translate(${boundingBox.x}px , ${boundingBox.y + moveY - clickOffsets[1]}px)`
 		resizingWindow.style.height = `${boundingBox.height - moveY + clickOffsets[1]}px`
-	} else if (grabPos[2]) resizingWindow.style.height = `${boundingBox.height + moveY - clickOffsets[1]}px`
+	} else if (grabPos[2]) { resizingWindow.style.height = `${boundingBox.height + moveY - clickOffsets[1]}px` }
 
 	if (grabPos[3]) {
 		resizingWindow.style.transform = `translate(${boundingBox.x + moveX - clickOffsets[0]}px , ${boundingBox.y}px)`
 		resizingWindow.style.width = `${boundingBox.width - moveX + clickOffsets[0]}px`
-	} else if (grabPos[1]) resizingWindow.style.width = `${boundingBox.width + moveX - clickOffsets[0]}px`
+	} else if (grabPos[1]) { resizingWindow.style.width = `${boundingBox.width + moveX - clickOffsets[0]}px` }
 }
 
 function focusWindow(appWindow) {
@@ -142,17 +141,16 @@ function focusWindow(appWindow) {
 
 	appWindow.classList.add("focus")
 	appWindow.style.zIndex = 29
-	appDockUpdate(appWindow, "focus")
+	appDockUpdateFocusedWindow(appWindow)
 }
 
 function resizeEvent() {
-	for (appWindow of document.getElementsByName("Window"))
-		updateWindowPosition(appWindow)
+	for (appWindow of document.getElementsByName("Window")) { updateWindowPosition(appWindow) }
 }
 
 function moveEvent(event) {
-	if (movingWindow) moveWindow(event.x , event.y)
-	else if (resizingWindow) resizeWindow(event.x , event.y)
+	if (movingWindow) { moveWindow(event.x , event.y) }
+	else if (resizingWindow) { resizeWindow(event.x , event.y) }
 }
 
 function mouseupEvent(event) {

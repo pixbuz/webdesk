@@ -82,19 +82,7 @@ function updateClock() {
 	}
 }
 
-function appDockUpdate(appWindow, eventType) {
-	// Idk what fever conjured this function
-	// TODO: Deprecate it
-
-	switch(eventType) {
-		case "open": return updateOpen(appWindow)
-		case "focus": return updateFocus(appWindow)
-		case "close": return updateClose(appWindow)
-		case "minimized": return updateMini(appWindow)
-	}
-}
-
-function updateOpen(appWindow) {
+function appDockUpdateOpenWindow(appWindow) {
 	// Update an Open Window Open Icon
 	const statusIcon = assetsStatusIcon.cloneNode(true)
 	const appName = appWindow.getAttribute("app")
@@ -107,7 +95,7 @@ function updateOpen(appWindow) {
 	windowIndicator.set(appWindow, statusIcon)
 }
 
-function updateClose(appWindow) {
+function appDockUpdateClosedWindow(appWindow) {
 	// Update a Closed Window Open Icon
 	const statusIcon = windowIndicator.get(appWindow)
 
@@ -115,14 +103,14 @@ function updateClose(appWindow) {
 	windowIndicator.delete(appWindow)
 }
 
-function updateMini(appWindow) {
+function appDockUpdateMinimizedWindow(appWindow) {
 	// Update an Minimized Window Open Icon
 	const statusIcon = windowIndicator.get(appWindow)
 
 	statusIcon.classList.add("mini")
 }
 
-function updateFocus(appWindow) {
+function appDockUpdateFocusedWindow(appWindow) {
 	// Update an Focussed Window Open Icon
 	const statusIcon = windowIndicator.get(appWindow)
 

@@ -1,18 +1,27 @@
-function closeWindow(button) {
+const windowCommandChannel = new BroadcastChannel("wm/commands")
+
+function closeMe(button) {
 	// Function called by the close button of a window used to close it
 	const appWindow = button.parentElement.parentElement.parentElement
-	windowsBox.delete(appWindow)
 
-	appWindow.classList.add("closing")
-	setTimeout(() => appWindow.remove(), 100)
-
-	appDockUpdate(appWindow, "close")
+	closeWindow(appWindow)
 }
 
-function maximiseWindow(button) {
+function closeWindow(appWindow) {
+	appWindow.classList.add("closing")
+	windowsBox.delete(appWindow)
+	appDockUpdateClosedWindow(appWindow)
+	setTimeout(() => { appWindow.remove() }, 100)
+}
+
+function maximiseMe(button) {
 	// Function called by the maximise button of a window used to make it full screen
 	const appWindow = button.parentElement.parentElement.parentElement
+	
+	maximiseWindow(appWindow)
+}
 
+function maximiseWindow(appWindow) {
 	if (!appWindow.classList.contains("maximised")) {
 		appWindow.classList.add("maximised")
 
@@ -37,10 +46,26 @@ function maximiseWindow(button) {
 	}
 }
 
-function minimizeWindow(button) {
+function minimizeMe(button) {
 	// Function called by the minimize button of a window used to make it disappear
 	const appWindow = button.parentElement.parentElement.parentElement
-	appWindow.classList.add("minimized")
 
-	appDockUpdate(appWindow, "minimized")
+	minimizeWindow(appWindow)
 }
+
+function minimizeWindow(appWindow) {
+	appWindow.classList.add("minimized")
+	appDockUpdateMinimizedWindow(appWindow)
+}
+
+function windowCommandChannelHandler(event) {
+	// Handles the commands coming from the windows
+	const command = event.data.split(" ")
+	switch(command[0]) {
+		case "close":
+			const appWindow = windowSpace.querySelector(`div[id="${command[1]}"]`)
+			return closeWindow(appWindow)
+	}
+}
+
+windowCommandChannel.onmessage = windowCommandChannelHandler
