@@ -11,9 +11,9 @@ Webdesk is a passion project of mine with the aim of making an OS type experienc
 	- Make it Maximisable
 	- Make it Minimizable
 	- Add Support for Custom Titlebars
-	- Support Window to Window Comunication   
-	- Support Window to Client Comunication   
-	- Support Window to Backend Comunication   
+	- Support Window to Window Comunication with Broadcast Channels (public comunication) or Message Ports (private comunication)
+	- Support Window to Client Comunication with Broadcast Channels (public comunication) or Message Ports (private comunication)
+	- Support Window to Backend Comunication with Web Sockets
 - Make a Window Manager
 	- Make Windows Movable
 	- Manage Window Focus
@@ -24,14 +24,20 @@ Webdesk is a passion project of mine with the aim of making an OS type experienc
 	- Add a Clock & Date
 - Add the Settings app
 	- Add Customization for as many aspects of webdesk
+	- Add a Background Upload
+	- Add Customization Save/Upload
+
 - Add the Blog app
 	- Make it as modular as possible
 - Add the Terminal app
 	- idk
+- Add a Chat app(?)
+	- Prevent Spam
+	- Bad Idea
 - Add Security
-	- Make sure Apps can't Intrfere with eachother
-	- Make sure Apps can't Intrfere with the Backend
-	- Make the Backend Resilient to Malicous Commands
+	- Make a Custom Lock Screen
+	- Make the FS read only up to the app folder
+	- Generate a private ID for each app at server init to authorize certain actions (read/write and indexedb)
 - Icons for apps
 - Finalized Webdesk
 
