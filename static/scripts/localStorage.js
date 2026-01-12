@@ -1,7 +1,3 @@
-/*
- * Interacts with the Indexed DB on the client side
-*/
-
 async function loadIndexDBChecks(appsJSON) {
 	// Sets up the client browser in order to make webdesk work
 	const appNames = Object.keys(appsJSON)
@@ -15,6 +11,7 @@ async function loadIndexDBChecks(appsJSON) {
 }
 
 function initDB(database, appNames) {
+	// Creates all the needed tables for Webdesk
 	console.log("Upgrading Database")
 
 	database.createObjectStore("Global")
@@ -22,13 +19,14 @@ function initDB(database, appNames) {
 }
 
 function openIndexDB(appNames) {
+	// Handles the Opening of the IndexDB
 	const databaseOpenRequest = indexedDB.open("webdesk")
 
 	return new Promise((res, rej) => {
 		databaseOpenRequest.addEventListener("success", () => { res(databaseOpenRequest.result) }, { once: true })
 		databaseOpenRequest.addEventListener("upgradeneeded", () => { initDB(databaseOpenRequest.result, appNames) }, { once: true })
 
-		databaseOpenRequest.addEventListener("error", event => { rej(event) }, { once: true })
-		databaseOpenRequest.addEventListener("blocked", event => { rej(event) }, { once: true })
+		databaseOpenRequest.addEventListener("error", (event) => { rej(event) }, { once: true })
+		databaseOpenRequest.addEventListener("blocked", (event) => { rej(event) }, { once: true })
 	})
 }

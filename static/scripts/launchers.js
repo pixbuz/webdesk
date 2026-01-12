@@ -1,13 +1,8 @@
-/* 
- * Responsible for spawning the different
- * app launchers at page load
-*/
-
 const launcherSpace = document.querySelector(".Launcher.Space")
 const assetsLauncher = document.getElementsByName("Launcher")[0]
 
 function addLaunchers(appsManifests) {
-	// Add the launcher of all installed webdesk apps
+	// Add the Launchers of all Installed Apps
 	const appNames = Object.keys(appsManifests)
 	
 	appNames.sort().map((appName) => {

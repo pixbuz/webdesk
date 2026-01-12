@@ -1,8 +1,3 @@
-/*
- * Contains all the functions
- * needed by the window manager
-*/
-
 const assetsWindow = document.getElementsByName("Window")[0]
 const windowSpace = document.querySelector(".Window.Space")
 

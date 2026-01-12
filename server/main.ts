@@ -9,20 +9,18 @@ const _server = Deno.serve({
 	handler: requestResponder
 })
 
-async function requestResponder(request: Request, _connInfo: Deno.ServeHandlerInfo) {
+function requestResponder(request: Request, _connInfo: Deno.ServeHandlerInfo) {
 	// Main function that replies to incoming browser requests
-	await resources.ready
+
+	// Simplifies the logic
 	const url = new URL(request.url)
 
-	if (request.headers.get("upgrade") === "websocket") {
-		// TODO: Make this more secure
-		const upgrade = Deno.upgradeWebSocket(request)
-		sockets.register(upgrade.socket)
+	// Handle Web Socket's upgrade requests
+	if (request.headers.get("upgrade") === "websocket") { return sockets.upgrade(request) }
 
-		return upgrade.response
-	}
-
+	// Log a Client Request for Debug
 	console.log(`Request from Client: "${ url.pathname }"`)
+	// If the requested endpoint is indexed, return it
 	if (resources.routes[url.pathname]) { return new Response(resources.routes[url.pathname], resources.headers[url.pathname]) }
 	else return new Response("", { status: 400 })
 }
