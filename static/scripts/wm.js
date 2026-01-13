@@ -3,8 +3,10 @@ const windowSpace = document.querySelector(".Window.Space")
 
 // Pairs a open window with its boundry box
 const windowsBox = new WeakMap()
+
 // Used for interpreting mouse movements during a window resize
 let grabPos = [ false, false, false, false ]
+
 let resizingWindow = null
 let movingWindow = null
 // Contains the offsets to remove from a mouse click during a window movement
@@ -17,30 +19,44 @@ function openWindow(launcher) {
 	const appWindow = assetsWindow.cloneNode(true)
 	const appName = launcher.getAttribute("app")
 
-	appWindow.querySelector(".Titlebar").addEventListener("mousedown", enableMovement)
-	appWindow.addEventListener("mousedown", windowInteraction)
+	// Add the animation class
 	appWindow.classList.add("opening")
+	// Add an event listener for window resizing
+	appWindow.addEventListener("mousedown", windowInteraction)
+	// Add an event listener for window movement
+	appWindow.querySelector(".Titlebar").addEventListener("mousedown", enableMovement)
 
+	// Set all the elements values
 	appWindow.querySelector("iframe").src = `apps/${appName}/?${windowID}`
 	appWindow.querySelector(".Icon").src = `apps/${appName}/icon`
 	appWindow.querySelector(".Title").innerText = appName
 	appWindow.setAttribute("app", appName)
 	appWindow.setAttribute("id", windowID)
+
+	// Add the new window to the window space
 	windowSpace.appendChild(appWindow)
+	// Remove the animation class
+	setTimeout(() => appWindow.classList.remove("opening"))
 
-	const boundingBox = appWindow.getBoundingClientRect()
-	windowsBox.set(appWindow, boundingBox)
+	// Send the event
+	windowID++
+	WINDOW_OPEN.emit({ id: (windowID - 1), target: appWindow, app: appName })
 
+	// appDockUpdateOpenWindow(appWindow)
+	// focusWindow(appWindow)
+}
+
+function centerNewWindow(details) {
+	// Get the new window bounding box
+	const boundingBox = details.target.getBoundingClientRect()
+	windowsBox.set(details.target, boundingBox)
+
+	// Calculate the exact center for the new window
 	boundingBox.x = ( window.innerWidth - boundingBox.width ) / 2
 	boundingBox.y = ( window.innerHeight - boundingBox.height ) / 2
 
-	appWindow.style.transform = `translate(${boundingBox.x}px,${boundingBox.y}px)`
-
-	appDockUpdateFocusedWindow(appWindow, "open")
-	focusWindow(appWindow)
-
-	setTimeout(() => appWindow.classList.remove("opening"))
-	windowID++
+	// Apply the transform
+	details.target.style.transform = `translate(${boundingBox.x}px,${boundingBox.y}px)`
 }
 
 function enableMovement(event) {
@@ -131,7 +147,7 @@ function resizeWindow(moveX, moveY) {
 	} else if (grabPos[1]) { resizingWindow.style.width = `${boundingBox.width + moveX - clickOffsets[0]}px` }
 }
 
-function focusWindow(appWindow) {
+function focusNewWindow(details) {
 	// Makes a window go in focus
 	for (openAppWindow of document.getElementsByName("Window")) {
 		openAppWindow.classList.remove("focus")
@@ -139,9 +155,9 @@ function focusWindow(appWindow) {
 		if (zIndex > 20) openAppWindow.style.zIndex = zIndex - 1
 	}
 
-	appWindow.classList.add("focus")
-	appWindow.style.zIndex = 29
-	appDockUpdateFocusedWindow(appWindow)
+	details.target.classList.add("focus")
+	details.target.style.zIndex = 29
+	// appDockUpdateFocusedWindow(appWindow)
 }
 
 function resizeEvent() {
@@ -174,3 +190,6 @@ function mouseupEvent(event) {
 document.addEventListener("mousemove", moveEvent)
 document.addEventListener("mouseup", mouseupEvent)
 window.addEventListener("resize", resizeEvent)
+
+WINDOW_OPEN.on(centerNewWindow)
+WINDOW_OPEN.on(focusNewWindow)

@@ -82,25 +82,25 @@ function updateClock() {
 	}
 }
 
-function appDockUpdateOpenWindow(appWindow) {
+function appDockUpdateOpenWindow(details) {
 	// Update an Open Window Open Icon
 	const statusIcon = assetsStatusIcon.cloneNode(true)
-	const appName = appWindow.getAttribute("app")
+	const appName = details.target.getAttribute("app")
 
 	statusIcon.classList.add("focus")
 	statusIcon.setAttribute("app", appName)
 	statusIcon.querySelector(".Icon").src = `apps/${appName}/icon`
 
 	appDockOpenWindows.append(statusIcon)
-	windowIndicator.set(appWindow, statusIcon)
+	windowIndicator.set(details.target, statusIcon)
 }
 
-function appDockUpdateClosedWindow(appWindow) {
+function appDockUpdateClosedWindow(details) {
 	// Update a Closed Window Open Icon
-	const statusIcon = windowIndicator.get(appWindow)
+	const statusIcon = windowIndicator.get(details.target)
 
 	statusIcon.remove()
-	windowIndicator.delete(appWindow)
+	windowIndicator.delete(details.target)
 }
 
 function appDockUpdateMinimizedWindow(appWindow) {
@@ -148,3 +148,6 @@ appDock.addEventListener("mouseover", maximisedWindowAnimations)
 appDock.addEventListener("mouseleave", maximisedWindowAnimations)
 
 initClock()
+
+WINDOW_OPEN.on(appDockUpdateOpenWindow)
+WINDOW_CLOSE.on(appDockUpdateClosedWindow)

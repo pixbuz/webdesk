@@ -25,13 +25,12 @@ function maximiseWindow(appWindow) {
 	if (!appWindow.classList.contains("maximised")) {
 		appWindow.classList.add("maximised")
 
-		focusWindow(appWindow)
-
 		appWindow.style.transform = `translate(0)`
 		appWindow.style.width = `100%`
 		appWindow.style.height = `100%`
 
 		hideappDock()
+		WINDOW_MAXIMISE.emit({ id: windowID, target: appWindow, app: appName })
 	} else {
 		const boundingBox = windowsBox.get(appWindow)
 		appWindow.classList.remove("maximised")

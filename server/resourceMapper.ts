@@ -169,11 +169,12 @@ async function compileIndex() {
 
 async function compileScripts() {
 	// Bundles all the JS frontend scripts into one
-	const scriptNames: string[] = []
+	const scriptNames: string[] = [ "util.js", ]
 
 	// Read all the files inside the front end scripts folder
 	for await (const script of Deno.readDir(config.frontendScriptsPath)) {
-		if (script.isFile) scriptNames.push(script.name)
+		if (script.name === "util.js") { continue }
+		else if (script.isFile) { scriptNames.push(script.name) }
 	}
 
 	// For all the scripts that are files, read the file contents and add a comment for debug
