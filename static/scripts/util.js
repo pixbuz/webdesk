@@ -23,7 +23,9 @@ class WebdeskOSEvent {
 
 function getWindowInfo(appWindow) {
 	const windowID = appWindow.getAttribute("id")
-	const window = appWindow.getAttribute("id")
+	const appName = appWindow.getAttribute("app")
+	
+	return { id: windowID, target: appWindow, app: appName}
 }
 
 const WINDOW_EVENT_TEMPLATE = {
@@ -32,13 +34,14 @@ const WINDOW_EVENT_TEMPLATE = {
 	target: null,
 }
 
-const TITLEBAR_MOUSEDOWN_TEMPLATE = WINDOW_EVENT_TEMPLATE
+const TITLEBAR_EVENT_TEMPLATE = WINDOW_EVENT_TEMPLATE
 
-const WINDOW_OPEN = new WebdeskOSEvent("os:window-open", WINDOW_EVENT_TEMPLATE)
-const WINDOW_CLOSE = new WebdeskOSEvent("os:window-closed", WINDOW_EVENT_TEMPLATE)
-// const WINDOW_MOVE_END = new WebdeskOSEvent("os:window-move_end", WINDOW_EVENT_TEMPLATE)
-// const WINDOW_RESIZE_END = new WebdeskOSEvent("os:window-resize_end", WINDOW_EVENT_TEMPLATE)
-const WINDOW_MAXIMISE = new WebdeskOSEvent("os:window-maximised", WINDOW_EVENT_TEMPLATE)
-const WINDOW_MINIMISED = new WebdeskOSEvent("os:window-minimised", WINDOW_EVENT_TEMPLATE)
+const WINDOW_OPEN = new WebdeskOSEvent("window-open", WINDOW_EVENT_TEMPLATE)
+const WINDOW_CLOSE = new WebdeskOSEvent("window-closed", WINDOW_EVENT_TEMPLATE)
+const WINDOW_MOVE_END = new WebdeskOSEvent("window-move_end", WINDOW_EVENT_TEMPLATE)
+const WINDOW_RESIZE_END = new WebdeskOSEvent("window-resize_end", WINDOW_EVENT_TEMPLATE)
+const WINDOW_MAXIMISE = new WebdeskOSEvent("window-maximised", WINDOW_EVENT_TEMPLATE)
+const WINDOW_MINIMISED = new WebdeskOSEvent("window-minimised", WINDOW_EVENT_TEMPLATE)
+const WINDOW_CHECK_COLLISION = new WebdeskOSEvent("window-check_collision", WINDOW_EVENT_TEMPLATE)
 
-const TITLEBAR_MOUSEDOWN = new WebdeskOSEvent("os:titlebar-mousedown", TITLEBAR_MOUSEDOWN_TEMPLATE)
+const TITLEBAR_MOUSEDOWN = new WebdeskOSEvent("titlebar-mousedown", TITLEBAR_EVENT_TEMPLATE)
