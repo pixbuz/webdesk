@@ -5,9 +5,9 @@ const appDockClock = appDock.querySelector(".Clock")
 // Get the Open Windows element inside App Dock
 const appDockOpenWindows = appDock.querySelector(".Open")
 // Template of the Open Window Icon Element
-const assetsStatusIcon = document.getElementsByName("StatusIcon")[0]
+const assetsDockIcon = document.getElementsByName("DockIcon")[0]
 // Map between an Open Window and a Open Window Icon Element
-const windowIndicator = new WeakMap()
+const windowDockIconMap = new WeakMap()
 
 // Timeout used for animations
 let removeClassTimeout
@@ -84,42 +84,43 @@ function updateClock() {
 
 function appDockUpdateOpenWindow(details) {
 	// Update an Open Window Open Icon
-	const statusIcon = assetsStatusIcon.cloneNode(true)
+	const dockIcon = assetsDockIcon.cloneNode(true)
 	const appName = details.target.getAttribute("app")
 
-	statusIcon.classList.add("focus")
-	statusIcon.setAttribute("app", appName)
-	statusIcon.querySelector(".Icon").src = `apps/${appName}/icon`
+	dockIcon.addEventListener("click", focusLinkedWindow)
+	dockIcon.classList.add("focus")
+	dockIcon.setAttribute("app", appName)
+	dockIcon.querySelector(".Icon").src = `apps/${appName}/icon`
 
-	appDockOpenWindows.append(statusIcon)
-	windowIndicator.set(details.target, statusIcon)
+	appDockOpenWindows.append(dockIcon)
+	windowDockIconMap.set(details.target, dockIcon)
 }
 
 function appDockUpdateClosedWindow(details) {
 	// Update a Closed Window Open Icon
-	const statusIcon = windowIndicator.get(details.target)
+	const dockIcon = windowDockIconMap.get(details.target)
 
-	statusIcon.remove()
-	windowIndicator.delete(details.target)
+	dockIcon.remove()
+	windowDockIconMap.delete(details.target)
 }
 
-function appDockUpdateMinimizedWindow(appWindow) {
+function appDockUpdateMinimizedWindow(details) {
 	// Update an Minimized Window Open Icon
-	const statusIcon = windowIndicator.get(appWindow)
+	const dockIcon = windowDockIconMap.get(details.target)
 
-	statusIcon.classList.add("mini")
+	dockIcon.classList.add("mini")
 }
 
-function appDockUpdateFocusedWindow(appWindow) {
+function appDockUpdateFocusedWindow(details) {
 	// Update an Focussed Window Open Icon
-	const statusIcon = windowIndicator.get(appWindow)
+	const dockIcon = windowDockIconMap.get(details.target)
 
 	
 }
 
-function focusLinkedWindow(statusIcon) {
+function focusLinkedWindow(dockIcon) {
 	// Focusses the Window Linked to a Open Icon
-	const appName = statusIcon.getAttribute("app")
+	const appName = dockIcon.getAttribute("app")
 	const window = windowSpace.querySelector(`[app="${appName}"]`)
 
 	window.classList.remove("minimized")
@@ -151,3 +152,11 @@ initClock()
 
 WINDOW_OPEN.on(appDockUpdateOpenWindow)
 WINDOW_CLOSE.on(appDockUpdateClosedWindow)
+
+WINDOW_MAXIMISE.on(hideappDock)
+WINDOW_MAXIMISE_END.on(showappDock)
+
+WINDOW_MINIMISE.on(appDockUpdateMinimizedWindow)
+WINDOW_MINIMISE_END.on(appDockUpdateMinimizedWindow)
+
+WINDOW_CHANGED_FOCUS.on(appDockUpdateFocusedWindow)
