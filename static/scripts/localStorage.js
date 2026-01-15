@@ -12,7 +12,6 @@ async function loadIndexDBChecks(appsJSON) {
 
 function initDB(database, appNames) {
 	// Creates all the needed tables for Webdesk
-	console.log("Upgrading Database")
 
 	database.createObjectStore("Global")
 	for (const app of appNames) { database.createObjectStore(app) }

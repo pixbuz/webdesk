@@ -9,9 +9,6 @@ const assetsDockIcon = document.getElementsByName("DockIcon")[0]
 // Map between an Open Window and a Open Window Icon Element
 const windowDockIconMap = new WeakMap()
 
-// Timeout used for animations
-let removeClassTimeout
-
 // Get the client start time
 const initTime = new Date()
 // Initialize the Clock and Date Values
@@ -83,80 +80,53 @@ function updateClock() {
 }
 
 function appDockUpdateOpenWindow(details) {
-	// Update an Open Window Open Icon
+	// Spawn a Newly Opened Window's Dock Icon
 	const dockIcon = assetsDockIcon.cloneNode(true)
 	const appName = details.target.getAttribute("app")
+	appDockOpenWindows.append(dockIcon)
 
+	// Add the necessary event listeners
 	dockIcon.addEventListener("click", focusLinkedWindow)
-	dockIcon.classList.add("focus")
+	
+	// Set the values of the Dock Icon
 	dockIcon.setAttribute("app", appName)
 	dockIcon.querySelector(".Icon").src = `apps/${appName}/icon`
 
-	appDockOpenWindows.append(dockIcon)
+	// Link the new Dock Icon to its Window
 	windowDockIconMap.set(details.target, dockIcon)
 }
 
 function appDockUpdateClosedWindow(details) {
-	// Update a Closed Window Open Icon
+	// Delete a Just Closed Window's Dock Icon
 	const dockIcon = windowDockIconMap.get(details.target)
 
+	// Delete the Dock Icon and remove it from the Map
 	dockIcon.remove()
 	windowDockIconMap.delete(details.target)
 }
 
 function appDockUpdateMinimizedWindow(details) {
-	// Update an Minimized Window Open Icon
+	// Update an Minimized Window Dock Icon
 	const dockIcon = windowDockIconMap.get(details.target)
 
+	// Add the class
 	dockIcon.classList.add("mini")
 }
 
-function appDockUpdateFocusedWindow(details) {
-	// Update an Focussed Window Open Icon
-	const dockIcon = windowDockIconMap.get(details.target)
-
-	
-}
-
-function focusLinkedWindow(dockIcon) {
-	// Focusses the Window Linked to a Open Icon
-	const appName = dockIcon.getAttribute("app")
+function focusLinkedWindow(event) {
+	// Shifts the Focus on the Linked Window of a Dock Icon
+	const appName = event.target.closest(`[name="DockIcon"]`).getAttribute("app")
 	const window = windowSpace.querySelector(`[app="${appName}"]`)
 
+	// Removes classes for some reason
 	window.classList.remove("minimized")
 	window.classList.remove("maximised")
-	window.classList.add("focus")
 }
-
-function maximisedWindowAnimations() {
-	// Animation assist class for the appDock when there is a maximised window
-	showappDock()
-	clearTimeout(removeClassTimeout)
-	if (!appDock.matches(":hover")) removeClassTimeout = setTimeout(hideappDock, 2500)
-}
-
-function hideappDock() {
-	// Handles the hiding of the App Dock
-	appDock.classList.remove("up")
-}
-
-function showappDock() {
-	// Handles the showing of the App Dock
-	appDock.classList.add("up")
-}
-
-appDock.addEventListener("mouseover", maximisedWindowAnimations)
-appDock.addEventListener("mouseleave", maximisedWindowAnimations)
 
 initClock()
 
-WINDOW_OPEN.on(appDockUpdateOpenWindow)
-WINDOW_CLOSE.on(appDockUpdateClosedWindow)
+WINDOW_OPEN.on([appDockUpdateOpenWindow])
+WINDOW_CLOSE.on([appDockUpdateClosedWindow])
 
-WINDOW_MAXIMISE.on(hideappDock)
-WINDOW_MAXIMISE_END.on(showappDock)
-
-WINDOW_MINIMISE.on(appDockUpdateMinimizedWindow)
-WINDOW_MINIMISE_END.on(appDockUpdateMinimizedWindow)
-
-WINDOW_CHANGED_FOCUS.on(appDockUpdateFocusedWindow)
+WINDOW_MINIMISE.on([appDockUpdateMinimizedWindow])
+WINDOW_MINIMISE_END.on([appDockUpdateMinimizedWindow])

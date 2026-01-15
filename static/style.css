@@ -236,6 +236,8 @@ div[name="Window"].focus::before { background: var(--nord6); }
 div[name="Window"].maximised::before {
 	border-radius: 0;
 	inset: 0;
+	transition: inset 100ms linear,
+		border-radius 100ms linear;
 }
 
 div[name="Window"]::after {

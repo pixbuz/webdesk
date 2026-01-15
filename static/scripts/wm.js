@@ -1,5 +1,8 @@
+// Contains the Assets Window to Clone when Opening a New Window
 const assetsWindow = document.getElementsByName("Window")[0]
+// Contains the Space where to spawn Windows when Opening One
 const windowSpace = document.querySelector(".Window.Space")
+// Public Channel where to send Commands to have the WM Act on
 const windowCommandChannel = new BroadcastChannel("wm/commands")
 
 // Pairs a open window with its boundry box
@@ -11,31 +14,31 @@ let grabPos = [ false, false, false, false ]
 let resizingWindow = null
 let movingWindow = null
 let focusedWindow = null
+
 // Contains the offsets to remove from a mouse click during a window movement
 let clickOffsets = []
 // Increasing counter to keep track of different windows
 let windowID = 0
 
-function openWindow(launcher) {
+function openWindow(event) {
 	// Spawns a window and sets all the appropriate proprieties also maps the newly opened window in 'windowsBoundryBoxes'
 	const appWindow = assetsWindow.cloneNode(true)
-	const appName = launcher.getAttribute("app")
+	const appName = event.target.closest(`[name="Launcher"]`).getAttribute("app")
 
-	// Add the event listeners for the different window elements
+	// Add the Interaction Event Listeners for the different window Elements
 	appWindow.addEventListener("mousedown", windowInteraction)
 	appWindow.querySelector(".Titlebar").addEventListener("mousedown", enableMovement)
-
 	appWindow.querySelector(".Close").addEventListener("click", (event) => { closeWindow(event.target.closest(`[name="Window"]`)) })
 	appWindow.querySelector(".Minimize").addEventListener("click", (event) => { minimizeWindow(event.target.closest(`[name="Window"]`)) })
 	appWindow.querySelector(".Maximise").addEventListener("click", (event) => { maximiseWindow(event.target.closest(`[name="Window"]`)) })
 
 	// Set all the elements' values
+	appWindow.setAttribute("app", appName)
+	appWindow.setAttribute("id", windowID)
+
 	appWindow.querySelector("iframe").src = `apps/${appName}/?${windowID}`
 	appWindow.querySelector(".Icon").src = `apps/${appName}/icon`
 	appWindow.querySelector(".Title").innerText = appName
-
-	appWindow.setAttribute("app", appName)
-	appWindow.setAttribute("id", windowID)
 
 	// Add the new window to the window space
 	windowSpace.appendChild(appWindow)
@@ -46,13 +49,19 @@ function openWindow(launcher) {
 }
 
 function closeWindow(appWindow) {
+	// Closes an Open Window
+	// Remove the Window from the Boundry Boxes Map
 	windowsBoundryBoxes.delete(appWindow)
+
+	// Remoes the Window
 	setTimeout(() => { appWindow.remove() }, 100)
 
+	// Send a Event
 	WINDOW_CLOSE.emit(getWindowInfo(appWindow))
 }
 
 function maximiseWindow(appWindow) {
+	// Handles the Maximising and un-Maximising of Windows
 	if (!appWindow.classList.contains("maximised")) {
 		appWindow.classList.add("maximised")
 		WINDOW_MAXIMISE.emit(getWindowInfo(appWindow))
@@ -63,6 +72,7 @@ function maximiseWindow(appWindow) {
 }
 
 function minimizeWindow(appWindow) {
+	// Handles the Minimising of Windows
 	appWindow.classList.add("minimized")
 	WINDOW_MINIMISE.emit(getWindowInfo(appWindow))
 }
@@ -82,25 +92,34 @@ function centerNewWindow(details) {
 
 function enableMovement(event) {
 	// Register the window for movement
-
 	const appWindow = event.target.closest(`[name="Window"]`)
-
+	
+	// If the click Landed on a Button, ignore it
+	// If the user is trying to move a Maximised Window, ignore it
 	if (event.target.tagName === "BUTTON") return
 	else if (appWindow.classList.contains("maximised")) return
 
+	// Set the target as the Moving Window
+	movingWindow = appWindow
+
+	// Save the click Offsets
 	clickOffsets = [ event.x , event.y ]
+	// Add the "moving" class to the target
 	appWindow.classList.add("moving")
 
-	movingWindow = appWindow
+	// Emit the Window Move Event
+	WINDOW_MOVE.emit(getWindowInfo(appWindow))
 }
 
 function moveWindow(moveEvent) {
 	// Move the window applying the current mouse position - the click offset + the old position
 	if (!movingWindow) return
 	
+	// Calculate the Translate values of the Move
 	const xPos = moveEvent.x - clickOffsets[0] + windowsBoundryBoxes.get(movingWindow).x
 	const yPos = moveEvent.y - clickOffsets[1] + windowsBoundryBoxes.get(movingWindow).y
 
+	// Set the Translate values
 	movingWindow.style.transform = `translate(${xPos}px,${yPos}px)`
 }
 
@@ -108,12 +127,13 @@ function updatePositionBasedOnViewportCollision(details) {
 	// Checks if the current window is in a valid position inside webdesk and corrects it if needed
 	const boundingBox = details.target.getBoundingClientRect()
 
-	if (boundingBox.right > window.innerWidth) boundingBox.x = ( window.innerWidth - boundingBox.width )
-	else if (boundingBox.left < 0) boundingBox.x = 0
+	if (boundingBox.right > window.innerWidth) boundingBox.x = ( window.innerWidth - boundingBox.width ) // If the window is beyond the right of the screen, move the window back to the edge
+	else if (boundingBox.left < 0) boundingBox.x = 0 // If the window is beyond the left of the screen, move the window back to the edge
 
-	if (boundingBox.bottom > window.innerHeight) boundingBox.y = ( window.innerHeight - boundingBox.height )
-	else if (boundingBox.top < 0) boundingBox.y = 0
+	if (boundingBox.bottom > window.innerHeight) boundingBox.y = ( window.innerHeight - boundingBox.height ) // If the window is beyond the bottom of the screen, move the window back to the edge
+	else if (boundingBox.top < 0) boundingBox.y = 0 // If the window is beyond the top of the screen, move the window back to the edge
 
+	// Update the Window Translate values and Boundry Box
 	details.target.style.transform = `translate(${boundingBox.x}px,${boundingBox.y}px)`
 	windowsBoundryBoxes.set(details.target, boundingBox)
 }
@@ -121,12 +141,16 @@ function updatePositionBasedOnViewportCollision(details) {
 function windowInteraction(event) {
 	// Checks where the user clicked in a Window and enables resizing
 	if (event.target.getAttribute("name") == "Window") {
+		// Get the Window Bounding Box of the Clicked Window
 		const boundingBox = windowsBoundryBoxes.get(event.target)
+		// Save the click offsets
 		clickOffsets = [ event.x, event.y ]
 
+		// Calculate where Inside the Window the User Clicked
 		const relClickX = clickOffsets[0] - boundingBox.x
 		const relClickY = clickOffsets[1] - boundingBox.y
 
+		// Update the Window Grab Position
 		grabPos = [
 			(relClickY <= 6), // Top
 			(boundingBox.width - relClickX <= 6), // Left
@@ -134,13 +158,19 @@ function windowInteraction(event) {
 			(relClickX <= 6) // Right
 		]
 
-		if (grabPos[1] || grabPos[3]) event.target.classList.add("resizeX")
-		if (grabPos[0] || grabPos[2]) event.target.classList.add("resizeY")
+		// If the user Clicked on the Left or Right Edge
+		if (grabPos[1] || grabPos[3]) { event.target.classList.add("resizeX") }
+		// If the user Clicked on the Top or Bottom Edge
+		if (grabPos[0] || grabPos[2]) { event.target.classList.add("resizeY") }
 
-		if (grabPos[0] && grabPos[3] || grabPos[1] && grabPos[2]) event.target.classList.add("resizeXY1")
-		else if (grabPos[0] && grabPos[1] || grabPos[2] && grabPos[3]) event.target.classList.add("resizeXY2")
+		// If the user clicked on the Top-Right or the Bottom-Left
+		if (grabPos[0] && grabPos[3] || grabPos[1] && grabPos[2]) { event.target.classList.add("resizeXY1") }
+		// If the user clicked on the Top-Left or the Bottom-Right
+		else if (grabPos[0] && grabPos[1] || grabPos[2] && grabPos[3]) { event.target.classList.add("resizeXY2") }
 
-		if (grabPos.indexOf(true) != -1) resizingWindow = event.target
+		// Set the Resizing Target and emit the Event
+		resizingWindow = event.target
+		WINDOW_RESIZE.emit(getWindowInfo(resizingWindow))
 	}
 }
 
@@ -148,6 +178,7 @@ function resizeWindow(moveEvent) {
 	// Interprets where a user clicked and runs the appropriate rescaling of a Window
 	if (!resizingWindow) return
 
+	// Get the Resizing Window Boundry Box
 	const boundingBox = windowsBoundryBoxes.get(resizingWindow)
 
 	if (grabPos[0] && grabPos[3]) { // Top Right corner special treatment
@@ -186,27 +217,37 @@ function focusWindow(details) {
 }
 
 function checkAllViewportCollisions() {
+	// When the Viewport gets Resized, Update all the Collisions and window Sizes
 	for (appWindow of document.getElementsByName("Window")) { updatePositionBasedOnViewportCollision(appWindow) }
 }
 
-function windowMovementEnd() {
+function appWindowMovementEnd() {
+	// Handles the End of a Window Movement
 	if (!movingWindow) return
+
+	// Remove Classes
 	movingWindow.classList.remove("moving")
 
-	WINDOW_CHECK_COLLISION.emit(getWindowInfo(movingWindow))
+	// Emit the Move End Event and remove the move Target
+	WINDOW_MOVE_END.emit(getWindowInfo(movingWindow))
 	movingWindow = null
 }
 
-function windowResizeEnd(event) {
+function appWindowResizeEnd(event) {
+	// Handles the End of a Window Resizing
 	if (!resizingWindow) return
+
+	// Reset User Grab Position
 	grabPos = [ false, false, false, false ]
 
+	// Remove Classes
 	resizingWindow.classList.remove("resizeY")
 	resizingWindow.classList.remove("resizeX")
 	resizingWindow.classList.remove("resizeXY1")
 	resizingWindow.classList.remove("resizeXY2")
 
-	WINDOW_CHECK_COLLISION.emit(getWindowInfo(resizingWindow))
+	// Emit the Resize End Event and remove the resize Target
+	WINDOW_RESIZE_END.emit(getWindowInfo(resizingWindow))
 	resizingWindow = null
 }
 
@@ -220,21 +261,16 @@ function windowCommandChannelHandler(event) {
 	}
 }
 
-WINDOW_OPEN.on(centerNewWindow)
-
-WINDOW_MOVE_END.on(windowMovementEnd)
-
-WINDOW_CHECK_COLLISION.on(updatePositionBasedOnViewportCollision)
-
-WINDOW_OPEN.on(focusWindow)
-WINDOW_MOVE_END.on(focusWindow)
+WINDOW_OPEN.on([centerNewWindow, focusWindow])
+WINDOW_MOVE_END.on([focusWindow, updatePositionBasedOnViewportCollision])
+WINDOW_RESIZE_END.on([focusWindow, updatePositionBasedOnViewportCollision])
 
 windowCommandChannel.addEventListener("message", windowCommandChannelHandler)
 
 document.addEventListener("mousemove", moveWindow)
 document.addEventListener("mousemove", resizeWindow)
 
-document.addEventListener("mouseup", windowMovementEnd)
-document.addEventListener("mouseup", windowResizeEnd)
+document.addEventListener("mouseup", appWindowMovementEnd)
+document.addEventListener("mouseup", appWindowResizeEnd)
 
 window.addEventListener("resize", checkAllViewportCollisions)
