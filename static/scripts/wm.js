@@ -182,19 +182,19 @@ function resizeWindow(moveEvent) {
 	const boundingBox = windowsBoundryBoxes.get(resizingWindow)
 
 	if (grabPos[0] && grabPos[3]) { // Top Right corner special treatment
-		resizingWindow.style.transform = `translate(${boundingBox.x + moveEvent.x - clickOffsets[0]}px , ${boundingBox.y + moveEvent.y - clickOffsets[1]}px)`
+		resizingWindow.style.transform = `translate(${boundingBox.x + moveEvent.x - clickOffsets[0]}px,${boundingBox.y + moveEvent.y - clickOffsets[1]}px)`
 		resizingWindow.style.height = `${boundingBox.height - moveEvent.y + clickOffsets[1]}px`
 		resizingWindow.style.width = `${boundingBox.width - moveEvent.x + clickOffsets[0]}px`
 		return
 	}
 
 	if (grabPos[0]) {
-		resizingWindow.style.transform = `translate(${boundingBox.x}px , ${boundingBox.y + moveEvent.y - clickOffsets[1]}px)`
+		resizingWindow.style.transform = `translate(${boundingBox.x}px,${boundingBox.y + moveEvent.y - clickOffsets[1]}px)`
 		resizingWindow.style.height = `${boundingBox.height - moveEvent.y + clickOffsets[1]}px`
 	} else if (grabPos[2]) { resizingWindow.style.height = `${boundingBox.height + moveEvent.y - clickOffsets[1]}px` }
 
 	if (grabPos[3]) {
-		resizingWindow.style.transform = `translate(${boundingBox.x + moveEvent.x - clickOffsets[0]}px , ${boundingBox.y}px)`
+		resizingWindow.style.transform = `translate(${boundingBox.x + moveEvent.x - clickOffsets[0]}px,${boundingBox.y}px)`
 		resizingWindow.style.width = `${boundingBox.width - moveEvent.x + clickOffsets[0]}px`
 	} else if (grabPos[1]) { resizingWindow.style.width = `${boundingBox.width + moveEvent.x - clickOffsets[0]}px` }
 }
@@ -213,6 +213,15 @@ function focusWindow(details) {
 		focusedWindow.style.zIndex = 29
 
 		WINDOW_CHANGED_FOCUS.emit(getWindowInfo(details.target))
+	}
+}
+
+function shiftWindowFocus(details) {
+	for (openAppWindow of document.getElementsByName("Window")) {
+		openAppWindow.classList.remove("focus")
+		const zIndex = parseInt(openAppWindow.style.zIndex)
+		if (zIndex < 29) { openAppWindow.style.zIndex = zIndex + 1 }
+		if (zIndex == 28) { openAppWindow.classList.add("focus") }
 	}
 }
 
@@ -262,8 +271,13 @@ function windowCommandChannelHandler(event) {
 }
 
 WINDOW_OPEN.on([centerNewWindow, focusWindow])
-WINDOW_MOVE_END.on([focusWindow, updatePositionBasedOnViewportCollision])
-WINDOW_RESIZE_END.on([focusWindow, updatePositionBasedOnViewportCollision])
+WINDOW_CLOSE.on([shiftWindowFocus])
+
+WINDOW_MOVE.on([focusWindow])
+WINDOW_MOVE_END.on([updatePositionBasedOnViewportCollision])
+
+WINDOW_RESIZE.on([focusWindow])
+WINDOW_RESIZE_END.on([updatePositionBasedOnViewportCollision])
 
 windowCommandChannel.addEventListener("message", windowCommandChannelHandler)
 

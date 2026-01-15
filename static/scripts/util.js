@@ -1,3 +1,76 @@
+// Utility Class to interact with IndexDB
+class WebdeskDatabase {
+	constructor() {
+		const localStorageQuery = localStorage.getItem("db-version")
+		if (localStorageQuery) { this.currentVersion = parseInt(localStorageQuery) }
+		else { this.currentVersion = 1 }
+
+		this.init()
+	}
+
+	init(increaseVersion = false) {
+		// Open the Database
+		const openReq = indexedDB.open("webdesk", increaseVersion ? ++this.currentVersion : this.currentVersion)
+		console.log(`Opened Webdesk Database with version ${this.currentVersion}`)
+		this.databaseReady = new Promise((res) => { this.databaseReadyResolve = res })
+
+		// If the Database is opened successfully, resolve the database
+		openReq.onsuccess = async () => {
+			this.databaseReadyResolve()
+			this.database = openReq.result
+			console.log(`Webdesk Database is now Ready for Use`)
+		}
+
+		if (increaseVersion || this.currentVersion == 1) { localStorage.setItem("db-version", this.currentVersion) }
+
+		return openReq
+	}
+
+	async createTable(table) {
+		await this.databaseReady
+		this.database.close()
+		console.log(`Database Closed, Adding new Table`)
+
+		return new Promise((res, rej) => {
+			setTimeout(rej, 1000)
+			this.init(true).onupgradeneeded = (openRequest) => {
+				const upgradeDatabase = openRequest.target.result
+				if (!upgradeDatabase.objectStoreNames.contains(table)) {
+					upgradeDatabase.createObjectStore(table)
+					console.log(`Created new Table "${table}" in database`)
+				} else { console.log(`Table "${table}" is already present in database`) }
+				res()
+			}
+		})
+	}
+
+	async get(table, key) {
+		await this.databaseReady
+		// Get a key from a Database Table
+		const transaction = this.database.transaction(table, "readonly")
+		const store = transaction.objectStore(table)
+		const getReq = store.get(key)
+
+		return new Promise((res, rej) => {
+			getReq.onsuccess = () => { res(getReq.result) }
+			getReq.onerror = () => { rej(getReq.error) }
+		})
+	}
+
+	async set(table, key, value) {
+		await this.databaseReady
+		// Set the Key and Value of a Pair inside a Database Table
+		const transaction = this.database.transaction(table, "readwrite")
+		const store = transaction.objectStore(table)
+		const setReq = store.put(value, key)
+
+		return new Promise((res, rej) => {
+			setReq.onsuccess = () => { res(setReq.result) }
+			setReq.onerror = () => { rej(setReq.error) }
+		})
+	}
+}
+
 // Utility Class to Dispatch and Listen for Custom OS Events
 class WebdeskOSEvent {
 	constructor(eventName, objectTemplate = {}) {
@@ -24,7 +97,7 @@ class WebdeskOSEvent {
 		// Used to set callback Functions to an event in batch
 
 		callBackFunctions.map((callBackFunction) => {
-			console.log(`Resistred the "${callBackFunction.name}" function to run on the "${this.name}" event`)
+			// console.log(`Resistred the "${callBackFunction.name}" function to run on the "${this.name}" event`)
 			window.addEventListener(this.name, (event) => { callBackFunction(event.detail) }, { once: oneTime })
 		})
 	}

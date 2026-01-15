@@ -51,7 +51,7 @@ function windowCloseAnimation(details) {
 let removeClassTimeout
 function appDockMaximisedAnimation() {
 	// Animation assist class for the appDock when there is a maximised window
-	showappDock()
+	showAppDockAnimation()
 	clearTimeout(removeClassTimeout)
 	if (!appDock.matches(":hover")) removeClassTimeout = setTimeout(hideappDock, 2500)
 }

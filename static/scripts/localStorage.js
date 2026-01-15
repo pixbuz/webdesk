@@ -1,31 +1,13 @@
-async function loadIndexDBChecks(appsJSON) {
-	// Sets up the client browser in order to make webdesk work
-	const appNames = Object.keys(appsJSON)
-	const database = await openIndexDB(appNames)
+const database = new WebdeskDatabase()
+const database1 = new WebdeskDatabase();
 
-	const transaction = database.transaction(["Global"], "readwrite")
-	const store = transaction.objectStore("Global")
+(async () => {
+	await database.createTable("settings")
+	await database1.createTable("Global")
 
-	store.get("userID").onsuccess = event => { if (event.target.result == undefined) { store.put(crypto.randomUUID(), "userID") } }
-	store.get("userID").onsuccess = event => { if (event.target.result == undefined) { store.put(crypto.randomUUID(), "userID") } }
-}
+	await database.set("settings", "test", 123)
+	await database1.set("Global", "test", 321)
 
-function initDB(database, appNames) {
-	// Creates all the needed tables for Webdesk
-
-	database.createObjectStore("Global")
-	for (const app of appNames) { database.createObjectStore(app) }
-}
-
-function openIndexDB(appNames) {
-	// Handles the Opening of the IndexDB
-	const databaseOpenRequest = indexedDB.open("webdesk")
-
-	return new Promise((res, rej) => {
-		databaseOpenRequest.addEventListener("success", () => { res(databaseOpenRequest.result) }, { once: true })
-		databaseOpenRequest.addEventListener("upgradeneeded", () => { initDB(databaseOpenRequest.result, appNames) }, { once: true })
-
-		databaseOpenRequest.addEventListener("error", (event) => { rej(event) }, { once: true })
-		databaseOpenRequest.addEventListener("blocked", (event) => { rej(event) }, { once: true })
-	})
-}
+	await database.get("settings", "test")
+	await database1.get("Global", "test")
+})()

@@ -33,7 +33,6 @@ webdeskBackend.addEventListener("open", async () => {
 	// Ask the server for the Installed Apps Manifests
 	const appsManifests = JSON.parse(await serverQuery("app manifests"))
 
-	// Send the Manifests to the init functions
-	loadIndexDBChecks(appsManifests)
+	// Send the Manifests to the init function
 	addLaunchers(appsManifests)
 }, { once: true })
