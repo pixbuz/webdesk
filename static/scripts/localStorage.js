@@ -1,13 +1,15 @@
-const database = new WebdeskDatabase()
-const database1 = new WebdeskDatabase();
+;(async () => {
+	await WebdeskDB.createTable("settings")
 
-(async () => {
-	await database.createTable("settings")
-	await database1.createTable("Global")
+	await WebdeskDB.set("settings", "test", 123)
 
-	await database.set("settings", "test", 123)
-	await database1.set("Global", "test", 321)
+	await WebdeskDB.get("settings", "test")
+})();
 
-	await database.get("settings", "test")
-	await database1.get("Global", "test")
-})()
+;(async () => {
+	await WebdeskDB.createTable("Global")
+
+	await WebdeskDB.set("Global", "test", 123)
+
+	await WebdeskDB.get("Global", "test")
+})();

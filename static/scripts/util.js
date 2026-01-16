@@ -1,81 +1,131 @@
 // Utility Class to interact with IndexDB
 class WebdeskDatabase {
 	constructor() {
-		const localStorageQuery = localStorage.getItem("db-version")
-		if (localStorageQuery) { this.currentVersion = parseInt(localStorageQuery) }
-		else { this.currentVersion = 1 }
-
-		this.init()
+		// Get the last Version of the Database
+		this.version = parseInt(localStorage.getItem("db-version")) || 1
+		
+		// Used to check if there is a connection to the Database
+		this.ready = this.init()
+		
+		// Used to not overlap operations to the Database
+		this.updateLock = Promise.resolve()
 	}
 
-	init(increaseVersion = false) {
-		// Open the Database
-		const openReq = indexedDB.open("webdesk", increaseVersion ? ++this.currentVersion : this.currentVersion)
-		console.log(`Opened Webdesk Database with version ${this.currentVersion}`)
-		this.databaseReady = new Promise((res) => { this.databaseReadyResolve = res })
+	init() {
+		// Used to open the Database
+		return new Promise((resolve, reject) => {
+			// Send the Open Request
+			const req = indexedDB.open("webdesk", this.version)
 
-		// If the Database is opened successfully, resolve the database
-		openReq.onsuccess = async () => {
-			this.databaseReadyResolve()
-			this.database = openReq.result
-			console.log(`Webdesk Database is now Ready for Use`)
-		}
-
-		if (increaseVersion || this.currentVersion == 1) { localStorage.setItem("db-version", this.currentVersion) }
-
-		return openReq
-	}
-
-	async createTable(table) {
-		await this.databaseReady
-		this.database.close()
-		console.log(`Database Closed, Adding new Table`)
-
-		return new Promise((res, rej) => {
-			setTimeout(rej, 1000)
-			this.init(true).onupgradeneeded = (openRequest) => {
-				const upgradeDatabase = openRequest.target.result
-				if (!upgradeDatabase.objectStoreNames.contains(table)) {
-					upgradeDatabase.createObjectStore(table)
-					console.log(`Created new Table "${table}" in database`)
-				} else { console.log(`Table "${table}" is already present in database`) }
-				res()
+			// If successfull, update the status of the Database connection
+			req.onsuccess = () => {
+				// When adding new tables, automatically close the Database
+				req.result.onversionchange = () => { req.result.close() }
+				resolve(req.result)
 			}
+
+			// On error, report it
+			req.onblocked = req.onerror = (event) => reject(event)
 		})
 	}
 
-	async get(table, key) {
-		await this.databaseReady
-		// Get a key from a Database Table
-		const transaction = this.database.transaction(table, "readonly")
-		const store = transaction.objectStore(table)
-		const getReq = store.get(key)
+	async _run(tableName, mode, callback) {
+		// Helper function
+		// Wait for no operations on the Database
+		await this.updateLock
 
-		return new Promise((res, rej) => {
-			getReq.onsuccess = () => { res(getReq.result) }
-			getReq.onerror = () => { rej(getReq.error) }
+		// Get the newest connection for the Database
+		const database = await this.ready
+
+		// Throw an error if trying to access a table that doesn't exist
+		if (!database.objectStoreNames.contains(tableName)) { throw new Error(`Table "${tableName}" does not exist`) }
+
+		return new Promise((resolve, reject) => {
+			try {
+				const tx = database.transaction(tableName, mode == 0 ? "readonly" : "readwrite")
+				const store = tx.objectStore(tableName)
+				const request = callback(store)
+
+				request.onsuccess = () => resolve(request.result)
+				request.onerror = () => reject(request.error)
+			} catch (err) { reject(err) }
 		})
 	}
 
-	async set(table, key, value) {
-		await this.databaseReady
-		// Set the Key and Value of a Pair inside a Database Table
-		const transaction = this.database.transaction(table, "readwrite")
-		const store = transaction.objectStore(table)
-		const setReq = store.put(value, key)
+	get(table, key) {
+		// Get a Key from a Table
+		return this._run(table, 0, (store) => { return store.get(key) })
+	}
 
-		return new Promise((res, rej) => {
-			setReq.onsuccess = () => { res(setReq.result) }
-			setReq.onerror = () => { rej(setReq.error) }
+	getAll(table) {
+		// Get all Key's Values from a Table
+		return this._run(table, 0, (store) => { return store.getAll() })
+	}
+
+	set(table, key, value) {
+		// Set the Value of a Key inside a Table
+		return this._run(table, 1, (store) => { return store.put(value, key) })
+	}
+
+	delete(table, key) {
+		// Delete a Key inside a Table
+		return this._run(table, 1, (store) => { return store.delete(key) })
+	}
+
+
+	async createTable(tableName) {
+		// Adds new Tables into the Database
+		// Wait for the old operation lock and set the new operation lock to:
+		this.updateLock = this.updateLock.then(async () => {
+			// Wait for the database
+			const database = await this.ready
+			
+			// If table exists do nothing
+			if (database.objectStoreNames.contains(tableName)) return
+
+			// Close the Database
+			database.close()
+			console.log(`Closing Database to create table "${tableName}"`)
+
+			// Block any Database operations now that it is closed
+			let resolveNewDb
+			this.ready = new Promise((resolve) => { resolveNewDb = resolve })
+
+			return new Promise((resolve, reject) => {
+				// Up the Database version
+				const req = indexedDB.open("webdesk", ++this.version)
+
+				// Before the Database Opens, add the new table
+				req.onupgradeneeded = (event) => {
+					const database = event.target.result
+
+					if (!database.objectStoreNames.contains(tableName)) { database.createObjectStore(tableName) }
+				}
+
+				// When the Database Opens, resolve all Promises
+				req.onsuccess = (event) => {
+					const database = event.target.result
+					database.onversionchange = () => { database.close() }
+					
+					localStorage.setItem("db-version", this.version)
+
+					resolveNewDb(database)
+					resolve()
+				}
+
+				req.onblocked = req.onerror = (event) => reject(event)
+			})
 		})
+
+		return this.updateLock
 	}
 }
 
 // Utility Class to Dispatch and Listen for Custom OS Events
 class WebdeskOSEvent {
 	constructor(eventName, objectTemplate = {}) {
-		this.name = eventName;
-		this.template = objectTemplate;
+		this.name = eventName
+		this.template = objectTemplate
 	}
 
 	emit(data = {}) {
@@ -138,3 +188,6 @@ const WINDOW_CHANGED_FOCUS = new WebdeskOSEvent("window-changed_focus", WINDOW_E
 const WINDOW_CHECK_COLLISION = new WebdeskOSEvent("window-check_collision", WINDOW_EVENT_TEMPLATE)
 
 const TITLEBAR_MOUSEDOWN = new WebdeskOSEvent("titlebar-mousedown", TITLEBAR_EVENT_TEMPLATE)
+
+// Open the DB
+const WebdeskDB = new WebdeskDatabase()
