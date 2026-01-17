@@ -2,18 +2,14 @@
 class WebdeskDatabase {
 	constructor() {
 		// Get the last Version of the Database
-		this.version = parseInt(localStorage.getItem("db-version")) || 1
-		
-		// Used to check if there is a connection to the Database
-		this.ready = this.init()
-		
-		// Used to not overlap operations to the Database
-		this.updateLock = Promise.resolve()
-	}
+		if (localStorage.getItem("db-version") == undefined) {
+			firstTimeInit()
+			this.version = 1
+			localStorage.setItem("db-version", 1)
+		} else { this.version = parseInt(localStorage.getItem("db-version")) }
 
-	init() {
-		// Used to open the Database
-		return new Promise((resolve, reject) => {
+		// Used to check if there is a connection to the Database
+		this.ready = new Promise((resolve, reject) => {
 			// Send the Open Request
 			const req = indexedDB.open("webdesk", this.version)
 
@@ -27,6 +23,9 @@ class WebdeskDatabase {
 			// On error, report it
 			req.onblocked = req.onerror = (event) => reject(event)
 		})
+
+		// Used to not overlap operations to the Database
+		this.updateLock = Promise.resolve()
 	}
 
 	async _run(tableName, mode, callback) {
@@ -189,5 +188,4 @@ const WINDOW_CHECK_COLLISION = new WebdeskOSEvent("window-check_collision", WIND
 
 const TITLEBAR_MOUSEDOWN = new WebdeskOSEvent("titlebar-mousedown", TITLEBAR_EVENT_TEMPLATE)
 
-// Open the DB
 const WebdeskDB = new WebdeskDatabase()
