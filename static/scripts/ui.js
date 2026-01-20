@@ -87,10 +87,4 @@ const CustomizationProprieties = {
 	},
 }
 
-async function firstTimeInit() {
-	await WebdeskDB.createTable("settings")
-	// await WebdeskDB.set("settings", "theme", )
-	console.log(CustomizationProprieties)
-}
-
 firstTimeInit()

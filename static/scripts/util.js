@@ -2,11 +2,13 @@
 class WebdeskDatabase {
 	constructor() {
 		// Get the last Version of the Database
-		if (localStorage.getItem("db-version") == undefined) {
+		const dbVersion = localStorage.getItem("db-version")
+
+		if (dbVersion == undefined) {
 			firstTimeInit()
 			this.version = 1
 			localStorage.setItem("db-version", 1)
-		} else { this.version = parseInt(localStorage.getItem("db-version")) }
+		} else { this.version = parseInt(dbVersion) }
 
 		// Used to check if there is a connection to the Database
 		this.ready = new Promise((resolve, reject) => {
@@ -150,6 +152,12 @@ class WebdeskOSEvent {
 			window.addEventListener(this.name, (event) => { callBackFunction(event.detail) }, { once: oneTime })
 		})
 	}
+}
+
+// First time Initialization Function for the Database
+async function firstTimeInit() {
+	await WebdeskDB.createTable("settings")
+	await WebdeskDB.set("settings", "dbclass", WebdeskDatabase.toString())
 }
 
 // Utility Function to extract all window information from a div

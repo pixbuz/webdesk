@@ -1,21 +1,8 @@
 const windowCommandChannel = new BroadcastChannel("wm/commands")
-const settingsCheck = new BroadcastChannel("settings/openAlreadyCheck")
-
 const mainElement = document.querySelector("main")
-const windowID = window.location.search.slice(1)
-const settingsDB = openDB()
 
 let currentSubSection = mainElement.querySelector(`div[name="Colors"]`)
-let openFlag = false
-
-function openDB() {
-	// Accesses the Database
-	const openRequest = indexedDB.open("webdesk")
-
-	return new Promise((res) => {
-		openRequest.onsuccess = () => { res(openRequest.result) }
-	})
-}
+let WebdeskDatabase
 
 function show(subSectionName) {
 	// Show a Section when clicking on the Aside menu Entry
@@ -26,21 +13,19 @@ function show(subSectionName) {
 	currentSubSection = subSection
 }
 
-function checkIfAlreadyOpen() {
-	settingsCheck.onmessage = closeIfMessage
-	settingsCheck.postMessage("open?")
-	setTimeout(() => { settingsCheck.onmessage = messageIfMessage }, 1000)
+function init() {
+	const dbVersion = localStorage.getItem("db-version")
+	const openRequest = indexedDB.open("webdesk", dbVersion)
+	openRequest.onsuccess = () => {
+		const transaction = openRequest.result.transaction("settings", "readonly")
+		const store = transaction.objectStore("settings")
+		const read = store.get("dbclass")
+		read.onsuccess = () => {
+			const RestoredClass = new Function("return " + read.result)()
+			const WebdeskDatabase = new RestoredClass()
+			console.log(WebdeskDatabase)
+		}
+	}
 }
 
-function messageIfMessage() {
-	windowCommandChannel.postMessage(`open`)
-}
-
-function closeIfMessage() {
-	windowCommandChannel.postMessage(`close ${windowID}`)
-}
-
-window.addEventListener("load", async () => {
-	await settingsDB
-	checkIfAlreadyOpen()
-})
+init()
