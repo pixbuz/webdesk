@@ -1,30 +1,30 @@
-const WindowsUIProprietiesTemplate = {
-	"background": null,
-	"border": null,
-	"title": null,
-	"dots": null,
+const WindowsUIProprieties = {
+	"background": "#D8DEE9",
+	"border": "#4C566A",
+	"title": "#2E3440",
+	"dots": "#2E3440",
 
 	"buttons": {
-		"close": null,
-		"maximize": null,
-		"minimize": null,
+		"close": "#D08770",
+		"maximize": "#EBCB8B",
+		"minimize": "#A3BE8C",
 	},
 
 	"focus": {
-		"background": null,
-		"border": null,
-		"title": null,
-		"dots": null,
+		"background": "#ECEFF4",
+		"border": "#2E3440",
+		"title": "#2E3440",
+		"dots": "#3B4252",
 
 		"buttons": {
-			"close": null,
-			"maximize": null,
-			"minimize": null,
+			"close": "#D08770",
+			"maximize": "#EBCB8B",
+			"minimize": "#A3BE8C",
 		},
 	},
 }
 
-const WindowsBehaviorProprietiesTemplate = {
+const WindowsBehaviorProprieties = {
 	"moveSmoothing": null,
 	"resizeSmoothing": null,
 	"maximizeSmoothing": null,
@@ -32,29 +32,29 @@ const WindowsBehaviorProprietiesTemplate = {
 	"closeSmoothing": null,
 }
 
-const AppDockUIProprietiesTemplate = {
-	"background": null,
-	"border": null,
-	"text": null,
+const AppDockUIProprieties = {
+	"background": "#4C566A",
+	"border": "#434C5E",
+	"text": "#D8DEE9",
 
 	"icons": {
-		"iconBackground": null,
+		"iconBackground": "transparent",
 
 		"focus": {
-			"iconBackground": null,
+			"iconBackground": "transparent",
 		},
 
 		"mini": {
-			"iconBackground": null,
+			"iconBackground": "transparent",
 		},
 
 		"maximised": {
-			"iconBackground": null,
+			"iconBackground": "transparent",
 		},
 	},
 }
 
-const AppDockBehaviorProprietiesTemplate = {
+const AppDockBehaviorProprieties = {
 	"autoHide": {
 		"enabled": null,
 		"upTime": null,
@@ -71,20 +71,43 @@ const AppDockBehaviorProprietiesTemplate = {
 }
 
 const CustomizationProprieties = {
+	"customName": "nord",
+	"customType": "light",
+
 	"colors": {
-		"windows": {...WindowsUIProprietiesTemplate},
-		"appDock": {...AppDockUIProprietiesTemplate},
+		"windows": {...WindowsUIProprieties},
+		"appDock": {...AppDockUIProprieties},
 	},
 
 	"sizes": {
-		"windows": {...WindowsUIProprietiesTemplate},
-		"appDock": {...AppDockUIProprietiesTemplate},
+		"windows": {...WindowsUIProprieties},
+		"appDock": {...AppDockUIProprieties},
 	},
 
 	"behavior": {
-		"windows": {...WindowsBehaviorProprietiesTemplate},
-		"appDock": {...AppDockBehaviorProprietiesTemplate},
+		"windows": {...WindowsBehaviorProprieties},
+		"appDock": {...AppDockBehaviorProprieties},
 	},
 }
 
-firstTimeInit()
+function uiInit() {
+	localStorage.setItem("customization", JSON.stringify(CustomizationProprieties))
+	localStorage.setItem("saved-customizations", JSON.stringify([CustomizationProprieties]))
+}
+
+function loadCssVar(root, prefix = "") {
+	for (const key of Object.keys(root)) {
+		if (root[key] instanceof Object) { loadCssVar(root[key], key, `${prefix ? prefix + "-" : ""}${key}`) }
+		else { document.documentElement.style.setProperty(`--${prefix}-${key}`, root[key]) }
+	}
+}
+
+function loadWebdeskCustomization() {
+	loadCssVar(CustomizationProprieties["colors"], null)
+}
+
+// !!! !!! !!! !!! !!!
+// Debug !!! !!! !!!
+webdeskFirstTimeInit()
+
+loadWebdeskCustomization()

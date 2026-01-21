@@ -5,7 +5,7 @@ class WebdeskDatabase {
 		const dbVersion = localStorage.getItem("db-version")
 
 		if (dbVersion == undefined) {
-			firstTimeInit()
+			webdeskFirstTimeInit()
 			this.version = 1
 			localStorage.setItem("db-version", 1)
 		} else { this.version = parseInt(dbVersion) }
@@ -154,10 +154,18 @@ class WebdeskOSEvent {
 	}
 }
 
+function webdeskFirstTimeInit() {
+	window.addEventListener("load", () => {
+		databaseInit()
+		uiInit()
+	})
+}
+
 // First time Initialization Function for the Database
-async function firstTimeInit() {
+async function databaseInit() {
 	await WebdeskDB.createTable("settings")
-	await WebdeskDB.set("settings", "dbclass", WebdeskDatabase.toString())
+	await WebdeskDB.set("settings", "dbclass", `return ${WebdeskDatabase.toString()}`)
+
 }
 
 // Utility Function to extract all window information from a div

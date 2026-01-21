@@ -6,43 +6,6 @@
 	font-family: system-ui, -apple-system;
 }
 
-:root {
-	/* POLAR NIGHT
-		Used for base background colors and dark UI elements.
-		nord0: Darkest (Main Background) -> nord3: Lightest (Comments/Secondary)
-	*/
-	--nord0: #2E3440;
-	--nord1: #3B4252;
-	--nord2: #434C5E;
-	--nord3: #4C566A;
-
-	/* SNOW STORM
-		Used for text and bright UI elements.
-		nord4: Darkest (faded text) -> nord6: Lightest (Main Text)
-	*/
-	--nord4: #D8DEE9;
-	--nord5: #E5E9F0;
-	--nord6: #ECEFF4;
-
-	/* FROST
-		Used for primary UI elements, buttons, and links.
-		Teal & Blues.
-	*/
-	--nord7: #8FBCBB; /* Teal */
-	--nord8: #88C0D0; /* Cyan */
-	--nord9: #81A1C1; /* Light Blue */
-	--nord10: #5E81AC; /* Dark Blue */
-
-	/* AURORA
-		Used for errors, warnings, success, and syntax highlighting.
-	*/
-	--nord11: #BF616A; /* Red (Error) */
-	--nord12: #D08770; /* Orange (Warning/Regex) */
-	--nord13: #EBCB8B; /* Yellow (Warning/Class) */
-	--nord14: #A3BE8C; /* Green (Success/String) */
-	--nord15: #B48EAD; /* Purple (Number/Type) */
-}
-
 html,
 body {
 	position: static;
@@ -80,12 +43,10 @@ body {
 
 .AppDock {
 	animation: AppDock-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
-	background: var(--nord3);
 	justify-content: center;
 	will-change: translate;
 	flex-flow: row nowrap;
 	align-content: center;
-	color: var(--nord4);
 	position: absolute;
 	overflow-y: hidden;
 	border-radius: 6px;
@@ -143,8 +104,6 @@ body:has(.maximised) .AppDock.up:hover { opacity: 1; }
 }
 
 .AppDock .Clock p {
-	background: var(--nord0);
-	background-clip: text;
 	font-size: 75%;
 }
 
@@ -184,7 +143,6 @@ body:has(.maximised) .AppDock.up:hover { opacity: 1; }
 div[name="Launcher"] {
 	flex-flow: column nowrap;
 	justify-content: center;
-	color: var(--nord0);
 	user-select: none;
 	overflow: hidden;
 	cursor: pointer;
@@ -206,11 +164,9 @@ div[name="Launcher"] h6 {
 
 div[name="Window"] {
 	transition: transform 25ms cubic-bezier(.25, .5, 1, 1);
-	background: var(--nord3);
 	will-change: transform;
 	min-height: 12.5vmin;
 	min-width: 12.5vmin;
-	color: var(--nord0);
 	position: absolute;
 	border-radius: 8px;
 	max-height: 95%;
@@ -221,17 +177,12 @@ div[name="Window"] {
 	height: 37.5vmin;
 }
 
-div[name="Window"].focus { background: var(--nord0); }
-
 div[name="Window"]::before {
-	background: var(--nord4);
 	position: absolute;
 	border-radius: 6px;
 	content: "";
 	inset: 2px;
 }
-
-div[name="Window"].focus::before { background: var(--nord6); }
 
 div[name="Window"].maximised::before {
 	border-radius: 0;
@@ -241,7 +192,6 @@ div[name="Window"].maximised::before {
 }
 
 div[name="Window"]::after {
-	background: radial-gradient(circle, var(--nord0) 37.5%, transparent 50%);
 	background-size: 4px 4px;
 	background-repeat: space;
 
@@ -344,10 +294,6 @@ div[name="Window"] .Titlebar .Buttons button {
 	border: 0;
 }
 
-div[name="Window"] .Titlebar .Buttons button:nth-child(1) { background: var(--nord14); }
-div[name="Window"] .Titlebar .Buttons button:nth-child(2) { background: var(--nord13); }
-div[name="Window"] .Titlebar .Buttons button:nth-child(3) { background: var(--nord12); }
-
 div[name="Window"] .ContentWrapper {
 	height: calc(100% - 2.5vmin);
 	pointer-events: none;
@@ -372,25 +318,3 @@ body:has(div[name="Window"].resizeX) { cursor: e-resize; }
 body:has(div[name="Window"].resizeY) { cursor: n-resize; }
 body:has(div[name="Window"].resizeXY1) { cursor: nw-resize; }
 body:has(div[name="Window"].resizeXY2) { cursor: ne-resize; }
-
-@keyframes AppDock-maximised-up {
-	from {
-		opacity: 1;
-		translate: 0 200%;
-	}
-	to {
-		opacity: 1;
-		translate: 0 0;
-	}
-}
-
-@keyframes AppDock-maximised-down {
-	from {
-		opacity: 1;
-		translate: 0 0;
-	}
-	to {
-		opacity: 1;
-		translate: 0 200%;
-	}
-}

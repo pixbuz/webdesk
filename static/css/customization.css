@@ -1,0 +1,75 @@
+:root {
+	/* POLAR NIGHT
+		Used for base background colors and dark UI elements.
+		nord0: Darkest (Main Background) -> nord3: Lightest (Comments/Secondary)
+	*/
+	--nord0: #2E3440;
+	--nord1: #3B4252;
+	--nord2: #434C5E;
+	--nord3: #4C566A;
+
+	/* SNOW STORM
+		Used for text and bright UI elements.
+		nord4: Darkest (faded text) -> nord6: Lightest (Main Text)
+	*/
+	--nord4: #D8DEE9;
+	--nord5: #E5E9F0;
+	--nord6: #ECEFF4;
+
+	/* FROST
+		Used for primary UI elements, buttons, and links.
+		Teal & Blues.
+	*/
+	--nord7: #8FBCBB; /* Teal */
+	--nord8: #88C0D0; /* Cyan */
+	--nord9: #81A1C1; /* Light Blue */
+	--nord10: #5E81AC; /* Dark Blue */
+
+	/* AURORA
+		Used for errors, warnings, success, and syntax highlighting.
+	*/
+	--nord11: #BF616A; /* Red (Error) */
+	--nord12: #D08770; /* Orange (Warning/Regex) */
+	--nord13: #EBCB8B; /* Yellow (Warning/Class) */
+	--nord14: #A3BE8C; /* Green (Success/String) */
+	--nord15: #B48EAD; /* Purple (Number/Type) */
+}
+
+.AppDock {
+	background: var(--nord3);
+	color: var(--nord4);
+}
+
+.AppDock .Clock p {
+	color: transparent;
+	background: var(--nord6);
+	background-clip: text;
+}
+
+div[name="Launcher"] {
+	color: var(--nord0);
+}
+
+div[name="Window"] {
+	background: var(--nord3);
+	color: var(--nord0);
+}
+
+div[name="Window"].focus {
+	background: var(--nord0);
+}
+
+div[name="Window"]::before {
+	background: var(--nord4);
+}
+
+div[name="Window"].focus::before { background: var(--nord6); }
+
+div[name="Window"]::after {
+	background: radial-gradient(circle, var(--nord0) 37.5%, transparent 50%);
+}
+
+div[name="Window"] .Titlebar .Buttons button:nth-child(1) { background: var(--nord14); }
+div[name="Window"] .Titlebar .Buttons button:nth-child(2) { background: var(--nord13); }
+div[name="Window"] .Titlebar .Buttons button:nth-child(3) { background: var(--nord12); }
+

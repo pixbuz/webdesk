@@ -1,0 +1,21 @@
+@keyframes AppDock-maximised-up {
+	from {
+		opacity: 1;
+		translate: 0 200%;
+	}
+	to {
+		opacity: 1;
+		translate: 0 0;
+	}
+}
+
+@keyframes AppDock-maximised-down {
+	from {
+		opacity: 1;
+		translate: 0 0;
+	}
+	to {
+		opacity: 1;
+		translate: 0 200%;
+	}
+}

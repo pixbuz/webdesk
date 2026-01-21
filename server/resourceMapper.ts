@@ -169,29 +169,40 @@ async function compileIndex() {
 
 async function compileScripts() {
 	// Bundles all the JS frontend scripts into one
-	const scriptNames: string[] = [ "util.js" ]
+	const scriptNames: Set<string> = new Set(["util.js"])
 
 	// Read all the files inside the front end scripts folder
 	for await (const script of Deno.readDir(config.frontendScriptsPath)) {
-		if (script.name === "util.js" || script.name === "animations.js") { continue }
-		else if (script.isFile) { scriptNames.push(script.name) }
+		if (script.name === "animations.js") { continue }
+		else if (script.isFile) { scriptNames.add(script.name) }
 	}
 
-	scriptNames.push("animations.js")
+	scriptNames.add("animations.js")
 
 	// For all the scripts that are files, read the file contents and add a comment for debug
-	const processingQueue = scriptNames.map(async (scriptName) => {
-		return `\n\n//./ ${scriptName}\n\n` + (await Deno.readTextFile(`${config.frontendScriptsPath}/${scriptName}`))
+	const processingQueue = [...scriptNames].map((scriptName) => {
+		return `\n\n//./ ${scriptName}\n\n${ Deno.readTextFileSync(`${config.frontendScriptsPath}/${scriptName}`) }`
 	})
 
 	// Set the /script.js endpoint to all the joined scripts as text
-	routes["/script.js"] = (await Promise.all(processingQueue)).join("\n")
+	routes["/script.js"] = processingQueue.join("\n")
 	registerHeaders("/script.js", "js")
 }
 
-function compileCSS() {
+async function compileCSS() {
 	// Not really compiling anything maybe in the future
-	registerRoute("/style.css", config.cssFilePath)
+	const cssNames: Set<string> = new Set(["animations.css", "customization.css"])
+
+	// Add all CSS Files to the processing Queue
+	for await (const css of Deno.readDir(config.cssStylesPath)) {
+		if (css.isFile) cssNames.add(css.name)
+	}
+
+	const processingQueue = [...cssNames].map((cssName) => {
+		return Deno.readTextFileSync(`${config.cssStylesPath}/${cssName}`)
+	})
+
+	routes["/style.css"] = processingQueue.toReversed().join("\n")
 	registerHeaders("/style.css", "css")
 }
 
@@ -215,7 +226,7 @@ async function resourceRefresher() {
 		if (relativePath === config.indexFilePath) { // If the index was updated send a message
 			compileIndex()
 			console.log(`Refreshed the index endpoint after file change`)
-		} else if (relativePath === config.cssFilePath) { // If the css was updated send a message
+		} else if (relativePath.includes(config.cssStylesPath)) { // If the css was updated send a message
 			compileCSS()
 			console.log(`Refreshed the css endpoint after file change`)
 		} else if (relativePath.includes(config.frontendScriptsPath)) { // If one of the scripts was updated send a message
