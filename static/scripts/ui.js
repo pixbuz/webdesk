@@ -24,12 +24,43 @@ const WindowsUIProprieties = {
 	},
 }
 
+const WindowsSizeProprieties = {
+	"background": "",
+	"titlebar": "",
+	"border": "",
+	"title": "",
+	"icon": "",
+	"dots": "",
+
+	"buttons": {
+		"close": "",
+		"maximize": "",
+		"minimize": "",
+	},
+}
+
 const WindowsBehaviorProprieties = {
 	"moveSmoothing": null,
 	"resizeSmoothing": null,
 	"maximizeSmoothing": null,
 	"minimizeSmoothing": null,
 	"closeSmoothing": null,
+}
+
+const LaunchersUIProprieties = {
+	"text": "#2E3440",
+}
+
+const LaunchersSizeProprieties = {
+	"text": "",
+}
+
+const LaunchersBehavorProprieties = {
+
+}
+
+const LaunchersBehaviorProprieties = {
+
 }
 
 const AppDockUIProprieties = {
@@ -52,6 +83,11 @@ const AppDockUIProprieties = {
 			"iconBackground": "transparent",
 		},
 	},
+}
+
+const AppDockSizeProprieties = {
+	"borderWidth": "none",
+	"borderStyle": "solid",
 }
 
 const AppDockBehaviorProprieties = {
@@ -77,16 +113,19 @@ const CustomizationProprieties = {
 	"colors": {
 		"windows": {...WindowsUIProprieties},
 		"appDock": {...AppDockUIProprieties},
+		"launchers": {...LaunchersUIProprieties}
 	},
 
 	"sizes": {
-		"windows": {...WindowsUIProprieties},
-		"appDock": {...AppDockUIProprieties},
+		"windows": {...WindowsSizeProprieties},
+		"appDock": {...AppDockSizeProprieties},
+		"launchers": {...LaunchersSizeProprieties}
 	},
 
 	"behavior": {
 		"windows": {...WindowsBehaviorProprieties},
 		"appDock": {...AppDockBehaviorProprieties},
+		"launchers": {...LaunchersBehaviorProprieties}
 	},
 }
 
@@ -97,7 +136,8 @@ function uiInit() {
 
 function loadCssVar(root, prefix = "") {
 	for (const key of Object.keys(root)) {
-		if (root[key] instanceof Object) { loadCssVar(root[key], key, `${prefix ? prefix + "-" : ""}${key}`) }
+		console.log(prefix, root)
+		if (root[key] instanceof Object) { loadCssVar(root[key], `${prefix ? prefix + "-" : ""}${key}`) }
 		else { document.documentElement.style.setProperty(`--${prefix}-${key}`, root[key]) }
 	}
 }
@@ -110,4 +150,5 @@ function loadWebdeskCustomization() {
 // Debug !!! !!! !!!
 webdeskFirstTimeInit()
 
+// Load the theme
 loadWebdeskCustomization()
