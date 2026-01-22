@@ -31,6 +31,8 @@ div[name="Window"]::before {
 /* Unfocused Window Dots */
 div[name="Window"]::after {
 	background: radial-gradient(circle, var(--windows-dots) 37.5%, transparent 50%);
+	background-size: 4px 4px;
+	background-repeat: space;
 }
 
 /* Focused Window Border */
@@ -46,6 +48,8 @@ div[name="Window"].focus::before {
 /* Focused Window Dots */
 div[name="Window"].focus::after {
 	background: radial-gradient(circle, var(--windows-focus-dots) 37.5%, transparent 50%);
+	background-size: 4px 4px;
+	background-repeat: space;
 }
 
 /* Unfocused Window Buttons */

@@ -192,9 +192,6 @@ div[name="Window"].maximised::before {
 }
 
 div[name="Window"]::after {
-	background-size: 4px 4px;
-	background-repeat: space;
-
 	margin-inline: calc(50% - 12px);
 	pointer-events: none;
 	position: absolute;
