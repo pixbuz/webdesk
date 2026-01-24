@@ -52,3 +52,5 @@ Webdesk is a passion project of mine with the aim of making an OS type experienc
 	- Themes
 - Add the first time tutorial
 - Make a file system(?)
+- Intro with terminal and terminal pixels
+- System info app as CV

@@ -6,8 +6,8 @@ const WindowsUIProprieties = {
 
 	"buttons": {
 		"close": "#D08770",
-		"maximize": "#EBCB8B",
-		"minimize": "#A3BE8C",
+		"maxi": "#EBCB8B",
+		"mini": "#A3BE8C",
 	},
 
 	"focus": {
@@ -18,8 +18,8 @@ const WindowsUIProprieties = {
 
 		"buttons": {
 			"close": "#D08770",
-			"maximize": "#EBCB8B",
-			"minimize": "#A3BE8C",
+			"maxi": "#EBCB8B",
+			"mini": "#A3BE8C",
 		},
 	},
 }
@@ -34,8 +34,8 @@ const WindowsSizeProprieties = {
 
 	"buttons": {
 		"close": "",
-		"maximize": "",
-		"minimize": "",
+		"maxi": "",
+		"mini": "",
 	},
 }
 
@@ -69,18 +69,18 @@ const AppDockUIProprieties = {
 	"text": "#D8DEE9",
 
 	"icons": {
-		"iconBackground": "transparent",
+		"background": "transparent",
 
 		"focus": {
-			"iconBackground": "transparent",
+			"background": "transparent",
 		},
 
 		"mini": {
-			"iconBackground": "transparent",
+			"background": "transparent",
 		},
 
-		"maximised": {
-			"iconBackground": "transparent",
+		"maxi": {
+			"background": "transparent",
 		},
 	},
 }
@@ -136,19 +136,15 @@ function uiInit() {
 
 function loadCssVar(root, prefix = "") {
 	for (const key of Object.keys(root)) {
-		console.log(prefix, root)
 		if (root[key] instanceof Object) { loadCssVar(root[key], `${prefix ? prefix + "-" : ""}${key}`) }
 		else { document.documentElement.style.setProperty(`--${prefix}-${key}`, root[key]) }
 	}
 }
 
 function loadWebdeskCustomization() {
-	loadCssVar(CustomizationProprieties["colors"], null)
+	const theme = localStorage.getItem("customization")
+	loadCssVar(JSON.parse(theme)["colors"], null)
 }
-
-// !!! !!! !!! !!! !!!
-// Debug !!! !!! !!!
-webdeskFirstTimeInit()
 
 // Load the theme
 loadWebdeskCustomization()

@@ -53,11 +53,11 @@ div[name="Window"].focus::after {
 }
 
 /* Unfocused Window Buttons */
-div[name="Window"] .Titlebar .Buttons button:nth-child(1) { background: var(--windows-buttons-minimize); }
-div[name="Window"] .Titlebar .Buttons button:nth-child(2) { background: var(--windows-buttons-maximize); }
+div[name="Window"] .Titlebar .Buttons button:nth-child(1) { background: var(--windows-buttons-mini); }
+div[name="Window"] .Titlebar .Buttons button:nth-child(2) { background: var(--windows-buttons-maxi); }
 div[name="Window"] .Titlebar .Buttons button:nth-child(3) { background: var(--windows-buttons-close); }
 
 /* Focused Window Buttons */
-div[name="Window"].focus .Titlebar .Buttons button:nth-child(1) { background: var(--windows-focus-buttons-minimize); }
-div[name="Window"].focus .Titlebar .Buttons button:nth-child(2) { background: var(--windows-focus-buttons-maximize); }
+div[name="Window"].focus .Titlebar .Buttons button:nth-child(1) { background: var(--windows-focus-buttons-mini); }
+div[name="Window"].focus .Titlebar .Buttons button:nth-child(2) { background: var(--windows-focus-buttons-maxi); }
 div[name="Window"].focus .Titlebar .Buttons button:nth-child(3) { background: var(--windows-focus-buttons-close); }

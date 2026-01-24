@@ -84,16 +84,14 @@ main section > div:first-child {
 	display: block;
 }
 
-div[name="Colors"] .ColorSelect {
-	justify-content: space-between;
+div[name="Colors"] .Propriety {
 	flex-flow: row nowrap;
 	display: flex;
 	width: 100%;
 	gap: 4px;
 }
 
-div[name="Colors"] .ColorSelect input {
+div[name="Colors"] .Propriety input[type="color"] {
 	background: none;
-	width: 12.5vmax;
 	border: none;
 }
