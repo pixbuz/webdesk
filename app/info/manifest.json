@@ -1,0 +1,10 @@
+{
+	"icon": "icon.svg",
+	"index": "index.html",
+	"description": "Information about the guy behind Webdesk",
+
+	"ignore": [
+	],
+	"routes": {
+	}
+}

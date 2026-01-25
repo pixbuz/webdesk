@@ -109,6 +109,7 @@ const AppDockBehaviorProprieties = {
 const CustomizationProprieties = {
 	"customName": "nord",
 	"customType": "light",
+	"background": "default",
 
 	"colors": {
 		"windows": {...WindowsUIProprieties},
@@ -143,7 +144,7 @@ function loadCssVar(root, prefix = "") {
 
 function loadWebdeskCustomization() {
 	const theme = localStorage.getItem("customization")
-	loadCssVar(JSON.parse(theme)["colors"], null)
+	loadCssVar(JSON.parse(theme)["colors"] || CustomizationProprieties["colors"], null)
 }
 
 // Load the theme

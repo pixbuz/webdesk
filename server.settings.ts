@@ -1,18 +1,9 @@
-const port = 8000
-const hostname = "localhost"
-const ssl = false
-
-const indexFilePath = "static/index.htm"
-const frontendScriptsPath = "static/scripts"
-const cssStylesPath = "static/css"
-const componentsPath = "static/components"
-
 export const config = Object.freeze({
-	frontendScriptsPath,
-	componentsPath,
-	indexFilePath,
-	cssStylesPath,
-	hostname,
-	port,
-	ssl,
+	frontendScriptsPath: "static/scripts",
+	componentsPath: "static/components",
+	indexFilePath: "static/index.htm",
+	cssStylesPath: "static/css",
+	hostname: "localhost",
+	port: 8000,
+	ssl: false,
 } as const)

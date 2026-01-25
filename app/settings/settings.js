@@ -1,7 +1,7 @@
 const mainElement = document.querySelector("main")
 const ThemeUpdateChannel = new BroadcastChannel("theme")
 
-let currentSubSection = mainElement.querySelector(`div[name="Colors"]`)
+let currentSubSection = mainElement.querySelector(`div[name="Customization"]`)
 let varToTheme = {}
 
 let theme
@@ -41,8 +41,8 @@ function updateTheme(target, value) {
 	ThemeUpdateChannel.postMessage("theme updated")
 }
 
-function initColorsSection() {
-	const section = document.querySelector(`div[name="Colors"]`)
+function initCustomizationSection() {
+	const section = document.querySelector(`div[name="Customization"]`)
 	const customization = localStorage.getItem("customization")
 
 	theme = JSON.parse(customization)
@@ -55,8 +55,17 @@ function initColorsSection() {
 	}
 }
 
+function initAnimationsSection() {
+
+}
+
+function initBackgroundSection() {
+
+}
+
 function init() {
-	initColorsSection()
+	initCustomizationSection()
+	initAnimationsSection()
 }
 
 ThemeUpdateChannel.addEventListener("message", init)

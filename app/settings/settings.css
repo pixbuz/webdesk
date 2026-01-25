@@ -74,24 +74,58 @@ main {
 	flex: 1;
 }
 
-main section > div {
+main > div {
 	width: 100%;
 	height: 100%;
 	display: none;
 }
 
-main section > div:first-child {
+main > div:first-child {
 	display: block;
 }
 
-div[name="Colors"] .Propriety {
-	flex-flow: row nowrap;
+div[name="Customization"] .Preview {
+	aspect-ratio: 16/9;
+	margin: 16px auto;
+	background: red;
+	max-width: 512px;
+	width: 100%;
+}
+
+div[name="Customization"] hr {
+	width: 90%;
+	border: solid 1px black;
+	margin: 0 auto 8px auto;
+}
+
+div[name="Customization"] nav {
+	width: 100%;
+	height: 5%;
+	background: green;
+}
+
+div[name="Customization"] .Tabs {
+	width: 100%;
+	height: 100%;
+	background: yellow;
+}
+
+div[name="Customization"] .Tabs .Colors {
+	flex-flow: row wrap;
 	display: flex;
 	width: 100%;
+	height: 100%;
+}
+
+div[name="Customization"] .Tabs .Colors .Propriety {
+	flex-flow: row nowrap;
+	display: flex;
+	height: 10%;
+	width: 50%;
 	gap: 4px;
 }
 
-div[name="Colors"] .Propriety input[type="color"] {
+div[name="Customization"] .Propriety input[type="color"] {
 	background: none;
 	border: none;
 }
