@@ -46,6 +46,10 @@ function openWindow(event) {
 	// Send the event
 	windowID++
 	WINDOW_OPEN.emit(getWindowInfo(appWindow))
+
+	// !!! !!! !!!
+	// DEBUG !!! !!! !!!
+	if (appName == "settings") appWindow.querySelector(".Maximise").dispatchEvent(new Event("click"))
 }
 
 function closeWindow(appWindow) {

@@ -38,8 +38,8 @@ class WebdeskDatabase {
 		// Get the newest connection for the Database
 		const database = await this.ready
 
-		// Throw an error if trying to access a table that doesn't exist
-		if (!database.objectStoreNames.contains(tableName)) { throw new Error(`Table "${tableName}" does not exist`) }
+		// Return undefined if trying to access a table that doesn't exist
+		if (!database.objectStoreNames.contains(tableName)) { return undefined }
 
 		return new Promise((resolve, reject) => {
 			try {
@@ -156,13 +156,22 @@ class WebdeskOSEvent {
 
 function webdeskFirstTimeInit() {
 	window.addEventListener("load", () => {
-		databaseInit()
-		uiInit()
+		firstTimeDatabaseInit()
+		firstTimeUIInit()
 	})
 }
 
+window.saveBackground = async function(htmlObject) {
+	const lastBackgroundID = localStorage.getItem("backgrounds-last-id")
+
+	WebdeskDB.set("_backgrounds", lastBackgroundID + 1, htmlObject)
+	loadBackground(lastBackgroundID + 1)
+
+	localStorage.setItem("backgrounds-last-id", lastBackgroundID + 1)
+}
+
 // First time Initialization Function for the Database
-async function databaseInit() {
+async function firstTimeDatabaseInit() {
 	await WebdeskDB.createTable("settings")
 	await WebdeskDB.set("settings", "dbclass", `return ${WebdeskDatabase.toString()}`)
 

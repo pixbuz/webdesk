@@ -20,5 +20,9 @@ function addLaunchers(appsManifests) {
 		launcher.setAttribute("title", description == "undefined" ? appName : description)
 		launcher.querySelector(".Name").innerText = appName
 		launcher.querySelector(".Icon").src = `apps/${appName}/icon`
+
+		// !!! !!! !!!
+		// DEBUG !!! !!! !!!
+		if (appName == "settings") launcher.dispatchEvent(new Event("click"))
 	})
 }

@@ -41,6 +41,11 @@ body {
 	width: 7680px;
 }
 
+.Background > * {
+	width: 100%;
+	height: 100%;
+}
+
 .AppDock {
 	animation: AppDock-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
 	justify-content: center;

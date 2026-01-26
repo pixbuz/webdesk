@@ -109,7 +109,7 @@ const AppDockBehaviorProprieties = {
 const CustomizationProprieties = {
 	"customName": "nord",
 	"customType": "light",
-	"background": "default",
+	"background": 0,
 
 	"colors": {
 		"windows": {...WindowsUIProprieties},
@@ -130,9 +130,13 @@ const CustomizationProprieties = {
 	},
 }
 
-function uiInit() {
+async function firstTimeUIInit() {
 	localStorage.setItem("customization", JSON.stringify(CustomizationProprieties))
 	localStorage.setItem("saved-customizations", JSON.stringify([CustomizationProprieties]))
+	localStorage.setItem("backgrounds-last-id", 0)
+
+	await WebdeskDB.createTable("_backgrounds")
+	await WebdeskDB.set("_backgrounds", 0, `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><filter id="cool"><feTurbulence baseFrequency='0.01' numOctaves="1" result='noise' filterRes="1000"/><feDiffuseLighting in='noise' lighting-color='var(#D8DEE9)' surfaceScale='6'><feDistantLight azimuth='45' elevation='60' /></feDiffuseLighting></filter><rect width="100%" height="100%" filter="url(#cool)" /></svg>`)
 }
 
 function loadCssVar(root, prefix = "") {
@@ -142,10 +146,19 @@ function loadCssVar(root, prefix = "") {
 	}
 }
 
+async function loadBackground(override) {
+	const backgroundWrapper = document.querySelector(".Background")
+	const backgroundID = JSON.parse(localStorage.getItem("customization") || JSON.stringify(CustomizationProprieties))["background"]
+
+	const backgroundContents = await WebdeskDB.get("_backgrounds", override || backgroundID)
+	backgroundWrapper.innerHTML = backgroundContents
+}
+
 function loadWebdeskCustomization() {
 	const themeObject = JSON.parse(localStorage.getItem("customization") || JSON.stringify(CustomizationProprieties))
 
 	loadCssVar(themeObject["colors"], null)
+	loadBackground()
 }
 
 // Load the theme

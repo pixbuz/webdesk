@@ -20,11 +20,11 @@ body {
 
 aside {
 	border-right: solid 2px rgba(0, 0, 0, 10%);
-	width: 192px;
 	scroll-behavior: smooth;
 	overflow-x: scroll;
-	height: 100%;
 	padding: 0 8px;
+	width: 192px;
+	height: 100%;
 }
 
 aside section {
@@ -75,60 +75,65 @@ main {
 }
 
 main > div {
-	width: 100%;
-	height: 100%;
 	display: none;
+	height: 100%;
+	width: 100%;
 }
 
 main > div:first-child {
 	display: block;
 }
 
-div[name="Customization"] .Preview {
-	aspect-ratio: 16/9;
-	margin: 16px auto;
-	background: red;
-	max-width: 512px;
-	width: 100%;
-}
-
-div[name="Customization"] hr {
-	width: 90%;
+div[name="Colors"] hr {
 	border: solid 1px black;
-	margin: 0 auto 8px auto;
+	margin: 8px auto;
+	width: 95%;
 }
 
-div[name="Customization"] nav {
-	width: 100%;
-	height: min(5%, 32px);
+div[name="Colors"] h5 {
+	margin-bottom: 4px;
+	font-size: 1rem;
 }
 
-div[name="Customization"] nav  {
-	width: 100%;
-	height: min(5%, 32px);
+div[name="Colors"] > div {
+	padding: 0 8px;
+	display: flex;
+	gap: 4px;
 }
 
-div[name="Customization"] .Tabs {
-	width: 100%;
-	height: 100%;
-	background: yellow;
-}
-
-div[name="Customization"] .Tabs .Colors {
-	flex-flow: row wrap;
+div[name="Colors"] .Windows {
+	flex-flow: row nowrap;
+	height: max-content;
 	display: flex;
 	width: 100%;
-	height: 100%;
 }
 
-div[name="Customization"] .Tabs .Colors .Propriety {
-	flex-flow: row nowrap;
+div[name="Colors"] .Windows section {
+	flex-flow: column nowrap;
 	display: flex;
 	width: 50%;
 	gap: 4px;
 }
 
-div[name="Customization"] .Propriety input[type="color"] {
+div[name="Colors"] .AppDock,
+div[name="Colors"] .Launchers {
+	flex-flow: column nowrap;
+	display: flex;
+	gap: 4px;
+}
+
+div[name="Colors"] .Propriety {
+	flex-flow: row nowrap;
+	display: flex;
+	gap: 4px;
+}
+
+div[name="Colors"] .Propriety input {
+	border-radius: 4px;
 	background: none;
 	border: none;
+}
+
+div[name="Colors"] .Propriety p {
+	margin: auto 0;
 }

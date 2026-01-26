@@ -1,8 +1,9 @@
 const mainElement = document.querySelector("main")
 const ThemeUpdateChannel = new BroadcastChannel("theme")
+const backgroundUpload = document.querySelector('#backgroundUpload')
 
-let currentSubSection = mainElement.querySelector(`div[name="Customization"]`)
-let varToTheme = {}
+let currentSubSection = mainElement.querySelector(`div[name="Colors"]`)
+const varToTheme = {}
 
 let theme
 
@@ -41,8 +42,38 @@ function updateTheme(target, value) {
 	ThemeUpdateChannel.postMessage("theme updated")
 }
 
-function initCustomizationSection() {
-	const section = document.querySelector(`div[name="Customization"]`)
+function processBackground(uploadEvent) {
+	const uploadedFile = uploadEvent.target.files[0]
+	const reader = new FileReader()
+
+	reader.onload = uploadBackgroundToDatabase
+	reader.readAsDataURL(uploadedFile)
+}
+
+function uploadBackgroundToDatabase(readerResult) {
+	const result = readerResult.target.result.split("base64,")
+	const mime = result[0]
+	const base64 = result[1]
+	const wrapper = []
+
+	if (mime.includes("svg")) {
+		const binaryString = atob(base64)
+		const bytes = new Uint8Array(binaryString.length)
+
+		for (let i = 0; i < binaryString.length; i++) {
+			bytes[i] = binaryString.charCodeAt(i)
+		}
+
+		wrapper.push(new TextDecoder().decode(bytes))
+	} else {
+		wrapper.push(`<img src="${readerResult.target.result}"></img>`)
+	}
+
+	window.parent.saveBackground(wrapper.join("\n"))
+}
+
+function initColorsSection() {
+	const section = document.querySelector(`div[name="Colors"]`)
 	const customization = localStorage.getItem("customization")
 
 	theme = JSON.parse(customization)
@@ -64,10 +95,11 @@ function initBackgroundSection() {
 }
 
 function init() {
-	initCustomizationSection()
+	initColorsSection()
 	initAnimationsSection()
 }
 
 ThemeUpdateChannel.addEventListener("message", init)
+backgroundUpload.addEventListener("input", processBackground)
 
 init()

@@ -10,21 +10,22 @@
 		<aside>
 			<section>
 				<h6>General</h6>
-				<button onclick="show('Customization')">
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-swatch-book">
-						<path d="M11 17a4 4 0 0 1-8 0V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2Z"/>
-						<path d="M16.7 13H19a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7"/>
-						<path d="M 7 17h.01"/>
-						<path d="m11 8 2.3-2.3a2.4 2.4 0 0 1 3.404.004L18.6 7.6a2.4 2.4 0 0 1 .026 3.434L9.9 19.8"/>
+				<button onclick="show('Launchers')">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-square-stack">
+						<path d="M4 10c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2"/>
+						<path d="M10 16c-1.1 0-2-.9-2-2v-4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2"/>
+						<rect width="8" height="8" x="14" y="14" rx="2"/>
 					</svg>
-					<p>Customization</p>
+					<p>Launchers</p>
 				</button>
-				<button onclick="show('Animations')">
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-circle-play">
-						<path d="M9 9.003a1 1 0 0 1 1.517-.859l4.997 2.997a1 1 0 0 1 0 1.718l-4.997 2.997A1 1 0 0 1 9 14.996z"/>
-						<circle cx="12" cy="12" r="10"/>
+				<button onclick="show('Windows')">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-app-window-mac">
+						<rect width="20" height="16" x="2" y="4" rx="2"/>
+						<path d="M6 8h.01"/>
+						<path d="M10 8h.01"/>
+						<path d="M14 8h.01"/>
 					</svg>
-					<p>Animations</p>
+					<p>Windows</p>
 				</button>
 				<button onclick="show('AppDock')">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 12" class="lucide-computer">
@@ -43,138 +44,159 @@
 				</button>
 			</section>
 			<section>
-				<h6>Windows</h6>
-				<button onclick="show('Style')">
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-app-window-mac">
-						<rect width="20" height="16" x="2" y="4" rx="2"/>
-						<path d="M6 8h.01"/>
-						<path d="M10 8h.01"/>
-						<path d="M14 8h.01"/>
+				<h6>Customization</h6>
+				<button onclick="show('Colors')">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-swatch-book">
+						<path d="M11 17a4 4 0 0 1-8 0V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2Z"/>
+						<path d="M16.7 13H19a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7"/>
+						<path d="M 7 17h.01"/>
+						<path d="m11 8 2.3-2.3a2.4 2.4 0 0 1 3.404.004L18.6 7.6a2.4 2.4 0 0 1 .026 3.434L9.9 19.8"/>
 					</svg>
-					<p>Style</p>
+					<p>Colors</p>
 				</button>
-				<button onclick="show('Preferences')">
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-settings-2">
-						<path d="M14 17H5"/><path d="M19 7h-9"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
-					<p>Preferences</p>
+				<button onclick="show('Background')">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20" class="lucide-wallpaper">
+						<path d="m9 17 6.1-6.1a2 2 0 0 1 2.81.01L22 15"/>
+						<circle cx="8" cy="9" r="2"/>
+						<rect x="2" y="3" width="20" height="14" rx="2"/>
+					</svg>
+					<p>Background</p>
+				</button>
+				<button onclick="show('Animations')">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-circle-play">
+						<path d="M9 9.003a1 1 0 0 1 1.517-.859l4.997 2.997a1 1 0 0 1 0 1.718l-4.997 2.997A1 1 0 0 1 9 14.996z"/>
+						<circle cx="12" cy="12" r="10"/>
+					</svg>
+					<p>Animations</p>
 				</button>
 			</section>
 		</aside>
 		<main>
-			<div name="Customization">
-				<div class="Preview"></div>
-				<hr>
-				<nav>
-					<button>Colors</button>
-					<button>Backgrounds</button>
-				</nav>
-				<div class="Tabs">
-					<div class="Colors">
+			<div name="Colors">
+				<h5>Windows</h5>
+				<div class="Windows">
+					<section>
 						<div class="Propriety">
 							<input type="color" name="windows-border">
-							<p>Window Border</p>
-						</div>
-						<div class="Propriety">
-							<input type="color" name="windows-focus-border">
-							<p>Focused Window Border</p>
+							<p>Border</p>
 						</div>
 						<div class="Propriety">
 							<input type="color" name="windows-background">
-							<p>Window Background</p>
-						</div>
-						<div class="Propriety">
-							<input type="color" name="windows-focus-background">
-							<p>Focused Window Background</p>
+							<p>Background</p>
 						</div>
 						<div class="Propriety">
 							<input type="color" name="windows-title">
-							<p>Window Title</p>
-						</div>
-						<div class="Propriety">
-							<input type="color" name="windows-focus-title">
-							<p>Focused Window Title</p>
+							<p>Title</p>
 						</div>
 						<div class="Propriety">
 							<input type="color" name="windows-dots">
-							<p>Window Dots</p>
-						</div>
-						<div class="Propriety">
-							<input type="color" name="windows-focus-dots">
-							<p>Focused Window Dots</p>
+							<p>Dots</p>
 						</div>
 						<div class="Propriety">
 							<input type="color" name="windows-buttons-close">
-							<p>Window Close Button</p>
-						</div>
-						<div class="Propriety">
-							<input type="color" name="windows-focus-buttons-close">
-							<p>Focused Window Close Button</p>
+							<p>Close Button</p>
 						</div>
 						<div class="Propriety">
 							<input type="color" name="windows-buttons-maxi">
-							<p>Window Maximise Button</p>
-						</div>
-						<div class="Propriety">
-							<input type="color" name="windows-focus-buttons-maxi">
-							<p>Focused Window Maximise Button</p>
+							<p>Maximise Button</p>
 						</div>
 						<div class="Propriety">
 							<input type="color" name="windows-buttons-mini">
-							<p>Window Minimixe Button</p>
+							<p>Minimise Button</p>
+						</div>
+					</section>
+					<section>
+						<div class="Propriety">
+							<input type="color" name="windows-focus-border">
+							<p>Focused Border</p>
+						</div>
+						<div class="Propriety">
+							<input type="color" name="windows-focus-background">
+							<p>Focused Background</p>
+						</div>
+						<div class="Propriety">
+							<input type="color" name="windows-focus-title">
+							<p>Focused Title</p>
+						</div>
+						<div class="Propriety">
+							<input type="color" name="windows-focus-dots">
+							<p>Focused Dots</p>
+						</div>
+						<div class="Propriety">
+							<input type="color" name="windows-focus-buttons-close">
+							<p>Focused Close Button</p>
+						</div>
+						<div class="Propriety">
+							<input type="color" name="windows-focus-buttons-maxi">
+							<p>Focused Maximise Button</p>
 						</div>
 						<div class="Propriety">
 							<input type="color" name="windows-focus-buttons-mini">
-							<p>Focused Window Minimise Button</p>
+							<p>Focused Minimise Button</p>
 						</div>
-
-						<div class="Propriety">
-							<input type="color" name="appDock-background">
-							<p>App Dock Background</p>
-						</div>
-						<div class="Propriety">
-							<input type="color" name="appDock-border">
-							<p>App Dock Border</p>
-						</div>
-						<div class="Propriety">
-							<input type="color" name="appDock-text">
-							<p>App Dock Text</p>
-						</div>
-						<div class="Propriety">
-							<input type="color" name="appDock-icons-background">
-							<p>App Dock Icons Background</p>
-						</div>
-						<div class="Propriety">
-							<input type="color" name="appDock-icons-focus-background">
-							<p>App Dock Focused Icons Background</p>
-						</div>
-						<div class="Propriety">
-							<input type="color" name="appDock-icons-mini-background">
-							<p>App Dock Minimized Icons Background</p>
-						</div>
-						<div class="Propriety">
-							<input type="color" name="appDock-icons-maxi-background">
-							<p>App Dock MaxiIcons Background</p>
-						</div>
-
-						<div class="Propriety">
-							<input type="color" name="launchers-text">
-							<p>Launchers Text</p>
-						</div>
+					</section>
+				</div>
+				<hr>
+				<h5>App Dock</h5>
+				<div class="AppDock">
+					<div class="Propriety">
+						<input type="color" name="appDock-background">
+						<p>Background</p>
 					</div>
-					<div class="Backgrounds">
+					<div class="Propriety">
+						<input type="color" name="appDock-border">
+						<p>Border</p>
+					</div>
+					<div class="Propriety">
+						<input type="color" name="appDock-text">
+						<p>Text</p>
+					</div>
+					<div class="Propriety">
+						<input type="color" name="appDock-icons-background">
+						<p>Icon Background</p>
+					</div>
+					<div class="Propriety">
+						<input type="color" name="appDock-icons-focus-background">
+						<p>Focused Icon Background</p>
+					</div>
+					<div class="Propriety">
+						<input type="color" name="appDock-icons-mini-background">
+						<p>Minimised Icon Background</p>
+					</div>
+					<div class="Propriety">
+						<input type="color" name="appDock-icons-maxi-background">
+						<p>Maximised Icon Background</p>
 					</div>
 				</div>
+				<hr>
+				<h5>Launchers</h5>
+				<div class="Launchers">
+					<div class="Propriety">
+						<input type="color" name="launchers-text">
+						<p>Text</p>
+					</div>
 				</div>
-				<div name="Animations">
-					<p>Animations Enable</p>
-					<input type="checkbox" name="" id="">
-					<p>Animations Speed</p>
-					<input type="text" name="" id="">
+			</div>
+			<div name="Animations">
+				<p>Animations Enable</p>
+				<input type="checkbox" name="" id="">
+				<p>Animations Speed</p>
+				<input type="text" name="" id="">
+			</div>
+			<div name="AppDock">
+			</div>
+			<div name="Background">
+				<div class="Propriety">
+					<input type="file" id="backgroundUpload" accept="image/*">
+					<p class="">Upload Background</p>
 				</div>
-				<div name="AppDock">
-				</div>
-				<div name="InstalledApps">
-				</div>
+			</div>
+			<div name="Windows">
+			</div>
+			<div name="Launchers">
+			</div>
+			<div name="InstalledApps">
+			</div>
 		</main>
 		<script src="settings.js"></script>
 	</body>
