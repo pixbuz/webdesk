@@ -143,8 +143,9 @@ function loadCssVar(root, prefix = "") {
 }
 
 function loadWebdeskCustomization() {
-	const theme = localStorage.getItem("customization")
-	loadCssVar(JSON.parse(theme)["colors"] || CustomizationProprieties["colors"], null)
+	const themeObject = JSON.parse(localStorage.getItem("customization") || JSON.stringify(CustomizationProprieties))
+
+	loadCssVar(themeObject["colors"], null)
 }
 
 // Load the theme

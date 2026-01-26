@@ -100,8 +100,12 @@ div[name="Customization"] hr {
 
 div[name="Customization"] nav {
 	width: 100%;
-	height: 5%;
-	background: green;
+	height: min(5%, 32px);
+}
+
+div[name="Customization"] nav  {
+	width: 100%;
+	height: min(5%, 32px);
 }
 
 div[name="Customization"] .Tabs {
@@ -120,7 +124,6 @@ div[name="Customization"] .Tabs .Colors {
 div[name="Customization"] .Tabs .Colors .Propriety {
 	flex-flow: row nowrap;
 	display: flex;
-	height: 10%;
 	width: 50%;
 	gap: 4px;
 }
