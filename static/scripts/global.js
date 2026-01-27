@@ -533,7 +533,7 @@ const UI = new class UIClass {
 			"borderWidth": "none",
 			"borderStyle": "solid",
 		},
-		"bahaviour": {
+		"behaviour": {
 			"autoHide": {
 				"enabled": null,
 				"upTime": null,
