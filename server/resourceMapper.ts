@@ -169,7 +169,8 @@ async function compileIndex() {
 
 async function compileScripts() {
 	// Bundles all the JS frontend scripts into one
-	const scriptNames: Set<string> = new Set(["util.js"])
+	// const scriptNames: Set<string> = new Set(["util.js"])
+	const scriptNames: Set<string> = new Set()
 
 	// Read all the files inside the front end scripts folder
 	for await (const script of Deno.readDir(config.frontendScriptsPath)) {
@@ -177,7 +178,7 @@ async function compileScripts() {
 		else if (script.isFile) { scriptNames.add(script.name) }
 	}
 
-	scriptNames.add("animations.js")
+	// scriptNames.add("animations.js")
 
 	// For all the scripts that are files, read the file contents and add a comment for debug
 	const processingQueue = [...scriptNames].map((scriptName) => {

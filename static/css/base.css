@@ -8,6 +8,7 @@
 
 html,
 body {
+	background: #000;
 	position: static;
 	overflow: hidden;
 	height: 100svh;
