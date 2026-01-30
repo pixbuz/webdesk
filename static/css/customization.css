@@ -1,63 +1,63 @@
 /* App Dock */
 .AppDock {
-	background: var(--appDock-background);
-	border: solid var(--appDock-border) var(--appDock-borderWidth);
-	color: var(--appDock-text);
+	background: var(--appdock-color-background);
+	border: var(--appdock-appearance-border-style) var(--appdock-color-border) var(--appdock-appearance-border-width);
+	color: var(--appdock-color-text);
 }
 
 /* App Dock Clock */
 .AppDock .Clock p {
 	color: transparent;
-	background: var(--appDock-text);
+	background: var(--appdock-color-text);
 	background-clip: text;
 }
 
 /* Launcher */
 div[name="Launcher"] {
-	color: var(--launchers-text);
+	color: var(--launchers-color-text);
 }
 
 /* Unfocused Window Border */
 div[name="Window"] {
-	background: var(--windows-border);
-	color: var(--windows-title);
+	background: var(--windows-color-border);
+	color: var(--windows-color-title);
 }
 
 /* Unfocused Window Background */
 div[name="Window"]::before {
-	background: var(--windows-background);
+	background: var(--windows-color-background);
 }
 
 /* Unfocused Window Dots */
 div[name="Window"]::after {
-	background: radial-gradient(circle, var(--windows-dots) 37.5%, transparent 50%);
+	background: radial-gradient(circle, var(--windows-color-dots) 37.5%, transparent 50%);
 	background-size: 4px 4px;
 	background-repeat: space;
 }
 
 /* Focused Window Border */
 div[name="Window"].focus {
-	background: var(--windows-focus-border);
+	background: var(--windows-color-focus-border);
 }
 
 /* Focused Window Background */
 div[name="Window"].focus::before {
-	background: var(--windows-focus-background);
+	background: var(--windows-color-focus-background);
 }
 
 /* Focused Window Dots */
 div[name="Window"].focus::after {
-	background: radial-gradient(circle, var(--windows-focus-dots) 37.5%, transparent 50%);
+	background: radial-gradient(circle, var(--windows-color-focus-dots) 37.5%, transparent 50%);
 	background-size: 4px 4px;
 	background-repeat: space;
 }
 
 /* Unfocused Window Buttons */
-div[name="Window"] .Titlebar .Buttons button:nth-child(1) { background: var(--windows-buttons-mini); }
-div[name="Window"] .Titlebar .Buttons button:nth-child(2) { background: var(--windows-buttons-maxi); }
-div[name="Window"] .Titlebar .Buttons button:nth-child(3) { background: var(--windows-buttons-close); }
+div[name="Window"] .Titlebar .Buttons button:nth-child(1) { background: var(--windows-color-buttons-mini); }
+div[name="Window"] .Titlebar .Buttons button:nth-child(2) { background: var(--windows-color-buttons-maxi); }
+div[name="Window"] .Titlebar .Buttons button:nth-child(3) { background: var(--windows-color-buttons-close); }
 
 /* Focused Window Buttons */
-div[name="Window"].focus .Titlebar .Buttons button:nth-child(1) { background: var(--windows-focus-buttons-mini); }
-div[name="Window"].focus .Titlebar .Buttons button:nth-child(2) { background: var(--windows-focus-buttons-maxi); }
-div[name="Window"].focus .Titlebar .Buttons button:nth-child(3) { background: var(--windows-focus-buttons-close); }
+div[name="Window"].focus .Titlebar .Buttons button:nth-child(1) { background: var(--windows-color-focus-buttons-mini); }
+div[name="Window"].focus .Titlebar .Buttons button:nth-child(2) { background: var(--windows-color-focus-buttons-maxi); }
+div[name="Window"].focus .Titlebar .Buttons button:nth-child(3) { background: var(--windows-color-focus-buttons-close); }
