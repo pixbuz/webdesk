@@ -38,8 +38,10 @@ body {
 .Error		{ z-index: 40; }
 
 .Background {
-	height: 4320px;
-	width: 7680px;
+	pointer-events: none;
+	user-select: none;
+	height: 100svh;
+	width: 100svw;
 }
 
 .Background > * {
@@ -48,7 +50,6 @@ body {
 }
 
 .AppDock {
-	animation: AppDock-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
 	justify-content: center;
 	will-change: translate;
 	flex-flow: row nowrap;
@@ -63,18 +64,6 @@ body {
 	bottom: 16px;
 	height: 32px;
 }
-
-body:has(.maximised) .AppDock {
-	opacity: 0;
-	animation: AppDock-maximised-down 250ms cubic-bezier(.25, -0.25, .5, 0) normal none;
-}
-
-body:has(.maximised) .AppDock.up {
-	opacity: 1;
-	animation: AppDock-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
-}
-
-body:has(.maximised) .AppDock.up:hover { opacity: 1; }
 
 .AppDock .Open {
 	flex-flow: row nowrap;
@@ -169,14 +158,13 @@ div[name="Launcher"] h6 {
 }
 
 div[name="Window"] {
-	transition: transform 25ms cubic-bezier(.25, .5, 1, 1);
 	will-change: transform;
 	min-height: 12.5vmin;
 	min-width: 12.5vmin;
 	position: absolute;
 	border-radius: 8px;
-	max-height: 95%;
-	max-width: 95%;
+	max-height: 99%;
+	max-width: 99%;
 	padding: 6px;
 
 	width: 37.5vmax;
@@ -188,13 +176,6 @@ div[name="Window"]::before {
 	border-radius: 6px;
 	content: "";
 	inset: 2px;
-}
-
-div[name="Window"].maximised::before {
-	border-radius: 0;
-	inset: 0;
-	transition: inset 100ms linear,
-		border-radius 100ms linear;
 }
 
 div[name="Window"]::after {
@@ -219,9 +200,6 @@ div[name="Window"].opening { transition: none; }
 div[name="Window"].from-maximised {
 	max-width: 100%;
 	max-height: 100%;
-	transition: transform 100ms cubic-bezier(.25, .5, 1, 1),
-		width 100ms cubic-bezier(.25, .5, 1, 1),
-		height 100ms cubic-bezier(.25, .5, 1, 1);
 }
 
 div[name="Window"].maximised {
@@ -230,9 +208,6 @@ div[name="Window"].maximised {
 	width: 100% !important;
 	max-width: 100%;
 	max-height: 100%;
-	transition: transform 100ms cubic-bezier(.25, .5, 1, 1),
-		width 100ms cubic-bezier(.25, .5, 1, 1),
-		height 100ms cubic-bezier(.25, .5, 1, 1);
 }
 
 div[name="Window"].minimized {
@@ -240,9 +215,7 @@ div[name="Window"].minimized {
 }
 
 div[name="Window"].closing {
-	transition-duration: 100ms;
 	pointer-events: none;
-	filter: blur(50px);
 	opacity: 0;
 }
 

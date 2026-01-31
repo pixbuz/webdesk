@@ -1,3 +1,44 @@
+body:has(.maximised) .AppDock:hover {
+	opacity: 1;
+	animation: AppDock-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
+}
+
+body:has(.maximised) .AppDock {
+	opacity: 0;
+	animation: AppDock-maximised-down 250ms cubic-bezier(.25, -0.25, .5, 0) normal none;
+}
+
+.AppDock {
+	animation: AppDock-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
+}
+
+div[name="Window"] {
+	transition: transform 25ms cubic-bezier(.25, .5, 1, 1);
+}
+
+div[name="Window"].maximised::before {
+	border-radius: 0;
+	inset: 0;
+	transition: inset 100ms linear,
+		border-radius 100ms linear;
+}
+
+div[name="Window"].maximised {
+	transition: transform 100ms cubic-bezier(.25, .5, 1, 1),
+		width 100ms cubic-bezier(.25, .5, 1, 1),
+		height 100ms cubic-bezier(.25, .5, 1, 1);
+}
+
+div[name="Window"].from-maximised {
+	transition: transform 100ms cubic-bezier(.25, .5, 1, 1),
+		width 100ms cubic-bezier(.25, .5, 1, 1),
+		height 100ms cubic-bezier(.25, .5, 1, 1);
+}
+
+div[name="Window"].closing {
+	transition-duration: 100ms;
+}
+
 @keyframes AppDock-maximised-up {
 	from {
 		opacity: 1;

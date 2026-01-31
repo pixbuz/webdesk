@@ -1,26 +1,44 @@
-import { config } from "../server.settings.ts"
-import { sockets } from "./webSocketer.ts"
-import * as resources from "./resourceMapper.ts"
+import { config } from "../server.config.ts"
+import { resources } from "./resourceMapper.ts"
 
-const _server = Deno.serve({
-	// TODO: Add SSL/TLS
+let options = config.ssl ? {
+	cert: config.cert,
+	key: config.key,
 	port: config.port,
 	hostname: config.hostname,
-	handler: requestResponder
-})
-
-function requestResponder(request: Request, _connInfo: Deno.ServeHandlerInfo) {
-	// Main function that replies to incoming browser requests
-
-	// Simplifies the logic
-	const url = new URL(request.url)
-
-	// Handle Web Socket's upgrade requests
-	if (request.headers.get("upgrade") === "websocket") { return sockets.upgrade(request) }
-
-	// Log a Client Request for Debug
-	console.log(`Request from Client: "${ url.pathname }"`)
-	// If the requested endpoint is indexed, return it
-	if (resources.routes[url.pathname]) { return new Response(resources.routes[url.pathname], resources.headers[url.pathname]) }
-	else return new Response("", { status: 400 })
+	handler: requestHandler
+} : {
+	port: config.port,
+	hostname: config.hostname,
+	handler: requestHandler
 }
+
+const _server = Deno.serve(options)
+
+// Responds to the incoming browser requests for webdesk
+async function requestHandler(browserRequest: Request, _connInfo: Deno.ServeHandlerInfo<Deno.NetAddr>): Promise<Response> {
+	const requestURL: URL = new URL(browserRequest.url)
+	const requestTree: string[] = requestURL.pathname.substring(1).split("/")
+
+	switch(requestTree[0]) {
+		case "": // return webdesk
+		case "apps": return appsAssetsReplier(requestTree)
+		case "api": return apiReplier(requestTree)
+		default: return genErrorResponse(`Recived command tree: ${requestTree}\n${" ".repeat(22)}^ isn't a valid branch`)
+	}
+}
+
+function appsAssetsReplier(requestTree: string[] ): Response {
+	return new Response(`${requestTree}! apps`, { status: 200 })
+}
+
+function apiReplier(requestTree: string[] ): Response {
+	return new Response(`${requestTree}! api`, { status: 200 })
+}
+
+function genErrorResponse(message: string) {
+	return new Response(message, { status: 400 })
+}
+
+await resources.ready
+console.log("ready")

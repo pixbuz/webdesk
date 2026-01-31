@@ -1,3 +1,7 @@
+// Window proprieties inside utilities replacing window boundry boxes and window dock icon map
+// Backend compilation of index launchers
+//
+
 const Utilities = new class {
 	// Assets section containg all template elements
 	assets = document.querySelector(".Assets")
@@ -14,6 +18,54 @@ const Utilities = new class {
 			},
 			CLOCK_EVENT: {
 				target: [ ]
+			}
+		}
+	}
+	// Time
+	time = {
+		// Get the client start time
+		init: null,
+		// Clock
+		seconds: 0,
+		minutes: 0,
+		hours: 0,
+		// Date
+		day: 0,
+		month: 0,
+		year: 0,
+		// Adds 1 second to the clock every second
+		progress() {
+			// Add a second
+			Utilities.time.seconds++
+
+			// If the seconds hit 60
+			if (Utilities.time.seconds >= 60) {
+				// Set them to 0 and add a minute
+				Utilities.time.seconds = 0
+				Utilities.time.minutes++
+
+				// Send the event
+				Utilities.events.CLOCK_UPDATE.emit({ target: ["seconds", "minutes"] })
+			} else { Utilities.events.CLOCK_UPDATE.emit({ target: ["seconds"] }) }
+
+			// If the minutes hit 60
+			if (Utilities.time.minutes >= 60) {
+				// Set them to 0 and add an hour
+				Utilities.time.minutes = 0
+				Utilities.time.hours++
+
+				// Send the event
+				Utilities.events.CLOCK_UPDATE.emit({ target: ["minutes", "hours"] })
+			}
+
+			// If the hours hit 24
+			if (Utilities.time.hours >= 24) {
+				// Set them to 0 and add a day
+				Utilities.time.hours = 0
+				Utilities.time.day++
+
+				// Send the event
+				Utilities.events.CLOCK_UPDATE.emit({ target: ["hours", "day"] })
 			}
 		}
 	}
@@ -130,99 +182,54 @@ const Utilities = new class {
 			callBackFunctions.map((callBackFunction) => { window.addEventListener(this.name, (event) => { callBackFunction(event.detail) }, { once: oneTime }) })
 		}
 	}
-	time = {
-		// Get the client start time
-		init: null,
-		// Clock and date values
-		seconds: 0,
-		minutes: 0,
-		hours: 0,
-
-		day: 0,
-		month: 0,
-		year: 0,
-
-		// Updates the clock every second
-		progress() {
-			// Add a second to the current time
-			Utilities.time.seconds++
-
-			// If the seconds hit 60
-			if (Utilities.time.seconds >= 60) {
-				// Set them to 0 and add a minute
-				Utilities.time.seconds = 0
-				Utilities.time.minutes++
-
-				// Send the event
-				Utilities.events.CLOCK_UPDATE.emit({ target: ["seconds", "minutes"] })
-			} else { Utilities.events.CLOCK_UPDATE.emit({ target: ["seconds"] }) }
-
-			// If the minutes hit 60
-			if (Utilities.time.minutes >= 60) {
-				// Set them to 0 and add an hour
-				Utilities.time.minutes = 0
-				Utilities.time.hours++
-
-				// Send the event
-				Utilities.events.CLOCK_UPDATE.emit({ target: ["minutes", "hours"] })
-			}
-
-			// If the hours hit 24
-			if (Utilities.time.hours >= 24) {
-				// Set them to 0 and add a day
-				Utilities.time.hours = 0
-				Utilities.time.day++
-
-				// Send the event
-				Utilities.events.CLOCK_UPDATE.emit({ target: ["hours", "day"] })
-			}
-		}
-	}
 	inits = {
+		// Allows registering functions to multiple events
 		monkeyPatch() {
 			Function.prototype.onEvent = function(...eventsList) {
 				eventsList.map((event) => { event.on([this]) })
 				return this
 			}
 		},
+		// Initializes the time
 		time() {
-			// Initialize the time
+			// Save the start date object
 			this.time.init = new Date()
 
+			// Set the initial values for the clock
 			this.time.seconds = this.time.init.getSeconds()
 			this.time.minutes = this.time.init.getMinutes()
 			this.time.hours = this.time.init.getHours()
 
+			// Set the initial values for the date
 			this.time.day = this.time.init.getDate()
 			this.time.month = this.time.init.getMonth() + 1
 			this.time.year = this.time.init.getFullYear()
 
-			// "Nullifies" the start time offset
+			// "Nullify" the start time offset by updating the clock every 1s and 0ms
 			setTimeout(() => {
-				// Run once at 0 ms
 				Utilities.time.progress()
-				// Update the clock every second
+				// Set an interval to update the clock every second
 				setInterval(Utilities.time.progress, 1000)
 			}, 1000 - this.time.init.getMilliseconds())
 		},
+		// Initialize the IndexDB database
 		webdeskDB() {
 			// Get the last version of the database
 			const dbVersion = localStorage.getItem("db-version")
-
+			// If there is no item in local storage called "db-version", initialize
 			if (dbVersion == undefined) {
-				this.firstTime = true
 				this.webdeskDB.version = 1
 				localStorage.setItem("db-version", 1)
 			} else { this.webdeskDB.version = parseInt(dbVersion) }
 		
-			// Used to check if there is a connection to the Database
+			// Stops any db interaction in case of db updating
 			this.webdeskDB.ready = new Promise((resolve, reject) => {
-				// Send the Open Request
+				// Send the db open request
 				const req = indexedDB.open("webdesk", this.webdeskDB.version)
 			
-				// If successfull, update the status of the Database connection
+				// If successfull, update the status of the database connection
 				req.onsuccess = () => {
-					// When adding new tables, automatically close the Database
+					// When adding new tables, automatically close the database
 					req.result.onversionchange = () => { req.result.close() }
 					resolve(req.result)
 				}
@@ -266,8 +273,6 @@ const Utilities = new class {
 		this.events.WINDOW_MOVE_END = new this.WebdeskEvent("window_was_moving", this.events.templates.WINDOW_EVENT)
 
 		this.events.CLOCK_UPDATE = new this.WebdeskEvent("clock_updated", this.events.templates.CLOCK_EVENT)
-
-		this.events.FIRST_TIME = new this.WebdeskEvent("first_time", {})
 	}
 }
 
@@ -302,10 +307,10 @@ const WindowManager = new class {
 	templateElement = Utilities.assets.querySelector(`[name="Window"]`)
 	// Space for new windows
 	space = document.querySelector(".Window.Space")
-	// Position Tracking map for each window element
+	// Tracks the position of every window element
 	boundryBoxes = new WeakMap()
 	basic = {
-		// Spawns a window and sets all the appropriate proprieties also maps the newly opened window in 'boundryBoxes'
+		// Spawns a window with all the appropriate proprieties and tracks it's position
 		openWindow(details) {
 			// Clone the window template
 			const newWindow = WindowManager.templateElement.cloneNode(true)
@@ -313,25 +318,25 @@ const WindowManager = new class {
 			WindowManager.space.appendChild(newWindow)
 
 			// Add the event listeners for the different window elements
-			Utilities.events.WINDOW_UPDATED_FOCUS.on([(newWindow) => { WindowManager.updateZIndex(newWindow) }])
-			newWindow.addEventListener("mousedown", WindowManager.interaction.manage)
+			Utilities.events.WINDOW_UPDATED_FOCUS.on([() => { WindowManager.basic.updateZIndex(newWindow) }])	// When the focus is shifted, update own z index
+			newWindow.addEventListener("mousedown", WindowManager.interaction.manage)	// When a click happens inside a window, manage the interaction
 
-			newWindow.querySelector(".Close").addEventListener("click", WindowManager.basic.closeWindow)
-			newWindow.querySelector(".Minimise").addEventListener("click", WindowManager.basic.minimiseWindow)
-			newWindow.querySelector(".Maximise").addEventListener("click", WindowManager.basic.maximiseWindow)
+			newWindow.querySelector(".Close").addEventListener("click", WindowManager.basic.closeWindow)	// When clicking the close button, close the window
+			newWindow.querySelector(".Minimise").addEventListener("click", WindowManager.basic.minimiseWindow)	// When clicking the minimise button, maximise the window
+			newWindow.querySelector(".Maximise").addEventListener("click", WindowManager.basic.maximiseWindow)	// When clicking the maximise button, minimise the window
 
 			// Set the window attributes
-			newWindow.setAttribute("app", details.app)
-			newWindow.setAttribute("id", WindowManager.rollingID)
+			newWindow.setAttribute("app", details.app)	// Identify the app
+			newWindow.setAttribute("id", WindowManager.rollingID)	// Give the window an id for window managment
 			
 			// Set the icon and content window src and the app title
 			newWindow.querySelector("iframe").src = `apps/${details.app}/?${WindowManager.rollingID}`
 			newWindow.querySelector(".Icon").src = `apps/${details.app}/icon`
 			newWindow.querySelector(".Title").innerText = details.app
 
-			// Escalate the event with the new window information
+			// Escalate the event (LAUNCHER_CLICKED -> WINDOW_OPEN) with the new window information
 			Utilities.events.WINDOW_OPEN.emit(Utilities.getWindowInfo(newWindow))
-			// Send an open window event
+			// Update the rolling id
 			WindowManager.rollingID++
 
 			// DEBUG !!! !!! !!!
@@ -343,14 +348,14 @@ const WindowManager = new class {
 			// Get the target window
 			const targetWindow = event.target.closest(`[name="Window"]`)
 			// Stop tracking the window position
-			boundryBoxes.delete(targetWindow)
+			WindowManager.boundryBoxes.delete(targetWindow)
 			
 			// Removes the window
 			// setTimeout(() => { targetWindow.remove() }, 100)
 			targetWindow.remove()
 		
 			// Send the close a event
-			Utilities.events.WINDOW_CLOSE.emit(getWindowInfo(targetWindow))
+			Utilities.events.WINDOW_CLOSE.emit(Utilities.getWindowInfo(targetWindow))
 		},
 		// Handles the maximising of windows
 		maximiseWindow(event) {
@@ -386,16 +391,17 @@ const WindowManager = new class {
 		},
 		// Makes a window the "active" window
 		focusWindow(details) {
+			// Get the focused window
 			const currentFocusedWindow = WindowManager.space.querySelector(".focus")
-			if (!currentFocusedWindow) { details.target.classList.add("focus") }
-			else if (details.target != currentFocusedWindow) {
-				currentFocusedWindow.classList.remove("focus")
+			// If the focused window isn't the target window, update the focus
+			if (currentFocusedWindow != details.target) {
+				(currentFocusedWindow || details.target).classList.remove("focus")
 				details.target.classList.add("focus")
 
 				Utilities.events.WINDOW_UPDATED_FOCUS.emit(details)
 			}
 		},
-		// Runs everytime the focus shifts
+		// Updates a window z-index, runs everytime the focus shifts
 		updateZIndex(targetWindow) {
 			// Get the current z-index
 			const zIndex = parseInt(targetWindow.style.zIndex)
@@ -403,7 +409,15 @@ const WindowManager = new class {
 			// If the window is in focus, max the z-index
 			// If the z-index is greater that the min z-index, lower it
 			if (targetWindow.classList.contains("focus")) { targetWindow.style.zIndex = 29 }
-			else if (zIndex > 20) { openAppWindow.style.zIndex = zIndex - 1 }
+			else if (zIndex > 20) { targetWindow.style.zIndex = zIndex - 1 }
+		},
+		shiftFocus(details) {
+			const targetWindow = WindowManager.space.querySelector(`[style*="z-index: 28"]`)
+
+			if (targetWindow) {
+				targetWindow.classList.add("focus")
+				Utilities.events.WINDOW_UPDATED_FOCUS.emit(details)
+			}
 		}
 	}
 	interaction = {
@@ -415,24 +429,24 @@ const WindowManager = new class {
 		offsets: [],
 		// Saves the relevant information when the user clicks in a window
 		manage(event) {
-			// If the user clicked on the window element, set direct click to true
-			// If the user clicked on a button, ignore
-			// If the user clicked on a maximised window, ignore
-			// If the user click in the window element, set direct click to false
-			if (event.target.getAttribute("name") == "Window") { WindowManager.interaction.directClick = true }
-			else if (event.target.tagName === "BUTTON") { return }
-			else if (event.target.classList.contains("maximised")) { return }
-
 			// Save the window target
 			WindowManager.interaction.window = event.target.closest(`[name="Window"]`)
 			// Save the click offsets
 			WindowManager.interaction.offsets = [ event.x , event.y ]
 
-			// Send the interaction event
+			// If the user clicked on the window element, set direct click to true
+			// If the user clicked on a button, ignore
+			// If the user clicked on a maximised window, ignore
+			// If the user click in the window element, set direct click to false
+
+			if (event.target.getAttribute("name") == "Window") { WindowManager.interaction.directClick = true }
+			else if (event.target.tagName === "BUTTON") { return }
+			else if (WindowManager.interaction.window.classList.contains("maximised")) { return }
+			// If everything looks good, send an interaction event
 			Utilities.events.WINDOW_INTERACTION.emit(Utilities.getWindowInfo(WindowManager.interaction.window))
 		},
 		// Resets the interaction information on mouseup
-		reset() {
+		reset(event) {
 			WindowManager.interaction.directClick = false
 			WindowManager.interaction.window = null
 			WindowManager.interaction.offsets = [ ]
@@ -512,7 +526,7 @@ const WindowManager = new class {
 		// Handles the end of a window movement
 		reset(event) {
 			const movingWindow = WindowManager.space.querySelector(".moving")
-			if (!movingWindow) return
+			if (!movingWindow) { return }
 		
 			// Remove the move classes
 			movingWindow.classList.remove("moving")
@@ -621,7 +635,7 @@ const WindowManager = new class {
 		Utilities.events.WINDOW_OPEN.on([this.move.centerWindow.bind(this)])
 		Utilities.events.LAUNCHER_CLICK.on([this.basic.openWindow.bind(this)])
 		Utilities.events.WINDOW_INTERACTION.on([this.move.checkEnable.bind(this), this.resize.checkEnable.bind(this)])
-		// Utilities.events.WINDOW_CLOSE.on([shiftWindowFocus])
+		Utilities.events.WINDOW_CLOSE.on([this.basic.shiftFocus.bind(this)])
 
 		this.move.updatePositionIfCollision.bind(this).onEvent(
 			Utilities.events.WINDOW_RESIZE_END,
@@ -640,8 +654,6 @@ const WindowManager = new class {
 
 		document.addEventListener("mousemove", this.move.followCursor.bind(this))
 		document.addEventListener("mousemove", this.resize.resizeWindow.bind(this))
-
-		// window.addEventListener("resize", this.resize.resizeWindow.bind(this))
 	}
 }
 
@@ -673,48 +685,50 @@ const AppDockManager = new class {
 		this.clock.querySelector(".month").innerText = `${Utilities.time.month}`.padStart(2, 0)
 		this.clock.querySelector(".year").innerText = `${Utilities.time.year}`
 	}
-	// Spawn a Newly Opened Window's Dock Icon
-	appDockUpdateOpenWindow(details) {
-		const dockIcon = assetsDockIcon.cloneNode(true)
-		const appName = details.target.getAttribute("app")
-		appDockOpenWindows.append(dockIcon)
+	icons = {
+		// Create the icon for a newly opened window
+		updateOpenWindow(details) {
+			const dockIcon = assetsDockIcon.cloneNode(true)
+			const appName = details.target.getAttribute("app")
+			appDockOpenWindows.append(dockIcon)
 
-		// Add the necessary event listeners
-		dockIcon.addEventListener("click", focusLinkedWindow)
+			// Add the necessary event listeners
+			dockIcon.addEventListener("click", focusLinkedWindow)
 
-		// Set the values of the Dock Icon
-		dockIcon.setAttribute("app", appName)
-		dockIcon.querySelector(".Icon").src = `apps/${appName}/icon`
+			// Set the values of the dock icon
+			dockIcon.setAttribute("app", appName)
+			dockIcon.querySelector(".Icon").src = `apps/${appName}/icon`
 
-		// Link the new Dock Icon to its Window
-		windowDockIconMap.set(details.target, dockIcon)
-	}
+			// Link the new dock icon to its window
+			windowDockIconMap.set(details.target, dockIcon)
+		},
+		// Removes an icon when the connected window is closed
+		updateClosedWindow(details) {
+			// Find the dock icon
+			const dockIcon = windowDockIconMap.get(details.target)
 
-	appDockUpdateClosedWindow(details) {
-		// Delete a Just Closed Window's Dock Icon
-		const dockIcon = windowDockIconMap.get(details.target)
+			// Delete the dock icon and remove it from the Map
+			dockIcon.remove()
+			windowDockIconMap.delete(details.target)
+		},
+		// Updates an icon when the connected window is maximised
+		updateMinimizedWindow(details) {
+			// Update an Minimized Window Dock Icon
+			const dockIcon = windowDockIconMap.get(details.target)
 
-		// Delete the Dock Icon and remove it from the Map
-		dockIcon.remove()
-		windowDockIconMap.delete(details.target)
-	}
+			// Add the class
+			dockIcon.classList.add("mini")
+		},
+		// Focuses the window connected to a dock icon
+		focusLinkedWindow(event) {
+			// Shifts the Focus on the Linked Window of a Dock Icon
+			const appName = event.target.closest(`[name="DockIcon"]`).getAttribute("app")
+			const window = windowSpace.querySelector(`[app="${appName}"]`)
 
-	appDockUpdateMinimizedWindow(details) {
-		// Update an Minimized Window Dock Icon
-		const dockIcon = windowDockIconMap.get(details.target)
-
-		// Add the class
-		dockIcon.classList.add("mini")
-	}
-
-	focusLinkedWindow(event) {
-		// Shifts the Focus on the Linked Window of a Dock Icon
-		const appName = event.target.closest(`[name="DockIcon"]`).getAttribute("app")
-		const window = windowSpace.querySelector(`[app="${appName}"]`)
-
-		// Removes classes for some reason
-		window.classList.remove("minimized")
-		window.classList.remove("maximised")
+			// Removes classes for some reason
+			window.classList.remove("minimized")
+			window.classList.remove("maximised")
+		}
 	}
 	constructor() {
 		this.initClockElement()

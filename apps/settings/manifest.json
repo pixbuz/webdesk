@@ -8,5 +8,8 @@
 	],
 	"routes": {
 		"style": "settings.css"
-	}
+	},
+	"commands": [
+		"test.ts"
+	]
 }
