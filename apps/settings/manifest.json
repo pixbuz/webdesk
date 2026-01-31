@@ -3,13 +3,9 @@
 	"index": "settings.html",
 	"description": "Customize Webdesk",
 
-	"ignore": [
-		"settings.css"
-	],
+	"commands": [ "test.ts" ],
+
 	"routes": {
 		"style": "settings.css"
-	},
-	"commands": [
-		"test.ts"
-	]
+	}
 }

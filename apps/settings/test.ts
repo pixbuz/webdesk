@@ -1,3 +1,3 @@
-export function gaming() {
-	console.log("test")
+export function test() {
+	console.log(a)
 }
