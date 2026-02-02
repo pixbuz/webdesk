@@ -18,20 +18,31 @@ type WebdeskApplicationManifest = {
 	icon: string
 }
 
+type WebdeskFiles = {
+	script: string,
+	index: string,
+	css: string,
+}
+
 export const resources = new class {
-	private readyResolve: Function = function() { /* Dummy function */ }
-	// Flags when all resources have been indexed
-	ready: Promise<void> = new Promise<void>((res) => { this.readyResolve = res })
-	webdesk: { index: string; css: string } = {
+	// // Saves the resolve for the ready method
+	// private readyResolve = function() { /* Dummy Function */ }
+	// // Flags when all resources have been indexed
+	// ready: Promise<void> = new Promise<void>((res) => { this.readyResolve = res })
+	webdesk: WebdeskFiles = {
 		// Webdesk index
 		index: "",
 		// Webdesk css
-		css: ""
+		css: "",
+		// Webdesk script
+		script: ""
 	}
 	// Contains the endpoints and the associated assets contents
 	assets: AssetsLookupTable = {}
 	// Contains the endpoints and the associated functions
 	commands: CommandsLookupTable = {}
+	// Contains the manifests of the installed apps
+	manifests: Record<string, WebdeskApplicationManifest> = {}
 	// Indexes all the wanted app assets in parallel
 	private async indexAppAssets(appName: string, ignore: string[], path: string = "") {
 		// Processing queue
@@ -68,11 +79,11 @@ export const resources = new class {
 	private async indexAppCommands(appName: string, commands: string[] = []) {
 		// For every file containing server commands
 		for (const command of commands) {
-			// Import the module and save it
+			// Import the module
 			const module = await import(`../apps/${appName}/${command}`)
-			// For each exported entry of the module
+			// For each export of the module...
 			for (const entry of Object.keys(module)) {
-				// If it's a function, map it to an api endpoint
+				// If it's a function, dedicate an endpoint for the function
 				if (module[entry] instanceof Function) { this.commands[`/api/${appName}/${entry}`] = module[entry] }
 			}
 		}
@@ -81,6 +92,8 @@ export const resources = new class {
 	private async indexApp(appName: string) {
 		// Read the manifest
 		const manifest: WebdeskApplicationManifest = JSON.parse(await Deno.readTextFile(`apps/${appName}/manifest.json`))
+		// Save the manifest
+		this.manifests[appName] = manifest
 		// Compile a list of files that will skip indexing
 		const fullIgnoreList: string[] = [...(manifest.ignore || []), ...(manifest.commands || []) , "/manifest.json"]
 		// Index the app commands
@@ -92,7 +105,7 @@ export const resources = new class {
 	}
 	// Adds all the template elements to the index page
 	// TODO: Discontinue it(?)
-	async compileIndex() {
+	async indexWebdesk() {
 		// Task parallelization array
 		const fileReadTasks: Promise<string>[] = []
 		// Split the base index html file into 2 parts
@@ -100,41 +113,68 @@ export const resources = new class {
 		// Read all the files inside the components folder
 		for await (const component of Deno.readDir(config.componentsPath)) {
 			// If the entry is a file, add it to the file read queue
-			if (component.isFile) {
-				fileReadTasks.push(Deno.readTextFile(`${config.componentsPath}/${component.name}`))
-			}
+			if (component.isFile) { fileReadTasks.push(Deno.readTextFile(`${config.componentsPath}/${component.name}`)) }
 		}
-		// Set the / to the index, as a text file, joining the first base part, all the components and the second base part
+		// Save the index as text, joining the first base part, all the components and the second base part
 		this.webdesk.index = [webdeskSplitIndex[0], (await Promise.all(fileReadTasks)).join("\n"), webdeskSplitIndex[1]].join("\n")
 	}
-	// 
-	async compileCSS() {
+	// Indexes the webdesk base command/s
+	indexWebdeskCommands() {
+		// Get command for an app or all app manifests
+		this.commands["/api/_/manifest"] = (queries: string[]) => {
+			// Return string
+			let manifests: string = ""
+			// For all apps the request contains
+			for (const app of queries) {
+				// If no app specified, send the full app list
+				if (!app) { return JSON.stringify(resources.manifests) }
+				// Return the app manifest or an empty object
+				manifests += `,${JSON.stringify(resources.manifests[app] || { })}`
+			}
+			// Return the manifests
+			return manifests.substring(1)
+		}
+	}
+	// Compiles into a single file the css and adds it to the endpoint
+	async indexCSS() {
 		// Add all CSS Files to the processing Queue
 		const cssNames: Set<string> = new Set(["base.css", "animations.css", "customization.css"])
-
-		const processingQueue = [...cssNames].map((cssFile) => {
-			return Deno.readTextFileSync(`${config.cssStylesPath}/${cssFile}`)
+		// Read all the css files
+		const processingQueue = [...cssNames].map(async (cssFile) => {
+			return await Deno.readTextFile(`${config.cssStylesPath}/${cssFile}`)
 		})
-
-		this.webdesk.css = processingQueue.join("\n")
+		// Compile all the css files into a single endpoint
+		this.webdesk.css = (await Promise.all(processingQueue)).join("\n")
 	}
-	//
-	async indexWebdesk() {
-		await this.compileCSS()
-		await this.compileIndex()
+	// Adds the endpoint for the webdesk script
+	async indexScripts() {
+		// Read the script file
+		this.webdesk.script = await Deno.readTextFile(`${config.frontendScriptsPath}/script.js`)
+	}
+	// Add all webdesk endpoints
+	async initWebdesk() {
+		const tasks: (Promise<void> | void)[] = []
+
+		tasks.push(this.indexCSS())
+		tasks.push(this.indexWebdesk())
+		tasks.push(this.indexScripts())
+		tasks.push(this.indexWebdeskCommands())
+
+		await Promise.all(tasks)
 	}
 
 	constructor() {(async () => {
-		const initTasks: Promise<void>[] = []
+		// const initTasks: Promise<void>[] = []
+
+		// initTasks.push(this.initWebdesk())
+		this.initWebdesk()
 
 		for await (const app of Deno.readDir("apps")) {
-			if (app.isDirectory) { initTasks.push(this.indexApp(app.name)) }
+			// if (app.isDirectory) { initTasks.push(this.indexApp(app.name)) }
+			if (app.isDirectory) { this.indexApp(app.name) }
 		}
 
-		initTasks.push(this.indexWebdesk())
-
-		Promise.all(initTasks)
-			.then(resources.readyResolve as ((value: void[]) => void[]))
-		
+		// Promise.all(initTasks)
+			// .then(resources.readyResolve)
 	})()}
 }

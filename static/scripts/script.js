@@ -5,6 +5,8 @@
 const Utilities = new class {
 	// Assets section containg all template elements
 	assets = document.querySelector(".Assets")
+	// App manifests
+	manifests
 	// Contains all the template objects for the events
 	events = {
 		templates: {
@@ -241,6 +243,14 @@ const Utilities = new class {
 			// Used to not overlap operations to the Database
 			this.webdeskDB.updateLock = Promise.resolve()
 		},
+		apps() {
+			this.manifests = new Promise(async (res) => {
+				const request = await fetch("/api/_/manifest")
+				const json = await request.json()
+
+				res(json)
+			})
+		}
 	}
 	// Utility method to get the information of a window
 	getWindowInfo(webdeskWindow) {
@@ -283,20 +293,27 @@ const LauncherManager = new class {
 	space = document.querySelector(".Launcher.Space")
 
 	// Adds an application launcher to the desktop
-	addLauncher(appName) {
+	addLauncher(appName, manifest) {
 		const newLauncher = this.templateElement.cloneNode(true)
 		this.space.appendChild(newLauncher)
 
 		newLauncher.addEventListener("click", () => { Utilities.events.LAUNCHER_CLICK.emit({app: appName}) })
 
 		newLauncher.setAttribute("app", appName)
-		// newLauncher.setAttribute("title", description == "undefined" ? appName : description)
+		newLauncher.setAttribute("title", manifest.description == "undefined" ? appName : manifest.description)
 		newLauncher.querySelector(".Name").innerText = appName
-		newLauncher.querySelector(".Icon").src = `apps/${appName}/icon`
+		newLauncher.querySelector(".Icon").src = `/apps/${appName}/${manifest.icon}`
+	}
+	// Add all the launchers
+	async init() {
+		const installedApps = await Utilities.manifests
+		for (const appName of Object.keys(installedApps)) {
+			this.addLauncher(appName, installedApps[appName])
+		}
 	}
 
 	constructor() {
-		this.addLauncher("settings")
+		this.init()
 	}
 }
 
@@ -311,9 +328,10 @@ const WindowManager = new class {
 	boundryBoxes = new WeakMap()
 	basic = {
 		// Spawns a window with all the appropriate proprieties and tracks it's position
-		openWindow(details) {
+		async openWindow(details) {
 			// Clone the window template
 			const newWindow = WindowManager.templateElement.cloneNode(true)
+			const manifest = await Utilities.manifests[details.app]
 			// Add the new window to the window space
 			WindowManager.space.appendChild(newWindow)
 
@@ -330,8 +348,8 @@ const WindowManager = new class {
 			newWindow.setAttribute("id", WindowManager.rollingID)	// Give the window an id for window managment
 			
 			// Set the icon and content window src and the app title
-			newWindow.querySelector("iframe").src = `apps/${details.app}/?${WindowManager.rollingID}`
-			newWindow.querySelector(".Icon").src = `apps/${details.app}/icon`
+			newWindow.querySelector("iframe").src = `apps/${manifest.index}/?${WindowManager.rollingID}`
+			newWindow.querySelector(".Icon").src = `apps/${details.app}/${manifest.icon}`
 			newWindow.querySelector(".Title").innerText = details.app
 
 			// Escalate the event (LAUNCHER_CLICKED -> WINDOW_OPEN) with the new window information
@@ -437,8 +455,6 @@ const WindowManager = new class {
 			// If the user clicked on the window element, set direct click to true
 			// If the user clicked on a button, ignore
 			// If the user clicked on a maximised window, ignore
-			// If the user click in the window element, set direct click to false
-
 			if (event.target.getAttribute("name") == "Window") { WindowManager.interaction.directClick = true }
 			else if (event.target.tagName === "BUTTON") { return }
 			else if (WindowManager.interaction.window.classList.contains("maximised")) { return }
@@ -623,10 +639,8 @@ const WindowManager = new class {
 
 			// Reset the grab position
 			WindowManager.resize.grabPosition = [ false, false, false, false ]
-
 			// Remove resize classes
 			resizingWindow.classList.remove("resizeX", "resizeY", "resizeXY1", "resizeXY2", "resizing")
-
 			// Emit the resize end event
 			Utilities.events.WINDOW_RESIZE_END.emit(Utilities.getWindowInfo(resizingWindow))
 		}
