@@ -37,38 +37,43 @@ const Utilities = new class {
 		year: 0,
 		// Adds 1 second to the clock every second
 		progress() {
+			// Track what changed to smartly update the elements
+			const changed = [ "seconds" ]
 			// Add a second
 			Utilities.time.seconds++
 
-			// If the seconds hit 60
+			// If the seconds hit 60...
 			if (Utilities.time.seconds >= 60) {
 				// Set them to 0 and add a minute
 				Utilities.time.seconds = 0
 				Utilities.time.minutes++
 
-				// Send the event
-				Utilities.events.CLOCK_UPDATE.emit({ target: ["seconds", "minutes"] })
-			} else { Utilities.events.CLOCK_UPDATE.emit({ target: ["seconds"] }) }
+				// Track the change for the event
+				changed.push("minutes")
+			}
 
-			// If the minutes hit 60
+			// If the minutes hit 60...
 			if (Utilities.time.minutes >= 60) {
 				// Set them to 0 and add an hour
 				Utilities.time.minutes = 0
 				Utilities.time.hours++
 
-				// Send the event
-				Utilities.events.CLOCK_UPDATE.emit({ target: ["minutes", "hours"] })
+				// Track the change for the event
+				changed.push("hours")
 			}
 
-			// If the hours hit 24
+			// If the hours hit 24...
 			if (Utilities.time.hours >= 24) {
 				// Set them to 0 and add a day
 				Utilities.time.hours = 0
 				Utilities.time.day++
 
-				// Send the event
-				Utilities.events.CLOCK_UPDATE.emit({ target: ["hours", "day"] })
+				// Track the change for the event
+				changed.push("day")
 			}
+
+			// Send the event
+			Utilities.events.CLOCK_UPDATE.emit({ target: changed })
 		}
 	}
 	// Simplifies IndexDB interactions
@@ -168,27 +173,32 @@ const Utilities = new class {
 		emit(data = {}) {
 			// Merge the template with the passed data
 			const details = { ...this.template, ...data }
-
 			// Create the event
 			const event = new CustomEvent(this.name, {
 				detail: details,
 				bubbles: true,
 				composed: true
 			})
-
 			// Dispatch the event
 			window.dispatchEvent(event)
 		}
-		// Binds multiple callback function to an event
+		// Binds multiple functions to a webdesk event
 		on(callBackFunctions = [], oneTime = false) {
-			callBackFunctions.map((callBackFunction) => { window.addEventListener(this.name, (event) => { callBackFunction(event.detail) }, { once: oneTime }) })
+			// For every function passed...
+			callBackFunctions.map((callBackFunction) => {
+				// Add an event listener for the event
+				window.addEventListener(this.name, (event) => { callBackFunction(event.detail) }, { once: oneTime })
+			})
 		}
 	}
 	inits = {
 		// Allows registering functions to multiple events
 		monkeyPatch() {
+			// Binds a function to multiple webdesk events
 			Function.prototype.onEvent = function(...eventsList) {
+				// For every event passed, register the function to it
 				eventsList.map((event) => { event.on([this]) })
+				// Return the function for more chaining
 				return this
 			}
 		},
@@ -207,10 +217,11 @@ const Utilities = new class {
 			this.time.month = this.time.init.getMonth() + 1
 			this.time.year = this.time.init.getFullYear()
 
-			// "Nullify" the start time offset by updating the clock every 1s and 0ms
+			// "Nullify" the start time offset by updating the clock every 1.000s
 			setTimeout(() => {
+				// Progress the time by 1 second
 				Utilities.time.progress()
-				// Set an interval to update the clock every second
+				// Set an interval to progress the clock every second
 				setInterval(Utilities.time.progress, 1000)
 			}, 1000 - this.time.init.getMilliseconds())
 		},
@@ -223,23 +234,21 @@ const Utilities = new class {
 				this.webdeskDB.version = 1
 				localStorage.setItem("db-version", 1)
 			} else { this.webdeskDB.version = parseInt(dbVersion) }
-		
+
 			// Stops any db interaction in case of db updating
 			this.webdeskDB.ready = new Promise((resolve, reject) => {
 				// Send the db open request
 				const req = indexedDB.open("webdesk", this.webdeskDB.version)
-			
 				// If successfull, update the status of the database connection
 				req.onsuccess = () => {
 					// When adding new tables, automatically close the database
 					req.result.onversionchange = () => { req.result.close() }
 					resolve(req.result)
 				}
-			
 				// On error, report it
 				req.onblocked = req.onerror = (event) => reject(event)
 			})
-		
+
 			// Used to not overlap operations to the Database
 			this.webdeskDB.updateLock = Promise.resolve()
 		},
@@ -254,11 +263,8 @@ const Utilities = new class {
 	}
 	// Utility method to get the information of a window
 	getWindowInfo(webdeskWindow) {
-		const windowID = webdeskWindow.getAttribute("id")
-		const appName = webdeskWindow.getAttribute("app")
-	
 		// Return the window ID, name and element
-		return { id: windowID, target: webdeskWindow, app: appName }
+		return { id: webdeskWindow.getAttribute("id"), target: webdeskWindow, app: webdeskWindow.getAttribute("app") }
 	}
 
 	constructor() {
@@ -331,7 +337,11 @@ const WindowManager = new class {
 		async openWindow(details) {
 			// Clone the window template
 			const newWindow = WindowManager.templateElement.cloneNode(true)
-			const manifest = await Utilities.manifests[details.app]
+			const manifest = (await Utilities.manifests)[details.app]
+			const iframe = document.createElement("iframe")
+
+			// Add the index to the content wrapper of the window
+			newWindow.querySelector(".ContentWrapper").appendChild(iframe)
 			// Add the new window to the window space
 			WindowManager.space.appendChild(newWindow)
 
@@ -345,10 +355,15 @@ const WindowManager = new class {
 
 			// Set the window attributes
 			newWindow.setAttribute("app", details.app)	// Identify the app
-			newWindow.setAttribute("id", WindowManager.rollingID)	// Give the window an id for window managment
-			
+			newWindow.setAttribute("id", WindowManager.rollingID)	// Give the window an id for window management
+
+			// Set up the iframe
+			iframe.src = `apps/${details.app}/${manifest.index}?${WindowManager.rollingID}`
+			iframe.setAttribute("frameborder", 0)
+			iframe.height = "100%"
+			iframe.width = "100%"
+
 			// Set the icon and content window src and the app title
-			newWindow.querySelector("iframe").src = `apps/${manifest.index}/?${WindowManager.rollingID}`
 			newWindow.querySelector(".Icon").src = `apps/${details.app}/${manifest.icon}`
 			newWindow.querySelector(".Title").innerText = details.app
 
@@ -413,9 +428,11 @@ const WindowManager = new class {
 			const currentFocusedWindow = WindowManager.space.querySelector(".focus")
 			// If the focused window isn't the target window, update the focus
 			if (currentFocusedWindow != details.target) {
+				// Hack when there is only one window open and it needs the focus
 				(currentFocusedWindow || details.target).classList.remove("focus")
+				// Add focus class
 				details.target.classList.add("focus")
-
+				// Emit focus update event
 				Utilities.events.WINDOW_UPDATED_FOCUS.emit(details)
 			}
 		},
@@ -429,9 +446,15 @@ const WindowManager = new class {
 			if (targetWindow.classList.contains("focus")) { targetWindow.style.zIndex = 29 }
 			else if (zIndex > 20) { targetWindow.style.zIndex = zIndex - 1 }
 		},
+		// When a window is closed, ensure there is one in focus
 		shiftFocus(details) {
+			// If there is a window in focus, ignore the event call
+			if (WindowManager.space.querySelector(".focus")) { return }
+
+			// Target the window with z-index to 28
 			const targetWindow = WindowManager.space.querySelector(`[style*="z-index: 28"]`)
 
+			// If there is a window, focus it
 			if (targetWindow) {
 				targetWindow.classList.add("focus")
 				Utilities.events.WINDOW_UPDATED_FOCUS.emit(details)
@@ -490,7 +513,7 @@ const WindowManager = new class {
 			if (!WindowManager.interaction.directClick) {
 				// Add the moving class to the window
 				details.target.classList.add("moving")
-				// Emit the Window Move Event
+				// Emit the window move event
 				Utilities.events.WINDOW_MOVE.emit(details)
 			}
 		},
@@ -508,7 +531,7 @@ const WindowManager = new class {
 			if (!movingWindow) { return }
 
 			// Calculate the translate values of the move:
-			// current mouse position - the click offset + the old position
+			// current mouse position - the click offset + the old position (before starting the movement)
 			const xPos = event.x - WindowManager.interaction.offsets[0] + WindowManager.boundryBoxes.get(movingWindow).x
 			const yPos = event.y - WindowManager.interaction.offsets[1] + WindowManager.boundryBoxes.get(movingWindow).y
 
@@ -519,40 +542,39 @@ const WindowManager = new class {
 		updatePositionIfCollision(details) {
 			// Get the target position
 			const boundingBox = details.target.getBoundingClientRect()
+			// Link by reference the window box
 			WindowManager.boundryBoxes.set(details.target, boundingBox)
 
 			// If the window is beyond the right of the screen, move the window back to the edge
-			// If the window is beyond the left of the screen, move the window back to the edge
 			if (boundingBox.right > window.innerWidth) { boundingBox.x = (window.innerWidth - boundingBox.width) }
+			// If the window is beyond the left of the screen, move the window back to the edge
 			else if (boundingBox.left < 0) { boundingBox.x = 0 }
-		
 			// If the window is beyond the bottom of the screen, move the window back to the edge
-			// If the window is beyond the top of the screen, move the window back to the edge
 			if (boundingBox.bottom > window.innerHeight) { boundingBox.y = (window.innerHeight - boundingBox.height) }
+			// If the window is beyond the top of the screen, move the window back to the edge
 			else if (boundingBox.top < 0) { boundingBox.y = 0 }
-			
+
 			// Translate the window to a safe spot
 			details.target.style.transform = `translate(${boundingBox.x}px,${boundingBox.y}px)`
 		},
 		// When the viewport gets resized, update all the collisions and window sizes
 		checkAllViewportCollisions() {
-			// Cycle all the open windows and update the position if clipping the viewport
+			// For all open windows, update the position if clipping the resized viewport
 			for (appWindow of document.getElementsByName("Window")) { updatePositionIfCollision(appWindow) }
 		},
 		// Handles the end of a window movement
 		reset(event) {
+			// Get the current moving window
 			const movingWindow = WindowManager.space.querySelector(".moving")
+			// If there is no moving window, ignore the mouse up event
 			if (!movingWindow) { return }
-		
 			// Remove the move classes
 			movingWindow.classList.remove("moving")
-			
 			// Emit the move end event
 			Utilities.events.WINDOW_MOVE_END.emit(Utilities.getWindowInfo(movingWindow))
 		}
 	}
 	resize = {
-		// Maybe resize needs an event driven rework
 		// Margin on the edges of a window for triggering the resizing
 		resizeMargin: 12,
 		// Saves on which edge/s the user clicked
@@ -568,7 +590,7 @@ const WindowManager = new class {
 				const relClickX = WindowManager.interaction.offsets[0] - boundingBox.x
 				const relClickY = WindowManager.interaction.offsets[1] - boundingBox.y
 
-					// Update the window grab position
+				// Update the window grab position
 				WindowManager.resize.grabPosition = [
 					(relClickY <= WindowManager.resize.resizeMargin), // Top
 					(boundingBox.width - relClickX <= WindowManager.resize.resizeMargin), // Left
@@ -576,19 +598,19 @@ const WindowManager = new class {
 					(relClickX <= WindowManager.resize.resizeMargin) // Right
 				]
 
-				// If the user clicked on the left or right Edge
+				// If the user clicked on the left or right edge
 				if (WindowManager.resize.grabPosition[1] || WindowManager.resize.grabPosition[3]) {
 					details.target.classList.add("resizeX", "resizing")
 				}
-				// If the user clicked on the top or bottom Edge
+				// If the user clicked on the top or bottom edge
 				else if (WindowManager.resize.grabPosition[0] || WindowManager.resize.grabPosition[2]) {
 					details.target.classList.add("resizeY", "resizing")
 				}
-				// If the user clicked on the top-right or the bottom-left
+				// If the user clicked on the top-right or the bottom-left corners
 				if (WindowManager.resize.grabPosition[0] && WindowManager.resize.grabPosition[3] || WindowManager.resize.grabPosition[1] && WindowManager.resize.grabPosition[2]) {
 					details.target.classList.add("resizeXY1", "resizing")
 				}
-				// If the user clicked on the top-left or the bottom-right
+				// If the user clicked on the top-left or the bottom-right corners
 				else if (WindowManager.resize.grabPosition[0] && WindowManager.resize.grabPosition[1] || WindowManager.resize.grabPosition[2] && WindowManager.resize.grabPosition[3]) {
 					details.target.classList.add("resizeXY2", "resizing")
 				}
@@ -597,44 +619,59 @@ const WindowManager = new class {
 				Utilities.events.WINDOW_RESIZE.emit(details)
 			}
 		},
-		// Interprets where a user clicked and runs the appropriate rescaling of a Window
-		// NEEDS INSANE REWORK
+		// Interprets where a user clicked and runs the appropriate rescaling of a window
+		// NEEDS INSANE REWORK(?)
 		resizeWindow(event) {
+			// Target the current resizing window
 			const resizingWindow = WindowManager.space.querySelector(".resizing")
+			// If none, ignore the mouse move
 			if (!resizingWindow) { return }
 
-			// Get the Resizing Window Boundry Box
+			// Get the current window box
 			const boundingBox = WindowManager.boundryBoxes.get(WindowManager.interaction.window)
 		
-			// If the user clicked on the top right corner...
+			// If the user clicked on the top left corner...
 			if (WindowManager.resize.grabPosition[0] && WindowManager.resize.grabPosition[3]) {
+				// Move the window to the bottom right
 				WindowManager.move.moveBy(WindowManager.interaction.window, (event.x - WindowManager.interaction.offsets[0]), (event.y - WindowManager.interaction.offsets[1]))
+				// Resize the window according to the user movement
 				WindowManager.interaction.window.style.height = `${boundingBox.height - event.y + WindowManager.interaction.offsets[1]}px`
 				WindowManager.interaction.window.style.width = `${boundingBox.width - event.x + WindowManager.interaction.offsets[0]}px`
+				// Ignore the next events
 				return
 			}
 			
 			// If the user clicked on the top edge...
-			// If the user clicked on the bottom edge...
 			if (WindowManager.resize.grabPosition[0]) {
+				// Move the window to the bottom
 				WindowManager.move.moveBy(WindowManager.interaction.window, 0, (event.y - WindowManager.interaction.offsets[1]))
+				// Resize the window height
 				WindowManager.interaction.window.style.height = `${boundingBox.height - event.y + WindowManager.interaction.offsets[1]}px`
-			} else if (WindowManager.resize.grabPosition[2]) {
+			}
+			// If the user clicked on the bottom edge...
+			else if (WindowManager.resize.grabPosition[2]) {
+				// Resize the window
 				WindowManager.interaction.window.style.height = `${boundingBox.height + event.y - WindowManager.interaction.offsets[1]}px`
 			}
 
 			// If the user clicked on the left edge...
-			// If the user clicked on the right edge...
 			if (WindowManager.resize.grabPosition[3]) {
+				// Move the window to the left
 				WindowManager.move.moveBy(WindowManager.interaction.window, (event.x - WindowManager.interaction.offsets[0]), 0)
+				// Resize the window height
 				WindowManager.interaction.window.style.width = `${boundingBox.width - event.x + WindowManager.interaction.offsets[0]}px`
-			} else if (WindowManager.resize.grabPosition[1]) {
+			}
+			// If the user clicked on the right edge...
+			else if (WindowManager.resize.grabPosition[1]) {
+				// Resize the window width
 				WindowManager.interaction.window.style.width = `${boundingBox.width + event.x - WindowManager.interaction.offsets[0]}px`
 			}
 		},
 		// Handles the end of a window resizing
 		reset(event) {
+			// Target the resizing window
 			const resizingWindow = WindowManager.space.querySelector(".resizing")
+			// If no resizing window, ignore the mouse up event
 			if (!resizingWindow) { return }
 
 			// Reset the grab position
@@ -685,7 +722,9 @@ const AppDockManager = new class {
 
 	// Updates the clock (in the frontend)
 	updateClockElement(details) {
+		// When the clock is updated
 		for (const piece of details.target) {
+			// Initialize the 
 			AppDockManager.clock.querySelector(`.${piece}`).innerText = `${Utilities.time[piece]}`.padStart(2, 0)
 		}
 	}
