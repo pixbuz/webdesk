@@ -724,7 +724,7 @@ const AppDockManager = new class {
 	updateClockElement(details) {
 		// When the clock is updated
 		for (const piece of details.target) {
-			// Initialize the 
+			// Update only the time elements that need updating
 			AppDockManager.clock.querySelector(`.${piece}`).innerText = `${Utilities.time[piece]}`.padStart(2, 0)
 		}
 	}
@@ -739,6 +739,16 @@ const AppDockManager = new class {
 		this.clock.querySelector(".year").innerText = `${Utilities.time.year}`
 	}
 	icons = {
+		// Add the maximised propriety to an icon
+		maximised: {
+			add() { dockIcon.classList.add("maximised") },
+			remove() { dockIcon.classList.remove("maximised") }
+		},
+		// Add the minimised propriety to an icon
+		minimised: {
+			add() { dockIcon.classList.add("minimised") },
+			remove() { dockIcon.classList.remove("minimised") }
+		},
 		// Create the icon for a newly opened window
 		updateOpenWindow(details) {
 			const dockIcon = assetsDockIcon.cloneNode(true)
@@ -765,7 +775,7 @@ const AppDockManager = new class {
 			windowDockIconMap.delete(details.target)
 		},
 		// Updates an icon when the connected window is maximised
-		updateMinimizedWindow(details) {
+		updateMinimisedWindow(details) {
 			// Update an Minimized Window Dock Icon
 			const dockIcon = windowDockIconMap.get(details.target)
 
@@ -787,11 +797,14 @@ const AppDockManager = new class {
 		this.initClockElement()
 		Utilities.events.CLOCK_UPDATE.on([this.updateClockElement])
 
-		// Utilities.events.WINDOW_OPEN.on([appDockUpdateOpenWindow])
-		// Utilities.events.WINDOW_CLOSE.on([appDockUpdateClosedWindow])
+		Utilities.events.WINDOW_OPEN.on([this.icons.updateOpenWindow])
+		Utilities.events.WINDOW_CLOSE.on([this.icons.updateClosedWindow])
 
-		// Utilities.events.WINDOW_MINIMISE.on([appDockUpdateMinimizedWindow])
-		// Utilities.events.WINDOW_MINIMISE_END.on([appDockUpdateMinimizedWindow])
+		Utilities.events.WINDOW_MINIMISE.on([this.icons.minimised.add])
+		Utilities.events.WINDOW_MINIMISE_END.on([this.icons.maximised.remove])
+
+		Utilities.events.WINDOW_MAXIMISE.on([this.icons.maximised.add])
+		Utilities.events.WINDOW_MAXIMISE_END.on([this.icons.maximised.remove])
 	}
 }
 
