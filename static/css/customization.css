@@ -13,51 +13,51 @@
 }
 
 /* Launcher */
-div[name="Launcher"] {
+[launcher] {
 	color: var(--launchers-color-text);
 }
 
 /* Unfocused Window Border */
-div[name="Window"] {
+[app] {
 	background: var(--windows-color-border);
 	color: var(--windows-color-title);
 }
 
 /* Unfocused Window Background */
-div[name="Window"]::before {
+[app]::before {
 	background: var(--windows-color-background);
 }
 
 /* Unfocused Window Dots */
-div[name="Window"]::after {
+[app]::after {
 	background: radial-gradient(circle, var(--windows-color-dots) 37.5%, transparent 50%);
 	background-size: 4px 4px;
 	background-repeat: space;
 }
 
 /* Focused Window Border */
-div[name="Window"].focus {
+[app].focus {
 	background: var(--windows-color-focus-border);
 }
 
 /* Focused Window Background */
-div[name="Window"].focus::before {
+[app].focus::before {
 	background: var(--windows-color-focus-background);
 }
 
 /* Focused Window Dots */
-div[name="Window"].focus::after {
+[app].focus::after {
 	background: radial-gradient(circle, var(--windows-color-focus-dots) 37.5%, transparent 50%);
 	background-size: 4px 4px;
 	background-repeat: space;
 }
 
 /* Unfocused Window Buttons */
-div[name="Window"] .Titlebar .Buttons button:nth-child(1) { background: var(--windows-color-buttons-mini); }
-div[name="Window"] .Titlebar .Buttons button:nth-child(2) { background: var(--windows-color-buttons-maxi); }
-div[name="Window"] .Titlebar .Buttons button:nth-child(3) { background: var(--windows-color-buttons-close); }
+[app] .titlebar button:nth-child(1) { background: var(--windows-color-buttons-mini); }
+[app] .titlebar button:nth-child(2) { background: var(--windows-color-buttons-maxi); }
+[app] .titlebar button:nth-child(3) { background: var(--windows-color-buttons-close); }
 
 /* Focused Window Buttons */
-div[name="Window"].focus .Titlebar .Buttons button:nth-child(1) { background: var(--windows-color-focus-buttons-mini); }
-div[name="Window"].focus .Titlebar .Buttons button:nth-child(2) { background: var(--windows-color-focus-buttons-maxi); }
-div[name="Window"].focus .Titlebar .Buttons button:nth-child(3) { background: var(--windows-color-focus-buttons-close); }
+[app].focus .titlebar button:nth-child(1) { background: var(--windows-color-focus-buttons-mini); }
+[app].focus .titlebar button:nth-child(2) { background: var(--windows-color-focus-buttons-maxi); }
+[app].focus .titlebar button:nth-child(3) { background: var(--windows-color-focus-buttons-close); }

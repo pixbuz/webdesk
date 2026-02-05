@@ -135,7 +135,7 @@ body {
 	display: none;
 }
 
-div[name="Launcher"] {
+[launcher] {
 	flex-flow: column nowrap;
 	justify-content: center;
 	user-select: none;
@@ -145,19 +145,19 @@ div[name="Launcher"] {
 	width: 5vmin;
 }
 
-div[name="Launcher"] img {
+[launcher] img {
 	aspect-ratio: 1;
 	max-width: 100%;
 }
 
-div[name="Launcher"] h6 {
+[launcher] h6 {
 	text-transform: uppercase;
 	text-align: center;
 	font-weight: 1000;
 	flex: 1;
 }
 
-div[name="Window"] {
+[app] {
 	will-change: transform;
 	min-height: 12.5vmin;
 	min-width: 12.5vmin;
@@ -171,14 +171,14 @@ div[name="Window"] {
 	height: 37.5vmin;
 }
 
-div[name="Window"]::before {
+[app]::before {
 	position: absolute;
 	border-radius: 6px;
 	content: "";
 	inset: 2px;
 }
 
-div[name="Window"]::after {
+[app]::after {
 	margin-inline: calc(50% - 12px);
 	pointer-events: none;
 	position: absolute;
@@ -189,37 +189,37 @@ div[name="Window"]::after {
 	bottom: 2px;
 }
 
-div[name="Window"].focus::after { opacity: 100%; }
+[app].focus::after { opacity: 100%; }
 
-div[name="Window"].resizeX,
-div[name="Window"].resizeY,
-div[name="Window"].resizeXY1,
-div[name="Window"].resizeXY2,
-div[name="Window"].opening { transition: none; }
+[app].resizeX,
+[app].resizeY,
+[app].resizeXY1,
+[app].resizeXY2,
+[app].opening { transition: none; }
 
-div[name="Window"].from-maximised {
-	max-width: 100%;
+[app].from-maximised {
 	max-height: 100%;
+	max-width: 100%;
 }
 
-div[name="Window"].maximised {
+[app].maximised {
 	transform: translate(0) !important;
 	height: 100% !important;
 	width: 100% !important;
-	max-width: 100%;
 	max-height: 100%;
+	max-width: 100%;
 }
 
-div[name="Window"].minimized {
+[app].minimized {
 	display: none;
 }
 
-div[name="Window"].closing {
+[app].closing {
 	pointer-events: none;
 	opacity: 0;
 }
 
-div[name="Window"] .Titlebar {
+[app] .titlebar {
 	justify-content: space-between;
 	padding: 0 1vmin 4px 1vmin;
 	align-content: center;
@@ -231,7 +231,7 @@ div[name="Window"] .Titlebar {
 	width: 100%;
 }
 
-div[name="Window"] .Titlebar .IconWrapper {
+[app] .titlebar .icon {
 	justify-content: flex-start;
 	align-content: center;
 	pointer-events: none;
@@ -242,7 +242,12 @@ div[name="Window"] .Titlebar .IconWrapper {
 	flex: 1;
 }
 
-div[name="Window"] .Titlebar .Title {
+[app] .titlebar .icon img {
+	aspect-ratio: 1;
+	max-width: 100%;
+}
+
+[app] .titlebar .title {
 	text-transform: capitalize;
 	text-align: center;
 	font-size: 1.25vmin;
@@ -250,7 +255,7 @@ div[name="Window"] .Titlebar .Title {
 	flex: 1;
 }
 
-div[name="Window"] .Titlebar .Buttons {
+[app] .titlebar .buttons {
 	justify-content: flex-end;
 	flex-flow: row nowrap;
 	pointer-events: none;
@@ -262,7 +267,7 @@ div[name="Window"] .Titlebar .Buttons {
 	flex: 1;
 }
 
-div[name="Window"] .Titlebar .Buttons button {
+[app] .titlebar .buttons button {
 	pointer-events: all;
 	border-radius: 4px;
 	aspect-ratio: 1.25;
@@ -270,7 +275,7 @@ div[name="Window"] .Titlebar .Buttons button {
 	border: 0;
 }
 
-div[name="Window"] .ContentWrapper {
+[app] .wrapper {
 	height: calc(100% - 2.5vmin);
 	pointer-events: none;
 	border-radius: 4px;
@@ -279,18 +284,23 @@ div[name="Window"] .ContentWrapper {
 	width: 100%;
 }
 
-div[name="Window"].focus .ContentWrapper { pointer-events: all; }
+[app].focus .wrapper { pointer-events: all; }
 
-.Window:has(div[name="Window"].moving) .ContentWrapper,
-.Window:has(div[name="Window"].resizeX) .ContentWrapper,
-.Window:has(div[name="Window"].resizeY) .ContentWrapper,
-.Window:has(div[name="Window"].resizeXY1) .ContentWrapper,
-.Window:has(div[name="Window"].resizeXY2) .ContentWrapper {
+[app] .wrapper iframe {
+	width: 100%;
+	height: 100%;
+}
+
+.Window:has([app].moving) .wrapper,
+.Window:has([app].resizeX) .wrapper,
+.Window:has([app].resizeY) .wrapper,
+.Window:has([app].resizeXY1) .wrapper,
+.Window:has([app].resizeXY2) .wrapper {
 	pointer-events: none !important;
 }
 
-body:has(div[name="Window"].moving) { cursor: grabbing; }
-body:has(div[name="Window"].resizeX) { cursor: e-resize; }
-body:has(div[name="Window"].resizeY) { cursor: n-resize; }
-body:has(div[name="Window"].resizeXY1) { cursor: nw-resize; }
-body:has(div[name="Window"].resizeXY2) { cursor: ne-resize; }
+body:has([app].moving) { cursor: grabbing; }
+body:has([app].resizeX) { cursor: e-resize; }
+body:has([app].resizeY) { cursor: n-resize; }
+body:has([app].resizeXY1) { cursor: nw-resize; }
+body:has([app].resizeXY2) { cursor: ne-resize; }

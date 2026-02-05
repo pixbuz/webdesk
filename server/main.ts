@@ -1,4 +1,3 @@
-import { resourceUsage } from "node:process";
 import { config } from "../server.config.ts"
 import { resources } from "./resourceMapper.ts"
 import { contentType, allExtensions, getCharset } from "@std/media-types";

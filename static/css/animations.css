@@ -12,30 +12,30 @@ body:has(.maximised) .AppDock {
 	animation: AppDock-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
 }
 
-div[name="Window"] {
+[app] {
 	transition: transform 25ms cubic-bezier(.25, .5, 1, 1);
 }
 
-div[name="Window"].maximised::before {
+[app].maximised::before {
 	border-radius: 0;
 	inset: 0;
 	transition: inset 100ms linear,
 		border-radius 100ms linear;
 }
 
-div[name="Window"].maximised {
+[app].maximised {
 	transition: transform 100ms cubic-bezier(.25, .5, 1, 1),
 		width 100ms cubic-bezier(.25, .5, 1, 1),
 		height 100ms cubic-bezier(.25, .5, 1, 1);
 }
 
-div[name="Window"].from-maximised {
+[app].from-maximised {
 	transition: transform 100ms cubic-bezier(.25, .5, 1, 1),
 		width 100ms cubic-bezier(.25, .5, 1, 1),
 		height 100ms cubic-bezier(.25, .5, 1, 1);
 }
 
-div[name="Window"].closing {
+[app].closing {
 	transition-duration: 100ms;
 }
 

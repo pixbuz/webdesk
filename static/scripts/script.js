@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+
 // Window proprieties inside utilities replacing window boundry boxes and window dock icon map
 // Backend compilation of index launchers
 //
@@ -11,9 +13,15 @@ const Utilities = new class {
 	events = {
 		templates: {
 			LAUNCHER_EVENT: {
-				app: null
+				app: null,
 			},
-			WINDOW_EVENT: {
+			WINDOW_OPENING_EVENT: {
+				element: null,
+				titlebar: null,
+				content: null,
+				app: null,
+			},
+			WINDOW_OPEN_EVENT: {
 				id: null,
 				app: null,
 				target: null,
@@ -43,7 +51,7 @@ const Utilities = new class {
 			// Add a second
 			Utilities.time.seconds++
 
-			// If the seconds hit 60...
+			// If the seconds hit 60
 			if (Utilities.time.seconds >= 60) {
 				// Set them to 0 and add a minute
 				Utilities.time.seconds = 0
@@ -53,7 +61,7 @@ const Utilities = new class {
 				changed.push("minutes")
 			}
 
-			// If the minutes hit 60...
+			// If the minutes hit 60
 			if (Utilities.time.minutes >= 60) {
 				// Set them to 0 and add an hour
 				Utilities.time.minutes = 0
@@ -63,7 +71,7 @@ const Utilities = new class {
 				changed.push("hours")
 			}
 
-			// If the hours hit 24...
+			// If the hours hit 24
 			if (Utilities.time.hours >= 24) {
 				// Set them to 0 and add a day
 				Utilities.time.hours = 0
@@ -185,7 +193,7 @@ const Utilities = new class {
 		}
 		// Binds multiple functions to a webdesk event
 		on(callBackFunctions = [], oneTime = false) {
-			// For every function passed...
+			// For every function passed
 			callBackFunctions.map((callBackFunction) => {
 				// Add an event listener for the event
 				window.addEventListener(this.name, (event) => { callBackFunction(event.detail) }, { once: oneTime })
@@ -278,19 +286,21 @@ const Utilities = new class {
 
 		this.events.LAUNCHER_CLICK = new this.WebdeskEvent("launcher_click", this.events.templates.LAUNCHER_EVENT)
 
-		this.events.WINDOW_OPEN = new this.WebdeskEvent("window_open", this.events.templates.WINDOW_EVENT)
-		this.events.WINDOW_MOVE = new this.WebdeskEvent("window_move", this.events.templates.WINDOW_EVENT)
-		this.events.WINDOW_CLOSE = new this.WebdeskEvent("window_close", this.events.templates.WINDOW_EVENT)
-		this.events.WINDOW_INTERACTION = new this.WebdeskEvent("window_click_within", this.events.templates.WINDOW_EVENT)
-		this.events.WINDOW_UPDATED_FOCUS = new this.WebdeskEvent("window_focus_update", this.events.templates.WINDOW_EVENT)
-		this.events.WINDOW_MAXIMISE = new this.WebdeskEvent("window_is_maximised", this.events.templates.WINDOW_EVENT)
-		this.events.WINDOW_MAXIMISE_END = new this.WebdeskEvent("window_was_maximised", this.events.templates.WINDOW_EVENT)
-		this.events.WINDOW_MINIMISE = new this.WebdeskEvent("window_is_minimised", this.events.templates.WINDOW_EVENT)
-		this.events.WINDOW_MINIMISE_END = new this.WebdeskEvent("window_was_minimised", this.events.templates.WINDOW_EVENT)
-		this.events.WINDOW_RESIZE = new this.WebdeskEvent("window_is_resizing", this.events.templates.WINDOW_EVENT)
-		this.events.WINDOW_RESIZE_END = new this.WebdeskEvent("window_was_resizing", this.events.templates.WINDOW_EVENT)
-		this.events.WINDOW_MOVE = new this.WebdeskEvent("window_is_moving", this.events.templates.WINDOW_EVENT)
-		this.events.WINDOW_MOVE_END = new this.WebdeskEvent("window_was_moving", this.events.templates.WINDOW_EVENT)
+		this.events.WINDOW_OPENING = new this.WebdeskEvent("window_opening", this.events.templates.WINDOW_OPENING_EVENT)
+
+		this.events.WINDOW_OPEN = new this.WebdeskEvent("window_open", this.events.templates.WINDOW_OPEN_EVENT)
+		this.events.WINDOW_MOVE = new this.WebdeskEvent("window_move", this.events.templates.WINDOW_OPEN_EVENT)
+		this.events.WINDOW_CLOSE = new this.WebdeskEvent("window_close", this.events.templates.WINDOW_OPEN_EVENT)
+		this.events.WINDOW_INTERACTION = new this.WebdeskEvent("window_click_within", this.events.templates.WINDOW_OPEN_EVENT)
+		this.events.WINDOW_UPDATED_FOCUS = new this.WebdeskEvent("window_focus_update", this.events.templates.WINDOW_OPEN_EVENT)
+		this.events.WINDOW_MAXIMISE = new this.WebdeskEvent("window_is_maximised", this.events.templates.WINDOW_OPEN_EVENT)
+		this.events.WINDOW_MAXIMISE_END = new this.WebdeskEvent("window_was_maximised", this.events.templates.WINDOW_OPEN_EVENT)
+		this.events.WINDOW_MINIMISE = new this.WebdeskEvent("window_is_minimised", this.events.templates.WINDOW_OPEN_EVENT)
+		this.events.WINDOW_MINIMISE_END = new this.WebdeskEvent("window_was_minimised", this.events.templates.WINDOW_OPEN_EVENT)
+		this.events.WINDOW_RESIZE = new this.WebdeskEvent("window_is_resizing", this.events.templates.WINDOW_OPEN_EVENT)
+		this.events.WINDOW_RESIZE_END = new this.WebdeskEvent("window_was_resizing", this.events.templates.WINDOW_OPEN_EVENT)
+		this.events.WINDOW_MOVE = new this.WebdeskEvent("window_is_moving", this.events.templates.WINDOW_OPEN_EVENT)
+		this.events.WINDOW_MOVE_END = new this.WebdeskEvent("window_was_moving", this.events.templates.WINDOW_OPEN_EVENT)
 
 		this.events.CLOCK_UPDATE = new this.WebdeskEvent("clock_updated", this.events.templates.CLOCK_EVENT)
 	}
@@ -302,102 +312,106 @@ const LauncherManager = new class {
 	// Launchers space
 	space = document.querySelector(".Launcher.Space")
 
-	// Adds an application launcher to the desktop
+	// Adds an app launcher to the desktop
 	addLauncher(appName, manifest) {
+		// Copy the template element
 		const newLauncher = this.templateElement.cloneNode(true)
+		// Add it to the launcher space
 		this.space.appendChild(newLauncher)
 
+		// When clicked, dispatch the LAUNCHER_CLICK event
 		newLauncher.addEventListener("click", () => { Utilities.events.LAUNCHER_CLICK.emit({app: appName}) })
 
-		newLauncher.setAttribute("app", appName)
+		// Identify the app the launcher opens
+		newLauncher.setAttribute("launcher", appName)
+		// Set a hover description if present
 		newLauncher.setAttribute("title", manifest.description == "undefined" ? appName : manifest.description)
+		// Set the launcher name
 		newLauncher.querySelector(".Name").innerText = appName
+		// Set the launcher icon
 		newLauncher.querySelector(".Icon").src = `/apps/${appName}/${manifest.icon}`
 	}
-	// Add all the launchers
-	async init() {
+
+	constructor() {(async () => {
 		const installedApps = await Utilities.manifests
+
 		for (const appName of Object.keys(installedApps)) {
 			this.addLauncher(appName, installedApps[appName])
 		}
-	}
-
-	constructor() {
-		this.init()
-	}
+	})()}
 }
 
 const WindowManager = new class {
 	// Rolling id for windows
 	rollingID = 0
-	// Template element for new windows
-	templateElement = Utilities.assets.querySelector(`[name="Window"]`)
 	// Space for new windows
 	space = document.querySelector(".Window.Space")
 	// Tracks the position of every window element
 	boundryBoxes = new WeakMap()
 	basic = {
-		// Spawns a window with all the appropriate proprieties and tracks it's position
-		async openWindow(details) {
-			// Clone the window template
-			const newWindow = WindowManager.templateElement.cloneNode(true)
-			const manifest = (await Utilities.manifests)[details.app]
+		// Assembles a blank window
+		skeletonizeWindow(details) {
+			// Make the wrapping element for the window
+			const windowSkeleton = document.createElement("article")
+			// Make the iframe wrapper element
+			const contentWrapper = document.createElement("section")
+			// Make the titlebar element
+			const titlebar = document.createElement("header")
+			// Make the app content iframe
+			const content = document.createElement("iframe")
 
-			// Create the content and titlebar iframes
-			const contentIframe = document.createElement("iframe"), titlebarIframe = document.createElement("iframe")
-			// Add the iframe to the content wrapper of the window
-			newWindow.querySelector(".ContentWrapper").appendChild(contentIframe)
-			// Add the iframe to the titlebar wrapper of the window
-			newWindow.querySelector(".TitlebarWrapper").appendChild(titlebarIframe)
-			// Set up the iframe
-			contentIframe.setAttribute("frameborder", 0)
-			titlebarIframe.setAttribute("frameborder", 0)
-			// Set the iframes height
-			titlebarIframe.height = contentIframe.height = "100%"
-			// Set the iframes width
-			titlebarIframe.width = contentIframe.width = "100%"
-
-			// Set the window content iframe to the app index
-			contentIframe.src = `apps/${details.app}/${manifest.index}?${WindowManager.rollingID}`
-			// If the manifests explicits a custom titlebar, use it
-			if (manifest.titlebar) { contentIframe.src = `apps/${details.app}/${manifest.titlebar}` }
-			// Otherwise, set the default titlebar
-			else { contentIframe.src = `api/_/titlebar` }
-
-			// Add the new window to the window space
-			WindowManager.space.appendChild(newWindow)
+			// Put the iframe inside it's the wrapper
+			contentWrapper.append(content)
+			// Nest the titlebar and content wrapper in the window
+			windowSkeleton.append(titlebar, contentWrapper)
 
 			// Add the event listeners for the different window elements
-			Utilities.events.WINDOW_UPDATED_FOCUS.on([() => { WindowManager.basic.updateZIndex(newWindow) }])	// When the focus is shifted, update own z index
-			newWindow.addEventListener("mousedown", WindowManager.interaction.manage)	// When a click happens inside a window, manage the interaction
+			Utilities.events.WINDOW_UPDATED_FOCUS.on([() => { WindowManager.basic.updateZIndex(windowSkeleton) }])	// When the focus is shifted, update own z index
+			windowSkeleton.addEventListener("mousedown", WindowManager.interaction.manage)	// When a click happens inside a window, manage the interaction
 
-			newWindow.querySelector(".Close").addEventListener("click", WindowManager.basic.closeWindow)	// When clicking the close button, close the window
-			newWindow.querySelector(".Minimise").addEventListener("click", WindowManager.basic.minimiseWindow)	// When clicking the minimise button, maximise the window
-			newWindow.querySelector(".Maximise").addEventListener("click", WindowManager.basic.maximiseWindow)	// When clicking the maximise button, minimise the window
+			windowSkeleton.setAttribute("app", details.app)	// Set the app name
+			windowSkeleton.id = WindowManager.rollingID	// Set the app id
+			titlebar.classList.add("titlebar")	// Add the titlebar class
+			contentWrapper.classList.add("wrapper")	// Add the iframe wrapper class
+			content.setAttribute("frameborder", 0)	// Aesthetic fix for the iframe
 
-			// Set the window attributes
-			newWindow.setAttribute("app", details.app)	// Identify the app
-			newWindow.setAttribute("id", WindowManager.rollingID)	// Give the window an id for window management
-
-			// Set the icon and content window src and the app title
-			newWindow.querySelector(".Icon").src = `apps/${details.app}/${manifest.icon}`
-			newWindow.querySelector(".Title").innerText = details.app
-
-			// Escalate the event (LAUNCHER_CLICKED -> WINDOW_OPEN) with the new window information
-			Utilities.events.WINDOW_OPEN.emit({ app: details.app, target: newWindow, id: WindowManager.rollingID, icon: null })
+			// Add the new window to the window space
+			WindowManager.space.appendChild(windowSkeleton)
+			// Escalate the event (LAUNCHER_CLICKED -> WINDOW_OPENING)
+			Utilities.events.WINDOW_OPENING.emit({ app: details.app, element: windowSkeleton, titlebar: titlebar, content: content })
 			// Update the rolling id
 			WindowManager.rollingID++
+		},
+		// Fills a blank window with it's proprieties
+		async openWindow(details) {
+			// Wait for the app manifest
+			const manifest = (await Utilities.manifests)[details.app]
+			// Wait for the app titlebar HTML
+			const titlebarHTML = (await fetch(`api/_/titlebar?${details.app}`)).text()
 
+			// Set the window iframe to the index of the app
+			details.content.src = `apps/${details.app}/${manifest.index}?${details.element.id}`
+			// Add the titlebar HTML to the window
+			details.titlebar.innerHTML = await titlebarHTML
+			// Set the titlebar icon to the window icon
+			details.titlebar.querySelector("img").src = `apps/${details.app}/${manifest.icon}`
+			// Set the titlebar title to the window name
+			details.titlebar.querySelector(".title").innerText = details.app
+			// Add the titlebar event listeners
+			details.element.querySelector(".close").addEventListener("click", WindowManager.basic.closeWindow)
+			details.element.querySelector(".minimise").addEventListener("click", WindowManager.basic.minimiseWindow)
+			details.element.querySelector(".maximise").addEventListener("click", WindowManager.basic.maximiseWindow)
+
+			// Escalate the event (WINDOW_OPENING -> WINDOW_OPEN)
+			Utilities.events.WINDOW_OPEN.emit({ app: details.app, target: details.element, id: WindowManager.rollingID, icon: null })
 			// DEBUG !!! !!! !!!
-			setTimeout(() => {
-				if (details.app == "settings") { newWindow.querySelector(".Maximise").dispatchEvent(new Event("click")) }
-			}, 1000)
+			if (details.app == "settings") { details.element.querySelector(".maximise").dispatchEvent(new Event("click")) }
 			// !!! !!! !!!
 		},
 		// Closes a window
 		closeWindow(event) {
 			// Get the target window
-			const targetWindow = event.target.closest(`[name="Window"]`)
+			const targetWindow = event.target.closest("[app]")
 			// Stop tracking the window position
 			WindowManager.boundryBoxes.delete(targetWindow)
 			// Removes the window
@@ -409,7 +423,7 @@ const WindowManager = new class {
 		// Handles the maximising of windows
 		maximiseWindow(event) {
 			// Get the target window
-			const targetWindow = event.target.closest(`[name="Window"]`)
+			const targetWindow = event.target.closest("[app]")
 			// If the window is maximised
 			if (targetWindow.classList.contains("maximised")) {
 				// Remove the maximised class and send the end maximised event
@@ -424,7 +438,7 @@ const WindowManager = new class {
 		// Handles the minimising of windows
 		minimiseWindow(event) {
 			// Get the target window
-			const targetWindow = event.target.closest(`[name="Window"]`)
+			const targetWindow = event.target.closest("[app]")
 			// If the window is minimised
 			if (targetWindow.classList.contains("minimized")) {
 				// Remove the minimised class and send the end minimised event
@@ -484,14 +498,14 @@ const WindowManager = new class {
 		// Saves the relevant information when the user clicks in a window
 		manage(event) {
 			// Save the window target
-			WindowManager.interaction.window = event.target.closest(`[name="Window"]`)
+			WindowManager.interaction.window = event.target.closest("[app]")
 			// Save the click offsets
 			WindowManager.interaction.offsets = [ event.x , event.y ]
 
 			// If the user clicked on the window element, set direct click to true
 			// If the user clicked on a button, ignore
 			// If the user clicked on a maximised window, ignore
-			if (event.target.getAttribute("name") == "Window") { WindowManager.interaction.directClick = true }
+			if (event.target.getAttribute("app")) { WindowManager.interaction.directClick = true }
 			else if (event.target.tagName === "BUTTON") { return }
 			else if (WindowManager.interaction.window.classList.contains("maximised")) { return }
 			// If everything looks good, send an interaction event
@@ -573,7 +587,7 @@ const WindowManager = new class {
 		// When the viewport gets resized, update all the collisions and window sizes
 		checkAllViewportCollisions() {
 			// For all open windows, update the position if clipping the resized viewport
-			for (appWindow of document.getElementsByName("Window")) { updatePositionIfCollision(appWindow) }
+			for (const openWindow of document.querySelectorAll("[app]")) { updatePositionIfCollision(openWindow) }
 		},
 		// Handles the end of a window movement
 		reset(event) {
@@ -594,7 +608,7 @@ const WindowManager = new class {
 		grabPosition: [ ],
 		// Checks where the user clicked in a window and enables resizing
 		checkEnable(details) {
-			// If the user clicked on a window...
+			// If the user clicked on a window
 			if (WindowManager.interaction.directClick) {
 				// Get the window positon
 				const boundingBox = WindowManager.boundryBoxes.get(details.target)
@@ -643,7 +657,7 @@ const WindowManager = new class {
 			// Get the current window box
 			const boundingBox = WindowManager.boundryBoxes.get(WindowManager.interaction.window)
 		
-			// If the user clicked on the top left corner...
+			// If the user clicked on the top left corner
 			if (WindowManager.resize.grabPosition[0] && WindowManager.resize.grabPosition[3]) {
 				// Move the window to the bottom right
 				WindowManager.move.moveBy(WindowManager.interaction.window, (event.x - WindowManager.interaction.offsets[0]), (event.y - WindowManager.interaction.offsets[1]))
@@ -654,27 +668,27 @@ const WindowManager = new class {
 				return
 			}
 			
-			// If the user clicked on the top edge...
+			// If the user clicked on the top edge
 			if (WindowManager.resize.grabPosition[0]) {
 				// Move the window to the bottom
 				WindowManager.move.moveBy(WindowManager.interaction.window, 0, (event.y - WindowManager.interaction.offsets[1]))
 				// Resize the window height
 				WindowManager.interaction.window.style.height = `${boundingBox.height - event.y + WindowManager.interaction.offsets[1]}px`
 			}
-			// If the user clicked on the bottom edge...
+			// If the user clicked on the bottom edge
 			else if (WindowManager.resize.grabPosition[2]) {
 				// Resize the window
 				WindowManager.interaction.window.style.height = `${boundingBox.height + event.y - WindowManager.interaction.offsets[1]}px`
 			}
 
-			// If the user clicked on the left edge...
+			// If the user clicked on the left edge
 			if (WindowManager.resize.grabPosition[3]) {
 				// Move the window to the left
 				WindowManager.move.moveBy(WindowManager.interaction.window, (event.x - WindowManager.interaction.offsets[0]), 0)
 				// Resize the window height
 				WindowManager.interaction.window.style.width = `${boundingBox.width - event.x + WindowManager.interaction.offsets[0]}px`
 			}
-			// If the user clicked on the right edge...
+			// If the user clicked on the right edge
 			else if (WindowManager.resize.grabPosition[1]) {
 				// Resize the window width
 				WindowManager.interaction.window.style.width = `${boundingBox.width + event.x - WindowManager.interaction.offsets[0]}px`
@@ -696,8 +710,9 @@ const WindowManager = new class {
 		}
 	}
 	constructor() {
+		Utilities.events.LAUNCHER_CLICK.on([this.basic.skeletonizeWindow.bind(this)])
+		Utilities.events.WINDOW_OPENING.on([this.basic.openWindow.bind(this)])
 		Utilities.events.WINDOW_OPEN.on([this.move.centerWindow.bind(this)])
-		Utilities.events.LAUNCHER_CLICK.on([this.basic.openWindow.bind(this)])
 		Utilities.events.WINDOW_INTERACTION.on([this.move.checkEnable.bind(this), this.resize.checkEnable.bind(this)])
 		Utilities.events.WINDOW_CLOSE.on([this.basic.shiftFocus.bind(this)])
 
@@ -768,14 +783,14 @@ const AppDockManager = new class {
 			// Create the new icon for the window
 			const dockIcon = AppDockManager.templateElement.cloneNode(true)
 			// Link the new dock icon to its window
-			AppDockManager.windowsIconMap.set(details.target, dockIcon)
+			AppDockManager.windowsIconMap.set(details.element, dockIcon)
 			// Add it to the app dock
 			AppDockManager.open.append(dockIcon)
 
 			// Add the necessary event listeners
 			dockIcon.addEventListener("click", AppDockManager.icons.focusLinkedWindow)
 			// Set the values of the dock icon
-			dockIcon.setAttribute("app", details.app)	// App name
+			dockIcon.setAttribute("icon", details.app)	// App name
 			dockIcon.querySelector(".Icon").src = `apps/${details.app}/${(await Utilities.manifests)[details.app].icon}`	// App icon
 		},
 		// Removes an icon when the connected window is closed
@@ -804,7 +819,7 @@ const AppDockManager = new class {
 		this.initClockElement()
 		Utilities.events.CLOCK_UPDATE.on([this.updateClockElement])
 
-		Utilities.events.WINDOW_OPEN.on([this.icons.add])
+		Utilities.events.WINDOW_OPENING.on([this.icons.add])
 		Utilities.events.WINDOW_CLOSE.on([this.icons.updateClosedWindow])
 
 		Utilities.events.WINDOW_MINIMISE.on([this.icons.minimised.add])

@@ -13,6 +13,7 @@ type WebdeskApplicationManifest = {
 	routes: Record<string, string>
 	commands: string[]
 	ignore: string[]
+	titlebar: string
 	index: string
 	desc: string
 	icon: string
@@ -127,16 +128,32 @@ export const resources = new class {
 			// For all apps the request contains
 			for (const app of queries) {
 				// If no app specified, send the full app list
-				if (!app) { return JSON.stringify(resources.manifests) }
+				if (!app) {
+					manifests = `,${JSON.stringify(resources.manifests)}`
+					break
+				}
 				// Return the app manifest or an empty object
 				manifests += `,${JSON.stringify(resources.manifests[app] || { })}`
 			}
 			// Return the manifests
-			return [ manifests.substring(1) , "text/plain" ]
+			return [ manifests.substring(1), "text/plain" ]
 		}
 		// Command for fetching the default app titlebar
-		this.commands["/api/_/titlebar"] = (_queries: string[]) => {
-			return [ Deno.readTextFileSync(`static/titlebar.htm`), "text/html" ]
+		this.commands["/api/_/titlebar"] = (queries: string[]) => {
+			// Return html string
+			let titlebar: string = ""
+			for (const app of queries) {
+				// If the app has a titlebar specified, read the html and return it
+				// If no app specified, return the default titlebar
+				if (resources.manifests[app].titlebar) {
+					titlebar = Deno.readTextFileSync(`apps/${app}/${resources.manifests[app].titlebar}`)
+				} else {
+					titlebar = Deno.readTextFileSync(`static/titlebar.htm`)
+					break
+				}
+			}
+			// Return the titlebar
+			return [ titlebar, "text/html" ]
 		}
 	}
 	// Compiles into a single file the css and adds it to the endpoint
@@ -176,6 +193,16 @@ export const resources = new class {
 		for await (const app of Deno.readDir("apps")) {
 			// if (app.isDirectory) { initTasks.push(this.indexApp(app.name)) }
 			if (app.isDirectory) { this.indexApp(app.name) }
+		}
+
+		for await (const _event of Deno.watchFs(".")) {
+			this.initWebdesk()
+			console.log("Change detected")
+
+			for await (const app of Deno.readDir("apps")) {
+				// if (app.isDirectory) { initTasks.push(this.indexApp(app.name)) }
+				if (app.isDirectory) { this.indexApp(app.name) }
+			}
 		}
 
 		// Promise.all(initTasks)
