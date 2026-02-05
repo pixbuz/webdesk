@@ -314,22 +314,35 @@ const LauncherManager = new class {
 
 	// Adds an app launcher to the desktop
 	addLauncher(appName, manifest) {
-		// Copy the template element
-		const newLauncher = this.templateElement.cloneNode(true)
-		// Add it to the launcher space
-		this.space.appendChild(newLauncher)
+		// Create the new launcher element
+		const launcher = document.createElement("button")
+		// Create the name element
+		const title = document.createElement("span")
+		// Create the icon element
+		const icon = document.createElement("img")
+
+		// Set the app the launcher opens
+		launcher.setAttribute("launcher", appName)
+		// Set the hover description of the launcher
+		launcher.setAttribute("title", manifest.description == "undefined" ? appName : manifest.description)
+
+		// Add the name element class
+		title.classList.add("name")
+		// Set the launcher name
+		title.innerText = appName
+
+		// Add the icon element class
+		icon.classList.add("icon")
+		// Set the launcher icon
+		icon.src = `/apps/${appName}/${manifest.icon}`
+
+		// Add the name and icon to the launcher
+		launcher.append(icon, title)
+		// Add the new launcher to the desktop
+		this.space.appendChild(launcher)
 
 		// When clicked, dispatch the LAUNCHER_CLICK event
-		newLauncher.addEventListener("click", () => { Utilities.events.LAUNCHER_CLICK.emit({app: appName}) })
-
-		// Identify the app the launcher opens
-		newLauncher.setAttribute("launcher", appName)
-		// Set a hover description if present
-		newLauncher.setAttribute("title", manifest.description == "undefined" ? appName : manifest.description)
-		// Set the launcher name
-		newLauncher.querySelector(".Name").innerText = appName
-		// Set the launcher icon
-		newLauncher.querySelector(".Icon").src = `/apps/${appName}/${manifest.icon}`
+		launcher.addEventListener("click", () => { Utilities.events.LAUNCHER_CLICK.emit({app: appName}) })
 	}
 
 	constructor() {(async () => {

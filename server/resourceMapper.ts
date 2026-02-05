@@ -145,7 +145,7 @@ export const resources = new class {
 			for (const app of queries) {
 				// If the app has a titlebar specified, read the html and return it
 				// If no app specified, return the default titlebar
-				if (resources.manifests[app].titlebar) {
+				if (app && resources.manifests[app].titlebar) {
 					titlebar = Deno.readTextFileSync(`apps/${app}/${resources.manifests[app].titlebar}`)
 				} else {
 					titlebar = Deno.readTextFileSync(`static/titlebar.htm`)
