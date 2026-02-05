@@ -342,10 +342,28 @@ const WindowManager = new class {
 			// Clone the window template
 			const newWindow = WindowManager.templateElement.cloneNode(true)
 			const manifest = (await Utilities.manifests)[details.app]
-			const iframe = document.createElement("iframe")
 
-			// Add the index to the content wrapper of the window
-			newWindow.querySelector(".ContentWrapper").appendChild(iframe)
+			// Create the content and titlebar iframes
+			const contentIframe = document.createElement("iframe"), titlebarIframe = document.createElement("iframe")
+			// Add the iframe to the content wrapper of the window
+			newWindow.querySelector(".ContentWrapper").appendChild(contentIframe)
+			// Add the iframe to the titlebar wrapper of the window
+			newWindow.querySelector(".TitlebarWrapper").appendChild(titlebarIframe)
+			// Set up the iframe
+			contentIframe.setAttribute("frameborder", 0)
+			titlebarIframe.setAttribute("frameborder", 0)
+			// Set the iframes height
+			titlebarIframe.height = contentIframe.height = "100%"
+			// Set the iframes width
+			titlebarIframe.width = contentIframe.width = "100%"
+
+			// Set the window content iframe to the app index
+			contentIframe.src = `apps/${details.app}/${manifest.index}?${WindowManager.rollingID}`
+			// If the manifests explicits a custom titlebar, use it
+			if (manifest.titlebar) { contentIframe.src = `apps/${details.app}/${manifest.titlebar}` }
+			// Otherwise, set the default titlebar
+			else { contentIframe.src = `api/_/titlebar` }
+
 			// Add the new window to the window space
 			WindowManager.space.appendChild(newWindow)
 
@@ -360,12 +378,6 @@ const WindowManager = new class {
 			// Set the window attributes
 			newWindow.setAttribute("app", details.app)	// Identify the app
 			newWindow.setAttribute("id", WindowManager.rollingID)	// Give the window an id for window management
-
-			// Set up the iframe
-			iframe.src = `apps/${details.app}/${manifest.index}?${WindowManager.rollingID}`
-			iframe.setAttribute("frameborder", 0)
-			iframe.height = "100%"
-			iframe.width = "100%"
 
 			// Set the icon and content window src and the app title
 			newWindow.querySelector(".Icon").src = `apps/${details.app}/${manifest.icon}`

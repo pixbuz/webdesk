@@ -132,12 +132,16 @@ export const resources = new class {
 				manifests += `,${JSON.stringify(resources.manifests[app] || { })}`
 			}
 			// Return the manifests
-			return manifests.substring(1)
+			return [ manifests.substring(1) , "text/plain" ]
+		}
+		// Command for fetching the default app titlebar
+		this.commands["/api/_/titlebar"] = (_queries: string[]) => {
+			return [ Deno.readTextFileSync(`static/titlebar.htm`), "text/html" ]
 		}
 	}
 	// Compiles into a single file the css and adds it to the endpoint
 	async indexCSS() {
-		// Add all CSS Files to the processing Queue
+		// Add all CSS files to the processing queue
 		const cssNames: Set<string> = new Set(["base.css", "animations.css", "customization.css"])
 		// Read all the css files
 		const processingQueue = [...cssNames].map(async (cssFile) => {

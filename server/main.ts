@@ -42,11 +42,16 @@ function appsAssetsReplier(request: URL): Response {
 		return new Response(resources.assets[request.pathname], { status: 200, headers: { "content-type": `${contentType(request.pathname.split(".").at(-1)!)}, charset=UTF-8` } })
 	} else { return genErrorResponse(`Recived asset request: ${request.pathname}\n${" ".repeat(23)}^isn't a valid asset`) }
 }
-// todo: sandboxing
+// Runs and returns a server function
 function apiReplier(request: URL): Response {
+	// If the command requested doesn't exist, return an error
 	if (!resources.commands[request.pathname]) { return genErrorResponse(`Recived api request: ${request.pathname}\n${" ".repeat(23)}^isn't a valid command`) }
 
-	try { return new Response(resources.commands[request.pathname](request.search.substring(1).split("&")), { status: 200 }) }
+	// Sandbox the function, in case return the error
+	try {
+		const result: [computed: unknown, type: string] = resources.commands[request.pathname](request.search.substring(1).split("&"))
+		return new Response(result[0] as BodyInit, { status: 200, headers: { "content-type": result[1] } })
+	}
 	catch(error) { return new Response(`${(error as Error).stack}`, { status: 500 }) }
 }
 
