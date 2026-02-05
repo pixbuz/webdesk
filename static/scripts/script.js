@@ -16,7 +16,8 @@ const Utilities = new class {
 			WINDOW_EVENT: {
 				id: null,
 				app: null,
-				target: null
+				target: null,
+				icon: null,
 			},
 			CLOCK_EVENT: {
 				target: [ ]
@@ -252,11 +253,14 @@ const Utilities = new class {
 			// Used to not overlap operations to the Database
 			this.webdeskDB.updateLock = Promise.resolve()
 		},
+		// 
 		apps() {
 			this.manifests = new Promise(async (res) => {
+				// Request all installed apps manifests
 				const request = await fetch("/api/_/manifest")
+				// Convert the response to json
 				const json = await request.json()
-
+				// Resolve the promise with the json
 				res(json)
 			})
 		}
@@ -264,7 +268,7 @@ const Utilities = new class {
 	// Utility method to get the information of a window
 	getWindowInfo(webdeskWindow) {
 		// Return the window ID, name and element
-		return { id: webdeskWindow.getAttribute("id"), target: webdeskWindow, app: webdeskWindow.getAttribute("app") }
+		return { id: webdeskWindow.getAttribute("id"), target: webdeskWindow, app: webdeskWindow.getAttribute("app"), icon: AppDockManager.windowsIconMap.get(webdeskWindow)}
 	}
 
 	constructor() {
@@ -368,12 +372,14 @@ const WindowManager = new class {
 			newWindow.querySelector(".Title").innerText = details.app
 
 			// Escalate the event (LAUNCHER_CLICKED -> WINDOW_OPEN) with the new window information
-			Utilities.events.WINDOW_OPEN.emit(Utilities.getWindowInfo(newWindow))
+			Utilities.events.WINDOW_OPEN.emit({ app: details.app, target: newWindow, id: WindowManager.rollingID, icon: null })
 			// Update the rolling id
 			WindowManager.rollingID++
 
 			// DEBUG !!! !!! !!!
-			if (details.app == "settings") { newWindow.querySelector(".Maximise").dispatchEvent(new Event("click")) }
+			setTimeout(() => {
+				if (details.app == "settings") { newWindow.querySelector(".Maximise").dispatchEvent(new Event("click")) }
+			}, 1000)
 			// !!! !!! !!!
 		},
 		// Closes a window
@@ -382,11 +388,9 @@ const WindowManager = new class {
 			const targetWindow = event.target.closest(`[name="Window"]`)
 			// Stop tracking the window position
 			WindowManager.boundryBoxes.delete(targetWindow)
-			
 			// Removes the window
 			// setTimeout(() => { targetWindow.remove() }, 100)
 			targetWindow.remove()
-		
 			// Send the close a event
 			Utilities.events.WINDOW_CLOSE.emit(Utilities.getWindowInfo(targetWindow))
 		},
@@ -394,7 +398,6 @@ const WindowManager = new class {
 		maximiseWindow(event) {
 			// Get the target window
 			const targetWindow = event.target.closest(`[name="Window"]`)
-
 			// If the window is maximised
 			if (targetWindow.classList.contains("maximised")) {
 				// Remove the maximised class and send the end maximised event
@@ -410,7 +413,6 @@ const WindowManager = new class {
 		minimiseWindow(event) {
 			// Get the target window
 			const targetWindow = event.target.closest(`[name="Window"]`)
-
 			// If the window is minimised
 			if (targetWindow.classList.contains("minimized")) {
 				// Remove the minimised class and send the end minimised event
@@ -440,7 +442,6 @@ const WindowManager = new class {
 		updateZIndex(targetWindow) {
 			// Get the current z-index
 			const zIndex = parseInt(targetWindow.style.zIndex)
-
 			// If the window is in focus, max the z-index
 			// If the z-index is greater that the min z-index, lower it
 			if (targetWindow.classList.contains("focus")) { targetWindow.style.zIndex = 29 }
@@ -716,9 +717,9 @@ const AppDockManager = new class {
 	// Get the Open Windows element inside App Dock
 	open = this.element.querySelector(".Open")
 	// Template of the Open Window Icon Element
-	templateElement = Utilities.assets.querySelector(`[name="DockIcon"]`)[0]
-	// Map between an Open Window and a Open Window Icon Element
-	dockIconMap = new WeakMap()
+	templateElement = Utilities.assets.querySelector(`[name="DockIcon"]`)
+	// Map between the windows and icons
+	windowsIconMap = new WeakMap()
 
 	// Updates the clock (in the frontend)
 	updateClockElement(details) {
@@ -738,49 +739,43 @@ const AppDockManager = new class {
 		this.clock.querySelector(".month").innerText = `${Utilities.time.month}`.padStart(2, 0)
 		this.clock.querySelector(".year").innerText = `${Utilities.time.year}`
 	}
+	// Contains all methods for icon managment
 	icons = {
 		// Add the maximised propriety to an icon
 		maximised: {
-			add() { dockIcon.classList.add("maximised") },
-			remove() { dockIcon.classList.remove("maximised") }
+			add(details) { details.icon.classList.add("maximised") },
+			remove(details) { details.icon.classList.remove("maximised") }
 		},
 		// Add the minimised propriety to an icon
 		minimised: {
-			add() { dockIcon.classList.add("minimised") },
-			remove() { dockIcon.classList.remove("minimised") }
+			add(details) { details.icon.classList.add("minimised") },
+			remove(details) { details.icon.classList.remove("minimised") }
 		},
 		// Create the icon for a newly opened window
-		updateOpenWindow(details) {
-			const dockIcon = assetsDockIcon.cloneNode(true)
-			const appName = details.target.getAttribute("app")
-			appDockOpenWindows.append(dockIcon)
+		async add(details) {
+			// Create the new icon for the window
+			const dockIcon = AppDockManager.templateElement.cloneNode(true)
+			// Link the new dock icon to its window
+			AppDockManager.windowsIconMap.set(details.target, dockIcon)
+			// Add it to the app dock
+			AppDockManager.open.append(dockIcon)
 
 			// Add the necessary event listeners
-			dockIcon.addEventListener("click", focusLinkedWindow)
-
+			dockIcon.addEventListener("click", AppDockManager.icons.focusLinkedWindow)
 			// Set the values of the dock icon
-			dockIcon.setAttribute("app", appName)
-			dockIcon.querySelector(".Icon").src = `apps/${appName}/icon`
-
-			// Link the new dock icon to its window
-			windowDockIconMap.set(details.target, dockIcon)
+			dockIcon.setAttribute("app", details.app)	// App name
+			dockIcon.querySelector(".Icon").src = `apps/${details.app}/${(await Utilities.manifests)[details.app].icon}`	// App icon
 		},
 		// Removes an icon when the connected window is closed
 		updateClosedWindow(details) {
-			// Find the dock icon
-			const dockIcon = windowDockIconMap.get(details.target)
-
-			// Delete the dock icon and remove it from the Map
-			dockIcon.remove()
+			// Delete the dock icon and remove it from the map
+			details.icon.remove()
 			windowDockIconMap.delete(details.target)
 		},
 		// Updates an icon when the connected window is maximised
 		updateMinimisedWindow(details) {
-			// Update an Minimized Window Dock Icon
-			const dockIcon = windowDockIconMap.get(details.target)
-
 			// Add the class
-			dockIcon.classList.add("mini")
+			details.icon.classList.add("mini")
 		},
 		// Focuses the window connected to a dock icon
 		focusLinkedWindow(event) {
@@ -797,7 +792,7 @@ const AppDockManager = new class {
 		this.initClockElement()
 		Utilities.events.CLOCK_UPDATE.on([this.updateClockElement])
 
-		Utilities.events.WINDOW_OPEN.on([this.icons.updateOpenWindow])
+		Utilities.events.WINDOW_OPEN.on([this.icons.add])
 		Utilities.events.WINDOW_CLOSE.on([this.icons.updateClosedWindow])
 
 		Utilities.events.WINDOW_MINIMISE.on([this.icons.minimised.add])
