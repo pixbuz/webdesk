@@ -307,8 +307,6 @@ const Utilities = new class {
 }
 
 const LauncherManager = new class {
-	// Template element for adding launchers
-	templateElement = Utilities.assets.querySelector(`[name="Launcher"]`)
 	// Launchers space
 	space = document.querySelector(".Launcher.Space")
 

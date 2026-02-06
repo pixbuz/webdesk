@@ -52,7 +52,7 @@ export const resources = new class {
 		for await (const entry of Deno.readDir(`apps/${appName}${path}`)) {
 			// If the ignore list contains the relative path of an entry, skip indexing
 			if (ignore.includes(`${path}/${entry.name}`)) {
-				log.info(`Skipped indexing of ${entry.name} from apps/${appName}${path}`)
+				log.debug(`Skipped indexing of ${entry.name} from apps/${appName}${path}`)
 				continue
 			}
 			// If the entry is a folder, queue it to index
@@ -60,7 +60,7 @@ export const resources = new class {
 			// If the entry is a file, add it to the app assets
 			else if (entry.isFile) {
 				this.assets[`/apps/${appName}${path}/${entry.name}`] = Deno.readFileSync(`apps/${appName}${path}/${entry.name}`)
-				log.info(`Indexed ${entry.name} from apps/${appName}${path}`)
+				log.debug(`Indexed ${entry.name} from apps/${appName}${path}`)
 			}
 		}
 		// Wait for all subfolders to finish indexing
@@ -197,7 +197,7 @@ export const resources = new class {
 
 		for await (const _event of Deno.watchFs(".")) {
 			this.initWebdesk()
-			console.log("Change detected")
+			log.info("Change detected")
 
 			for await (const app of Deno.readDir("apps")) {
 				// if (app.isDirectory) { initTasks.push(this.indexApp(app.name)) }

@@ -143,6 +143,7 @@ body {
 	cursor: pointer;
 	display: flex;
 	width: 5vmin;
+	border: none;
 }
 
 [launcher] img {
@@ -150,7 +151,7 @@ body {
 	max-width: 100%;
 }
 
-[launcher] h6 {
+[launcher] p {
 	text-transform: uppercase;
 	text-align: center;
 	font-weight: 1000;
