@@ -74,18 +74,24 @@ body {
 	flex: 1;
 }
 
-.AppDock .Open div[name="DockIcon"] {
+[icon] {
 	border-radius: 4px;
 	user-select: none;
 	overflow: hidden;
+	background: none;
 	aspect-ratio: 1;
-	height: 100%;
 	margin: 0 2px;
+	border: none;
+	height: 100%;
 }
 
-.AppDock .Open div[name="DockIcon"] img {
+[icon] img {
 	max-height: 100%;
 	aspect-ratio: 1;
+}
+
+[icon] p {
+	display: none;
 }
 
 .AppDock .Clock {

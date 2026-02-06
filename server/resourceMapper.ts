@@ -9,14 +9,14 @@ type CommandsLookupTable = {
 	[key: string]: Function
 }
 
-type WebdeskApplicationManifest = {
-	routes: Record<string, string>
-	commands: string[]
-	ignore: string[]
-	titlebar: string
-	index: string
-	desc: string
-	icon: string
+class WebdeskApplicationManifest {
+	routes: Record<string, string> = {}
+	description: string = ""
+	commands: string[] = []
+	ignore: string[] = []
+	titlebar: string = ""
+	index: string = ""
+	icon: string = ""
 }
 
 type WebdeskFiles = {
@@ -94,7 +94,7 @@ export const resources = new class {
 		// Read the manifest
 		const manifest: WebdeskApplicationManifest = JSON.parse(await Deno.readTextFile(`apps/${appName}/manifest.json`))
 		// Save the manifest
-		this.manifests[appName] = manifest
+		this.manifests[appName] = {...(new WebdeskApplicationManifest), ...manifest}
 		// Compile a list of files that will skip indexing
 		const fullIgnoreList: string[] = [...(manifest.ignore || []), ...(manifest.commands || []) , "/manifest.json"]
 		// Index the app commands
@@ -104,20 +104,10 @@ export const resources = new class {
 		// Index the app custom assets
 		this.indexCustomAssets(appName, manifest.routes)
 	}
-	// Adds all the template elements to the index page
-	// TODO: Discontinue it(?)
+	// Indexes the webdesk base page
 	async indexWebdesk() {
-		// Task parallelization array
-		const fileReadTasks: Promise<string>[] = []
-		// Split the base index html file into 2 parts
-		const webdeskSplitIndex: string[] = (await Deno.readTextFile(config.indexFilePath)).split("<!--Assets-->")
-		// Read all the files inside the components folder
-		for await (const component of Deno.readDir(config.componentsPath)) {
-			// If the entry is a file, add it to the file read queue
-			if (component.isFile) { fileReadTasks.push(Deno.readTextFile(`${config.componentsPath}/${component.name}`)) }
-		}
-		// Save the index as text, joining the first base part, all the components and the second base part
-		this.webdesk.index = [webdeskSplitIndex[0], (await Promise.all(fileReadTasks)).join("\n"), webdeskSplitIndex[1]].join("\n")
+		// Read the index file and index it
+		this.webdesk.index = (await Deno.readTextFile("static/index.htm"))
 	}
 	// Indexes the webdesk base command/s
 	indexWebdeskCommands() {
@@ -136,7 +126,7 @@ export const resources = new class {
 				manifests += `,${JSON.stringify(resources.manifests[app] || { })}`
 			}
 			// Return the manifests
-			return [ manifests.substring(1), "text/plain" ]
+			return [ manifests.substring(1), "application/json" ]
 		}
 		// Command for fetching the default app titlebar
 		this.commands["/api/_/titlebar"] = (queries: string[]) => {
@@ -153,7 +143,7 @@ export const resources = new class {
 				}
 			}
 			// Return the titlebar
-			return [ titlebar, "text/html" ]
+			return [ titlebar, "text/html; charset=UTF-8" ]
 		}
 	}
 	// Compiles into a single file the css and adds it to the endpoint
@@ -170,7 +160,7 @@ export const resources = new class {
 	// Adds the endpoint for the webdesk script
 	async indexScripts() {
 		// Read the script file
-		this.webdesk.script = await Deno.readTextFile(`${config.frontendScriptsPath}/script.js`)
+		this.webdesk.script = await Deno.readTextFile(`static/script.js`)
 	}
 	// Add all webdesk endpoints
 	async initWebdesk() {
@@ -197,7 +187,7 @@ export const resources = new class {
 
 		for await (const _event of Deno.watchFs(".")) {
 			this.initWebdesk()
-			log.info("Change detected")
+			log.info("Change detected - Reindexing apps")
 
 			for await (const app of Deno.readDir("apps")) {
 				// if (app.isDirectory) { initTasks.push(this.indexApp(app.name)) }

@@ -754,8 +754,6 @@ const AppDockManager = new class {
 	clock = this.element.querySelector(".Clock")
 	// Get the Open Windows element inside App Dock
 	open = this.element.querySelector(".Open")
-	// Template of the Open Window Icon Element
-	templateElement = Utilities.assets.querySelector(`[name="DockIcon"]`)
 	// Map between the windows and icons
 	windowsIconMap = new WeakMap()
 
@@ -792,17 +790,24 @@ const AppDockManager = new class {
 		// Create the icon for a newly opened window
 		async add(details) {
 			// Create the new icon for the window
-			const dockIcon = AppDockManager.templateElement.cloneNode(true)
+			const icon = document.createElement("button")
+			const image = document.createElement("img")
+			const name = document.createElement("p")
+
+			// Assemble the dock icon element
+			icon.append(name, image)
+
 			// Link the new dock icon to its window
-			AppDockManager.windowsIconMap.set(details.element, dockIcon)
+			AppDockManager.windowsIconMap.set(details.element, icon)
 			// Add it to the app dock
-			AppDockManager.open.append(dockIcon)
+			AppDockManager.open.append(icon)
 
 			// Add the necessary event listeners
-			dockIcon.addEventListener("click", AppDockManager.icons.focusLinkedWindow)
+			icon.addEventListener("click", AppDockManager.icons.focusLinkedWindow)
 			// Set the values of the dock icon
-			dockIcon.setAttribute("icon", details.app)	// App name
-			dockIcon.querySelector(".Icon").src = `apps/${details.app}/${(await Utilities.manifests)[details.app].icon}`	// App icon
+			icon.setAttribute("icon", details.app)	// App name
+			image.src = `apps/${details.app}/${(await Utilities.manifests)[details.app].icon}`	// App icon
+			name.innerText = details.app
 		},
 		// Removes an icon when the connected window is closed
 		updateClosedWindow(details) {

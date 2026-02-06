@@ -16,7 +16,7 @@ enum LogDecorations {
 export const log = new class {
 	private relTimeBase = performance.now()
 
-	getRelTime() {
+	private getRelTime() {
 		const now = performance.now()
 		const passMills = now - this.relTimeBase
 
@@ -28,7 +28,7 @@ export const log = new class {
 		return `[${`${days}`.padStart(3, "0")}:${`${hour}`.padStart(2, "0")}:${`${mins}`.padStart(2, "0")}:${`${secs.toFixed(3)}`.padStart(6, "0")}]`
 	}
 
-	getAbsTime() {
+	private getAbsTime() {
 		const now = new Date()
 
 		return [
