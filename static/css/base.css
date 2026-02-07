@@ -146,6 +146,7 @@ body {
 	justify-content: center;
 	user-select: none;
 	overflow: hidden;
+	background: none;
 	cursor: pointer;
 	display: flex;
 	width: 5vmin;

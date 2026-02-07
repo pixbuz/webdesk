@@ -1,0 +1,76 @@
+.introBanner {
+	background: rgba(0, 0, 0, 37.5%);
+	backdrop-filter: blur(1px);
+	position: absolute;
+	height: 100svh;
+	width: 100svw;
+	z-index: 99;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex-flow: column nowrap;
+}
+
+.introBanner .deco {
+	translate: -25% 0;
+	height: 10vmin;
+	width: 200svw;
+	left: 0;
+}
+
+.deco.top {
+	translate: 0 0%;
+	rotate: 2deg;
+}
+
+.deco.bottom {
+	translate: 0 0%;
+	rotate: 2deg;
+}
+
+.introBanner section {
+	background: rgba(0, 0, 0, 25%);
+	flex-flow: column nowrap;
+	border-radius: 1vmin;
+	padding: 2vmax;
+	width: 25vmax;
+	height: 25vmin;
+	display: flex;
+}
+
+.introBanner input {
+	aspect-ratio: 2;
+	width: 2vmax;
+	border: none;
+}
+
+.introBanner input ::before {
+	background: red;
+	content: "";
+	inset: 0;
+}
+
+.introBanner h1 {
+	text-align: center;
+	color: white;
+	width: 100%;
+}
+
+.introBanner p {
+	color: white;
+	width: 100%;
+	flex: 1;
+}
+
+.introBanner div {
+	justify-content: space-between;
+	flex-flow: row nowrap;
+	display: flex;
+}
+
+.introBanner button {
+	text-align: center;
+	color: black;
+	width: 25%;
+	padding: 2vmin;
+}

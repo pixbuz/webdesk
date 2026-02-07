@@ -150,7 +150,7 @@ export const resources = new class {
 	// Compiles into a single file the css and adds it to the endpoint
 	async indexCSS() {
 		// Add all CSS files to the processing queue
-		const cssNames: Set<string> = new Set(["base.css", "animations.css", "customization.css"])
+		const cssNames: Set<string> = new Set(["base.css", "customization.css", "intro.css", "animations.css"])
 		// Read all the css files
 		const processingQueue = [...cssNames].map(async (cssFile) => {
 			return await Deno.readTextFile(`${config.cssStylesPath}/${cssFile}`)

@@ -242,6 +242,7 @@ const Utilities = new class {
 			if (dbVersion == undefined) {
 				this.webdeskDB.version = 1
 				localStorage.setItem("db-version", 1)
+				this.introSequence()
 			} else { this.webdeskDB.version = parseInt(dbVersion) }
 
 			// Stops any db interaction in case of db updating
@@ -261,7 +262,7 @@ const Utilities = new class {
 			// Used to not overlap operations to the Database
 			this.webdeskDB.updateLock = Promise.resolve()
 		},
-		// 
+		// Fetches all the application manifests
 		apps() {
 			this.manifests = new Promise(async (res) => {
 				// Request all installed apps manifests
@@ -277,6 +278,48 @@ const Utilities = new class {
 	getWindowInfo(webdeskWindow) {
 		// Return the window ID, name and element
 		return { id: webdeskWindow.getAttribute("id"), target: webdeskWindow, app: webdeskWindow.getAttribute("app"), icon: AppDockManager.windowsIconMap.get(webdeskWindow)}
+	}
+	// Intros the user to webdesk
+	introSequence() {
+		// Create all intro banner's elements
+		const banner = document.createElement("div"),
+			deco1 = document.createElement("div"),
+			deco2 = document.createElement("div"),
+			content = document.createElement("section"),
+			title = document.createElement("h1"),
+			text = document.createElement("p"),
+			theme = document.createElement("input"),
+			buttons = document.createElement("div"),
+			button1 = document.createElement("button"),
+			button2 = document.createElement("button")
+
+		banner.append(deco1, content, deco2)
+		content.append(title, text, theme, buttons)
+		buttons.append(button1, button2)
+
+		banner.classList.add("introBanner")
+		deco1.classList.add("deco", "top")
+		deco2.classList.add("deco", "bottom")
+
+		title.innerHTML = "Welcome to <span>Webdesk</span>!"
+		text.innerHTML = `Webdesk is my passion project that aims to create a OS like experience in the browser! Check out more in the <a target="_about" href="https://github.com/FatiguedFrench/webdesk">github repo</a>!`
+		theme.setAttribute("type", "checkbox")
+
+		button1.innerText = "Cool!"
+		button2.innerText = "Give me the tour!"
+
+		button2.onclick = Utilities.progressTutorial
+		button1.onclick = Utilities.endIntro
+
+		document.body.append(banner)
+	}
+	// Removes the intro banner
+	endIntro() {
+		document.querySelector(".introBanner").remove()
+	}
+	// If the user wishes they get a short tour of webdesk
+	progressTutorial() {
+		document.querySelector(".introBanner").children[1].remove()
 	}
 
 	constructor() {
@@ -1008,3 +1051,7 @@ const UIManager = new class {
 		this.backgroundWrapper.innerHTML = backgroundContents
 	})() }
 }
+
+// DEBUG !!! !!! !!!
+Utilities.introSequence()
+// !!! !!! !!!
