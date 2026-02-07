@@ -52,7 +52,7 @@ export const resources = new class {
 		for await (const entry of Deno.readDir(`apps/${appName}${path}`)) {
 			// If the ignore list contains the relative path of an entry, skip indexing
 			if (ignore.includes(`${path}/${entry.name}`)) {
-				log.debug(`Skipped indexing of ${entry.name} from apps/${appName}${path}`)
+				log.debug(`Skipped indexing of ${appName}'s ${entry.name} (from "apps/${appName}${path}")`)
 				continue
 			}
 			// If the entry is a folder, queue it to index
@@ -60,7 +60,7 @@ export const resources = new class {
 			// If the entry is a file, add it to the app assets
 			else if (entry.isFile) {
 				this.assets[`/apps/${appName}${path}/${entry.name}`] = Deno.readFileSync(`apps/${appName}${path}/${entry.name}`)
-				log.debug(`Indexed ${entry.name} from apps/${appName}${path}`)
+				log.debug(`Indexed app ${appName}'s ${entry.name} (from "apps/${appName}${path}")`)
 			}
 		}
 		// Wait for all subfolders to finish indexing
@@ -74,6 +74,7 @@ export const resources = new class {
 			this.assets[`/apps/${appName}/${route}`] = this.assets[`/apps/${appName}/${custom[route]}`]
 			// Remove the default asset
 			delete this.assets[`/apps/${appName}/${custom[route]}`]
+			log.debug(`Replaced app ${appName}'s asset endpoint (from "apps/${appName}/${custom[route]}" to "apps/${appName}/${route}")`)
 		}
 	}
 	// Register the commands of an app
@@ -81,22 +82,22 @@ export const resources = new class {
 		// For every file containing server commands
 		for (const command of commands) {
 			// Import the module
-			const module = await import(`../apps/${appName}/${command}`)
-			// For each export of the module...
+			const module = await import(`../apps/${appName}${command}`)
+			// For each export of the module, map it to an endpoint
 			for (const entry of Object.keys(module)) {
-				// If it's a function, dedicate an endpoint for the function
-				if (module[entry] instanceof Function) { this.commands[`/api/${appName}/${entry}`] = module[entry] }
+				this.commands[`/api/${appName}/${entry}`] = module[entry]
+				log.info(`Binded ${entry} to "/api/${appName}/${entry}" (from ${appName} module "/apps/${appName}/${command}")`)
 			}
 		}
 	}
 	// Indexes an app, assets and commands included
 	private async indexApp(appName: string) {
-		// Read the manifest
-		const manifest: WebdeskApplicationManifest = JSON.parse(await Deno.readTextFile(`apps/${appName}/manifest.json`))
+		// Read and normalize the manifest
+		const manifest: WebdeskApplicationManifest = {...(new WebdeskApplicationManifest), ...JSON.parse(await Deno.readTextFile(`apps/${appName}/manifest.json`))}
 		// Save the manifest
-		this.manifests[appName] = {...(new WebdeskApplicationManifest), ...manifest}
+		this.manifests[appName] = manifest
 		// Compile a list of files that will skip indexing
-		const fullIgnoreList: string[] = [...(manifest.ignore || []), ...(manifest.commands || []) , "/manifest.json"]
+		const fullIgnoreList: string[] = [...manifest.ignore, ...manifest.commands, "/manifest.json", ]
 		// Index the app commands
 		await this.indexAppCommands(appName, manifest.commands)
 		// Index the app default assets
@@ -109,7 +110,7 @@ export const resources = new class {
 		// Read the index file and index it
 		this.webdesk.index = (await Deno.readTextFile("static/index.htm"))
 	}
-	// Indexes the webdesk base command/s
+	// Indexes the webdesk base commands
 	indexWebdeskCommands() {
 		// Get command for an app or all app manifests
 		this.commands["/api/_/manifest"] = (queries: string[]) => {

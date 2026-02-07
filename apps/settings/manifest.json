@@ -3,7 +3,7 @@
 	"index": "settings.html",
 	"description": "Customize Webdesk",
 
-	"commands": [ "test.ts" ],
+	"commands": [ "/test.ts" ],
 
 	"routes": {
 		"style": "settings.css"

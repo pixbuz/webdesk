@@ -450,6 +450,8 @@ const WindowManager = new class {
 		minimiseWindow(event) {
 			// Get the target window
 			const targetWindow = event.target.closest("[app]")
+			// Remove the maximised class
+			targetWindow.classList.remove("maximised")
 			// If the window is minimised
 			if (targetWindow.classList.contains("minimized")) {
 				// Remove the minimised class and send the end minimised event
@@ -813,7 +815,7 @@ const AppDockManager = new class {
 		updateClosedWindow(details) {
 			// Delete the dock icon and remove it from the map
 			details.icon.remove()
-			windowDockIconMap.delete(details.target)
+			AppDockManager.windowsIconMap.delete(details.target)
 		},
 		// Updates an icon when the connected window is maximised
 		updateMinimisedWindow(details) {
@@ -823,8 +825,8 @@ const AppDockManager = new class {
 		// Focuses the window connected to a dock icon
 		focusLinkedWindow(event) {
 			// Shifts the Focus on the Linked Window of a Dock Icon
-			const appName = event.target.closest(`[name="DockIcon"]`).getAttribute("app")
-			const window = windowSpace.querySelector(`[app="${appName}"]`)
+			const appName = event.target.closest(`[icon]`).getAttribute("icon")
+			const window = WindowManager.space.querySelector(`[app="${appName}"]`)
 
 			// Removes classes for some reason
 			window.classList.remove("minimized")

@@ -81,7 +81,9 @@ function apiReplier(request: URL): Response {
 			return new Response(result[0] as BodyInit, { status: 200, headers: { "content-type": result[1] } })
 		}
 		catch(error) {
-			log.warn(`Command function failed with: ${(error as Error).message}`)
+			const errorStack = (error as Error).stack!.split("\n")
+			log.warn(`Command function for "${request.pathname}" failed: ${errorStack[0]}`)
+			errorStack.slice(1).forEach((line) => { log.warn(line) })
 			// Send an server error response
 			return new ErrorResponse((error as Error).stack, 500)
 		}
