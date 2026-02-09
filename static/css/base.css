@@ -136,11 +136,6 @@ body {
 	gap: 4px 8px;
 }
 
-.Assets {
-	position: absolute;
-	display: none;
-}
-
 [launcher] {
 	flex-flow: column nowrap;
 	justify-content: center;
