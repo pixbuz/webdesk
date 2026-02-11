@@ -4,7 +4,7 @@
 // Backend compilation of index launchers
 //
 
-var newUser = true
+var newUser = false
 
 const Utilities = new class {
 	// Assets section containg all template elements
@@ -364,12 +364,13 @@ const WindowManager = new class {
 	boundryBoxes = new WeakMap()
 	basic = {
 		// Assembles a blank window
-		skeletonizeWindow(details) {
+		skeletonizeWindow(details, emit = true) {
 			// Make the wrapping element for the window
 			const windowSkeleton = document.createElement("article")
 			// Make the iframe wrapper element
 			const contentWrapper = document.createElement("section")
 			// Make the titlebar element
+			// TODO: Make it so the iframe page title reflects the titlebar title
 			const titlebar = document.createElement("header")
 			// Make the app content iframe
 			const content = document.createElement("iframe")
@@ -389,10 +390,9 @@ const WindowManager = new class {
 			contentWrapper.classList.add("wrapper")	// Add the iframe wrapper class
 			content.setAttribute("frameborder", 0)	// Aesthetic fix for the iframe
 
-			// Add the new window to the window space
-			WindowManager.space.appendChild(windowSkeleton)
 			// Escalate the event (LAUNCHER_CLICKED -> WINDOW_OPENING)
-			Utilities.events.WINDOW_OPENING.emit({ app: details.app, element: windowSkeleton, titlebar: titlebar, content: content })
+			if (emit) { Utilities.events.WINDOW_OPENING.emit({ app: details.app, element: windowSkeleton, titlebar: titlebar, content: content }) }
+			else { WindowManager.space.appendChild(windowSkeleton); return windowSkeleton }
 			// Update the rolling id
 			WindowManager.rollingID++
 		},
@@ -416,6 +416,8 @@ const WindowManager = new class {
 			details.element.querySelector(".minimise").addEventListener("click", WindowManager.basic.minimiseWindow)
 			details.element.querySelector(".maximise").addEventListener("click", WindowManager.basic.maximiseWindow)
 
+			// Add the new window to the window space
+			WindowManager.space.appendChild(details.element)
 			// Escalate the event (WINDOW_OPENING -> WINDOW_OPEN)
 			Utilities.events.WINDOW_OPEN.emit({ app: details.app, target: details.element, id: WindowManager.rollingID, icon: null })
 			// DEBUG !!! !!! !!!
@@ -725,6 +727,7 @@ const WindowManager = new class {
 			Utilities.events.WINDOW_RESIZE_END.emit(Utilities.getWindowInfo(resizingWindow))
 		}
 	}
+
 	constructor() {
 		Utilities.events.LAUNCHER_CLICK.on([this.basic.skeletonizeWindow.bind(this)])
 		Utilities.events.WINDOW_OPENING.on([this.basic.openWindow.bind(this)])
@@ -1012,6 +1015,24 @@ const UIManager = new class {
 	})() }
 }
 
-// DEBUG !!! !!! !!!
-Utilities.introSequence()
-// !!! !!! !!!
+// Intros the user to webdesk
+// TODO: move to titlebar fetching
+if (newUser) {
+	const introWindow = WindowManager.basic.skeletonizeWindow({app: "intro"}, false)
+	const closeButton = document.createElement("button")
+	const buttonsContainer = document.createElement("div")
+	const title = document.createElement("h5")
+
+	title.innerText = "Welcome!"
+
+	buttonsContainer.classList.add("buttons")
+	buttonsContainer.append(closeButton)
+	introWindow.querySelector(".titlebar").append(title, buttonsContainer)
+
+	closeButton.classList.add("close")
+	closeButton.addEventListener("click", WindowManager.basic.closeWindow)
+
+	WindowManager.move.centerWindow({target: introWindow})
+	WindowManager.basic.focusWindow({target: introWindow})
+	introWindow.querySelector("iframe").src = "/api/_/intro-index"
+}

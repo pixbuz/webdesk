@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Welcome!</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				position: relative;
+				box-sizing: border-box;
+				font-family: system-ui, -apple-system;
+			}
+			body {
+				padding: 8px;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Welcome to Webdesk!</h1>
+		<p>Here's a guide for you to get started!</p>
+		<strong>If you want to jump right in, close this window with the red button!</strong>
+		<h2>What is this?</h2>
+		<p>Webdesk works like an OS, allowing you to open applications in windows by clicking on the <strong>application Launchers</strong>. This is an <strong>application Window</strong>, you can try <strong>moving it arround by clicking on the title, or you can try resizing it by grabbing an edge and drag the cursor!</strong> "Normal" windows also allow you to minimise and maximise them - usually but not always, since every application can choose which buttons to have in the titlebar. When you open an application you will see it's icon appear on the bottom bar too - that's the <strong>App Dock</strong> and it allows you to multitask with multiple applications open.</p>
+		<h2>How does it work?</h2>
+		<p>When the user clicks on a launcher, <strong>an event is emitted</strong> and it gets iterpret into which app to open, fetching the application's index and resources. Then, the App Dock updates by displaying the icon of the opened app. When a window's close button is clicked, the window simply deletes itself. As for the <strong>system on the backend, it uses Deno</strong>, listening for incoming requests and handling the application indexing, by mapping all the different browser endpoints to the respective resource. </p>
+		<h2>Aight, that's all! Explore Webdesk by yourself, hope you enjoy!!</h2>
+	</body>
+</html>

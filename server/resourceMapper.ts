@@ -146,6 +146,10 @@ export const resources = new class {
 			// Return the titlebar
 			return [ titlebar, "text/html; charset=UTF-8" ]
 		}
+		// Returns the intro page
+		this.commands["/api/_/intro-index"] = (_queries: string[]) => {
+			return [ Deno.readFileSync("static/intropage.htm"), "text/html; charset=UTF-8" ]
+		}
 	}
 	// Compiles into a single file the css and adds it to the endpoint
 	async indexCSS() {

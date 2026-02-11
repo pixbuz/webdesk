@@ -53,11 +53,11 @@
 }
 
 /* Unfocused Window Buttons */
-[app] .titlebar button:nth-child(1) { background: var(--windows-color-buttons-mini); }
-[app] .titlebar button:nth-child(2) { background: var(--windows-color-buttons-maxi); }
-[app] .titlebar button:nth-child(3) { background: var(--windows-color-buttons-close); }
+[app] .titlebar button.minimise { background: var(--windows-color-buttons-mini); }
+[app] .titlebar button.maximise { background: var(--windows-color-buttons-maxi); }
+[app] .titlebar button.close { background: var(--windows-color-buttons-close); }
 
 /* Focused Window Buttons */
-[app].focus .titlebar button:nth-child(1) { background: var(--windows-color-focus-buttons-mini); }
-[app].focus .titlebar button:nth-child(2) { background: var(--windows-color-focus-buttons-maxi); }
-[app].focus .titlebar button:nth-child(3) { background: var(--windows-color-focus-buttons-close); }
+[app].focus .titlebar button.minimise { background: var(--windows-color-focus-buttons-mini); }
+[app].focus .titlebar button.maximise { background: var(--windows-color-focus-buttons-maxi); }
+[app].focus .titlebar button.close { background: var(--windows-color-focus-buttons-close); }
