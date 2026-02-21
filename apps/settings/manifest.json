@@ -1,11 +1,11 @@
 {
-	"icon": "settings.svg",
-	"index": "settings.html",
+	"icon": "icon.svg",
+	"index": "index.html",
 	"description": "Customize Webdesk",
 
 	"commands": [ "/test.ts" ],
 
 	"routes": {
-		"style": "settings.css"
+		"style": "style.css"
 	}
 }

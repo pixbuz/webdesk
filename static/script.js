@@ -1,14 +1,11 @@
 /// <reference lib="dom" />
 
 // Window proprieties inside utilities replacing window boundry boxes and window dock icon map
-// Backend compilation of index launchers
-//
+// Customization for the Titlebar compiler's event listeners and callback functions
 
 var newUser = false
 
 const Utilities = new class {
-	// Assets section containg all template elements
-	assets = document.querySelector(".Assets")
 	// App manifests
 	manifests
 	// Contains all the template objects for the events
@@ -26,8 +23,7 @@ const Utilities = new class {
 			WINDOW_OPEN_EVENT: {
 				id: null,
 				app: null,
-				target: null,
-				icon: null,
+				target: null
 			},
 			CLOCK_EVENT: {
 				target: [ ]
@@ -279,7 +275,7 @@ const Utilities = new class {
 	// Utility method to get the information of a window
 	getWindowInfo(webdeskWindow) {
 		// Return the window ID, name and element
-		return { id: webdeskWindow.getAttribute("id"), target: webdeskWindow, app: webdeskWindow.getAttribute("app"), icon: AppDockManager.windowsIconMap.get(webdeskWindow)}
+		return { id: webdeskWindow.getAttribute("id"), target: webdeskWindow, app: webdeskWindow.getAttribute("app") }
 	}
 
 	constructor() {
@@ -419,7 +415,7 @@ const WindowManager = new class {
 			// Add the new window to the window space
 			WindowManager.space.appendChild(details.element)
 			// Escalate the event (WINDOW_OPENING -> WINDOW_OPEN)
-			Utilities.events.WINDOW_OPEN.emit({ app: details.app, target: details.element, id: WindowManager.rollingID, icon: null })
+			Utilities.events.WINDOW_OPEN.emit({ app: details.app, target: details.element, id: WindowManager.rollingID })
 			// DEBUG !!! !!! !!!
 			if (details.app == "settings") { details.element.querySelector(".maximise").dispatchEvent(new Event("click")) }
 			// !!! !!! !!!
@@ -762,8 +758,6 @@ const AppDockManager = new class {
 	clock = this.element.querySelector(".Clock")
 	// Get the Open Windows element inside App Dock
 	open = this.element.querySelector(".Open")
-	// Map between the windows and icons
-	windowsIconMap = new WeakMap()
 
 	// Updates the clock (in the frontend)
 	updateClockElement(details) {
@@ -787,13 +781,13 @@ const AppDockManager = new class {
 	icons = {
 		// Add the maximised propriety to an icon
 		maximised: {
-			add(details) { details.icon.classList.add("maximised") },
-			remove(details) { details.icon.classList.remove("maximised") }
+			add(details) { AppDockManager.open.querySelector(`[icon=${details.app}]`).classList.add("maximised") },
+			remove(details) { AppDockManager.open.querySelector(`[icon=${details.app}]`).classList.remove("maximised") }
 		},
 		// Add the minimised propriety to an icon
 		minimised: {
-			add(details) { details.icon.classList.add("minimised") },
-			remove(details) { details.icon.classList.remove("minimised") }
+			add(details) { AppDockManager.open.querySelector(`[icon=${details.app}]`).classList.add("minimised") },
+			remove(details) { AppDockManager.open.querySelector(`[icon=${details.app}]`).classList.remove("minimised") }
 		},
 		// Create the icon for a newly opened window
 		async add(details) {
@@ -805,8 +799,6 @@ const AppDockManager = new class {
 			// Assemble the dock icon element
 			icon.append(name, image)
 
-			// Link the new dock icon to its window
-			AppDockManager.windowsIconMap.set(details.element, icon)
 			// Add it to the app dock
 			AppDockManager.open.append(icon)
 
@@ -820,13 +812,12 @@ const AppDockManager = new class {
 		// Removes an icon when the connected window is closed
 		updateClosedWindow(details) {
 			// Delete the dock icon and remove it from the map
-			details.icon.remove()
-			AppDockManager.windowsIconMap.delete(details.target)
+			AppDockManager.open.querySelector(`[icon=${details.app}]`).remove()
 		},
 		// Updates an icon when the connected window is maximised
 		updateMinimisedWindow(details) {
 			// Add the class
-			details.icon.classList.add("mini")
+			AppDockManager.open.querySelector(`[icon=${details.app}]`).classList.add("mini")
 		},
 		// Focuses the window connected to a dock icon
 		focusLinkedWindow(event) {

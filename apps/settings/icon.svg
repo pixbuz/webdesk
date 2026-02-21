@@ -1,0 +1,8 @@
+<svg version="1.1" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+	<g fill="none" stroke-linecap="round" stroke-linejoin="round">
+		<path d="m18.2 24h-13.2" stroke="#404040" stroke-width="2" style="paint-order:stroke fill markers"/>
+		<path d="m27 8h-13.2" stroke="#404040" stroke-width="2" style="paint-order:stroke fill markers"/>
+		<ellipse cx="24" cy="24" rx="5" ry="5" stroke="#4dff6b" stroke-width="2" style="paint-order:stroke fill markers"/>
+		<circle cx="8" cy="8" r="5" stroke="#ff5f40" stroke-width="2.02" style="paint-order:stroke fill markers"/>
+	</g>
+</svg>
