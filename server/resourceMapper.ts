@@ -20,9 +20,11 @@ class WebdeskApplicationManifest {
 }
 
 type WebdeskFiles = {
+	manifest: string,
 	script: string,
 	index: string,
 	css: string,
+	sw: string
 }
 
 export const resources = new class {
@@ -36,7 +38,11 @@ export const resources = new class {
 		// Webdesk css
 		css: "",
 		// Webdesk script
-		script: ""
+		script: "",
+		// Web app manifest
+		manifest: "",
+		// Service Worker script
+		sw: ""
 	}
 	// Contains the endpoints and the associated assets contents
 	assets: AssetsLookupTable = {}
@@ -151,6 +157,12 @@ export const resources = new class {
 			return [ Deno.readFileSync("static/intropage.htm"), "text/html; charset=UTF-8" ]
 		}
 	}
+	async indexServiceWorker() {
+		this.webdesk.sw = await Deno.readTextFile(`static/serviceWorker.js`)
+	}
+	async indexWebappManifest() {
+		this.webdesk.manifest = await Deno.readTextFile(`static/manifest.json`)
+	}
 	// Compiles into a single file the css and adds it to the endpoint
 	async indexCSS() {
 		// Add all CSS files to the processing queue
@@ -175,6 +187,8 @@ export const resources = new class {
 		tasks.push(this.indexWebdesk())
 		tasks.push(this.indexScripts())
 		tasks.push(this.indexWebdeskCommands())
+		tasks.push(this.indexWebappManifest())
+		tasks.push(this.indexServiceWorker())
 
 		await Promise.all(tasks)
 	}

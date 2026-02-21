@@ -49,6 +49,10 @@ function webdeskReplier(request: URL) {
 		case "/style": return new Response(resources.webdesk.css, { status: 200, headers: { "content-type": "text/css, charset=UTF-8" } })
 		// Return the script
 		case "/script": return new Response(resources.webdesk.script, { status: 200, headers: { "content-type": "text/javascript, charset=UTF-8" } })
+		// Return the service worker
+		case "/sw": return new Response(resources.webdesk.sw, { status: 200, headers: { "content-type": "text/javascript, charset=UTF-8" } })
+		// Return the web app manifest
+		case "/manifest": return new Response(resources.webdesk.manifest, { status: 200, headers: { "content-type": "application/json, charset=UTF-8" } })
 		// Return an error if the requested file doesn't exist
 		default: return new ErrorResponse(`Recived request: ${request}\n${" ".repeat(17)}^ isn't a valid webdesk file`)
 	}
