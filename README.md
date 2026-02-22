@@ -52,6 +52,8 @@ Webdesk is a passion project of mine with the aim of making an OS type experienc
 
 ~~Change the code to event driven actions~~
 
+Titlebar button name -> callback function system for custom titlebars
+
 Add settings and customization options with CSS variables
 - ~~Different Color Palettes~~
 - ~~Desktop Image~~

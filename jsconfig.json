@@ -3,7 +3,7 @@
 		"module": "commonjs",
 		"target": "es6",
 		"checkJs": false,
-		"lib": ["dom", "dom.iterable", "esnext"],
+		"lib": ["dom", "dom.iterable", "esnext", "webworker"],
 	},
 	"exclude": ["node_modules"]
 }
