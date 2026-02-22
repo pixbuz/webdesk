@@ -1,8 +1,8 @@
 /// <reference lib="webworker" />
 /** @type {ServiceWorkerGlobalScope} */
 
-const CACHE_NAME = "webdesk"
 const TRIM = self.location.origin.length
+const DONTINTERCEPT = true
 
 const log = new class {
 	colors = Object.freeze({
@@ -39,7 +39,7 @@ const log = new class {
 		const now = new Date()
 
 		return [
-			`[${`${now.getDate()}`.padStart(2, "0")}/${`${now.getMonth()}`.padStart(2, "0")}/${now.getFullYear()}]`,
+			`[${`${now.getDate()}`.padStart(2, "0")}/${`${now.getMonth() + 1}`.padStart(2, "0")}/${now.getFullYear()}]`,
 			`[${`${now.getHours()}`.padStart(2, "0")}:${`${now.getMinutes()}`.padStart(2, "0")}:${`${now.getSeconds()}`.padStart(2, "0")}.${`${now.getMilliseconds()}`.padStart(3,"0")}]`,
 		]
 	}
@@ -93,50 +93,39 @@ function installCallback(event) {
 	}
 }
 
-// Set up the service worker
-// TODO: idk is it usefull tho?
-function activateCallback(event) {
-	log.info(`Checking for caches`)
-	// Retrieve an array of all cache names in the domain
-	caches.keys().then((allCaches) => {
-		log.debug(`Found caches: ${allCaches.toString()}`)
-		// For each cache name in the array
-		allCaches.map((cacheName) => {
-			// If the cache name does not match the "active" CACHE_NAME, delete it
-			if (cacheName !== CACHE_NAME) {
-				log.info(`Deleting cache "${cacheName}"`)
-				return caches.delete(cacheName)
-			}
-		})
-	})
-}
-
 // Main request intercept logic
 async function fetchCallback(event) {
 	// Log the request
 	log.info(`Recived request`, event.request.url)
-	// If the request doesn't use the GET method, ignore it
-	if (event.request.method !== 'GET') {
+	// If the request doesn"t use the GET method, ignore it
+	if (event.request.method !== "GET") {
 		console.log(`Ignoring, method is ${event.request.method}`, event.request.url)
 		return
 	}
 
-	event.respondWith(
-		// Search the caches to find the requested file
-		caches.match(event.request, { ignoreSearch: true }).then(async (cachedResponse) => {
-			// If the request was found in the cache, return the content
-			if (cachedResponse) {
-				log.debug(`Cache HIT!`, event.request.url)
-				return cachedResponse
-			}
+	if (DONTINTERCEPT) {
+		log.debug(`Don't intercept mode, returning the server response`, event.request.url)
+		event.respondWith(fetch(event.request))
+	} else {
+		event.respondWith(
+			// Search the caches to find the requested file
+			caches.match(event.request, { ignoreSearch: true }).then(async (cachedResponse) => {
+				// If the request was found in the cache, return the content
+				if (cachedResponse) {
+					log.debug(`Cache HIT!`, event.request.url)
+					return cachedResponse
+				}
 
-			log.info(`Cache MISS, forwarding the request to the server`, event.request.url)
-			// Ask the server the request url and return in to the client
-			return (await askServer(event.request))
-		})
-	)
+				log.info(`Cache MISS, forwarding the request to the server`, event.request.url)
+				// Ask the server the request url and return in to the client
+				return (await askServer(event.request))
+			})
+		)
+	}
 }
 
+// Fetches a request from the server, caching it in parallel
+// TODO: Use multiple caches for different things IF ovelap problem emerges
 async function askServer(request) {
 	// Fall trought with the request to the server
 	const serverResponse = await fetch(request)
@@ -147,11 +136,10 @@ async function askServer(request) {
 	log.info(`Server responded with code ${serverResponse.status} (${serverResponse.statusText})`, request.url)
 
 	// Save the response to the cache
-	;(await caches.open(CACHE_NAME)).put(request, responseClone)
+	caches.open("webdesk").then((cache) => { cache.put(request, responseClone) })
 	// Return the response
 	return serverResponse
 }
 
-self.addEventListener('install', installCallback)
-self.addEventListener('activate', activateCallback)
-self.addEventListener('fetch', fetchCallback)
+self.addEventListener("install", installCallback)
+self.addEventListener("fetch", fetchCallback)

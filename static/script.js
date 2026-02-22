@@ -1006,6 +1006,30 @@ const UIManager = new class {
 	})() }
 }
 
+// Manages the service worker
+// TODO: Add a versioning system that empties the cache if any server asset is updated
+const ServiceWorkerManager = new class {
+	// Displays the size of the cache
+	loadInformation() {
+		navigator.storage.estimate().then(({ usage, quota }) => {
+			const usedMB = (usage / 1024 ** 2).toFixed(2)
+			const totalMB = (quota / 1024 ** 2).toFixed(2)
+			const percentUsed = ((usage / quota) * 100).toFixed(2)
+
+			console.log(`Using ${usedMB} MB out of ${totalMB} MB (${percentUsed}%)`)
+		})
+	}
+
+	constructor() {
+		// Log the service worker information
+		this.loadInformation()
+		// Register the sw script as the service worker
+		navigator.serviceWorker.register("/sw")
+			.then((registration) => { console.log("Service Worker registered successfully!", registration) })
+			.catch((error) => { console.error(error) })
+	}
+}
+
 // Intros the user to webdesk
 // TODO: move to titlebar fetching
 if (newUser) {
@@ -1026,14 +1050,4 @@ if (newUser) {
 	WindowManager.move.centerWindow({target: introWindow})
 	WindowManager.basic.focusWindow({target: introWindow})
 	introWindow.querySelector("iframe").src = "/api/_/intro-index"
-}
-
-// Service worker logic
-if ('serviceWorker' in navigator) {
-	window.addEventListener('load', () => {
-		// Register the sw script as the service worker
-		navigator.serviceWorker.register('/sw')
-			.then((registration) => { console.log('Service Worker registered successfully!', registration.scope) })
-			.catch((error) => { console.error(error) })
-	})
 }
