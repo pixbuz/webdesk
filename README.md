@@ -18,7 +18,7 @@ Webdesk is a passion project of mine with the aim of making an OS type experienc
 	- [x] Make Windows Movable
 	- [x] Manage Window Focus
 	- [x] Manage Window Overlapping
-	- [] Add Keybind Window Switching
+	- [ ] Add Keybind Window Switching
 - Make a App Dock
 	- [x] Make it Show the Open Apps' Windows
 	- [x] Add a Clock & Date
@@ -53,10 +53,10 @@ Webdesk is a passion project of mine with the aim of making an OS type experienc
 ~~Change the code to event driven actions~~
 
 Add settings and customization options with CSS variables
-- Different Color Palettes
-- Desktop Image
+- ~~Different Color Palettes~~
+- ~~Desktop Image~~
 - Preferences
-- Themes
+- ~~Themes~~
 
 ~~Add the first time tutorial~~
 
