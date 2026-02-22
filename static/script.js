@@ -1027,3 +1027,13 @@ if (newUser) {
 	WindowManager.basic.focusWindow({target: introWindow})
 	introWindow.querySelector("iframe").src = "/api/_/intro-index"
 }
+
+// Service worker logic
+if ('serviceWorker' in navigator) {
+	window.addEventListener('load', () => {
+		// Register the sw script as the service worker
+		navigator.serviceWorker.register('/sw')
+			.then((registration) => { console.log('Service Worker registered successfully!', registration.scope) })
+			.catch((error) => { console.error(error) })
+	})
+}

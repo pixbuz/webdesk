@@ -1,12 +1,5 @@
 {
 	"icon": "icon.svg",
 	"index": "index.html",
-	"description": "Stuff I've been busy with",
-
-	"ignore": [
-		
-	],
-	"routes": {
-		
-	}
+	"description": "Stuff I've been busy with"
 }

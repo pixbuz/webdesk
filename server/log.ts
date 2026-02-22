@@ -32,7 +32,7 @@ export const log = new class {
 		const now = new Date()
 
 		return [
-			`[${now.getFullYear()}/${`${now.getMonth()}`.padStart(2, "0")}/${`${now.getDate()}`.padStart(2, "0")}]`,
+			`[${`${now.getDate()}`.padStart(2, "0")}/${`${now.getMonth()}`.padStart(2, "0")}/${now.getFullYear()}]`,
 			`[${`${now.getHours()}`.padStart(2, "0")}:${`${now.getMinutes()}`.padStart(2, "0")}:${`${now.getSeconds()}`.padStart(2, "0")}.${`${now.getMilliseconds()}`.padStart(3,"0")}]`,
 		]
 	}
@@ -40,28 +40,28 @@ export const log = new class {
 	async debug(message: string) {
 		const absTime = this.getAbsTime(), relTime = this.getRelTime()
 
-		console.log(`%c● %c${absTime.join("    ")}    ${relTime}    %c${message}`, LogColors.DEBUG, LogColors.TIME, `${LogColors.DEBUG};${LogDecorations.DEBUG}`)
+		console.log(`%c●    %c${absTime.join("    ")}    ${relTime}    %c${message}`, LogColors.DEBUG, LogColors.TIME, `${LogColors.DEBUG};${LogDecorations.DEBUG}`)
 		await new Promise<void>(res => res())
 	}
 
 	async info(message: string) {
 		const absTime = this.getAbsTime(), relTime = this.getRelTime()
 
-		console.log(`%c▲ %c${absTime.join("    ")}    ${relTime}    %c${message}`, LogColors.INFO, LogColors.TIME, `${LogColors.INFO};${LogDecorations.INFO}`)
+		console.log(`%c▲    %c${absTime.join("    ")}    ${relTime}    %c${message}`, LogColors.INFO, LogColors.TIME, `${LogColors.INFO};${LogDecorations.INFO}`)
 		await new Promise<void>(res => res())
 	}
 
 	async warn(message: string) {
 		const absTime = this.getAbsTime(), relTime = this.getRelTime()
 	
-		console.warn(`%c◼ %c${absTime.join("    ")}    ${relTime}    %c${message}`, LogColors.WARN, LogColors.TIME, `${LogColors.WARN};${LogDecorations.WARN}`)
+		console.warn(`%c◼    %c${absTime.join("    ")}    ${relTime}    %c${message}`, LogColors.WARN, LogColors.TIME, `${LogColors.WARN};${LogDecorations.WARN}`)
 		await new Promise<void>(res => res())
 	}
 
 	async error(message: string) {
 		const absTime = this.getAbsTime(), relTime = this.getRelTime()
 	
-		console.error(`%c⬟ ${absTime.join("    ")}    ${relTime}    %c${message}`, LogColors.ERROR, `${LogColors.ERROR};${LogDecorations.ERROR}`)
+		console.error(`%c⬟    ${absTime.join("    ")}    ${relTime}    %c${message}`, LogColors.ERROR, `${LogColors.ERROR};${LogDecorations.ERROR}`)
 		await new Promise<void>(res => res())
 	}
 }
