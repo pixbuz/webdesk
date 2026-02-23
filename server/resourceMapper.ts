@@ -32,41 +32,93 @@ class WebdeskApplicationManifest {
 	icon: string = ""
 }
 
-type WebdeskFiles = {
-	manifest: string,
-	script: string,
-	index: string,
-	css: string,
-	sw: string
+type WebdeskIndexers = {
+	index: VoidFunction,
+	commands: VoidFunction,
+	serviceWorker: VoidFunction,
+	manifest: VoidFunction,
+	css: VoidFunction,
+	scripts: VoidFunction
 }
 
-export const resources = new class {
-	// // Saves the resolve for the ready method
-	// private readyResolve = function() { /* Dummy Function */ }
-	// // Flags when all resources have been indexed
-	// ready: Promise<void> = new Promise<void>((res) => { this.readyResolve = res })
-	webdesk: WebdeskFiles = {
-		// Webdesk index
-		index: "",
-		// Webdesk css
-		css: "",
-		// Webdesk script
-		script: "",
-		// Web app manifest
-		manifest: "",
-		// Service Worker script
-		sw: ""
+const webdesk = new class {
+	css: string = "" // CSS
+	index: string = "" // HTML
+	manifest: string = "" // PWA Manifest
+	script: string = "" // Frontend script
+	sw: string = "" // Service Worker script
+	// Returns the intro page
+	intro(_queries: string[]) {
+		return [ Deno.readFileSync("static/intropage.htm"), "text/html; charset=UTF-8" ]
 	}
-	// Contains the endpoints and the associated assets contents
-	assets: AssetsLookupTable = {}
-	// Contains the endpoints and the associated functions
-	commands: CommandsLookupTable = {}
-	// Contains the manifests of the installed apps
-	manifests: Record<string, WebdeskApplicationManifest> = {}
+	// Command for fetching the default app titlebar
+	titlebar(queries: string[]) {
+		// Return html string
+		let titlebar: string = ""
+		for (const app of queries) {
+			// If the app has a titlebar specified, read the html and return it
+			// If no app specified, return the default titlebar
+			if (app && this.manifests[app].titlebar) {
+				titlebar = Deno.readTextFileSync(`apps/${app}/${this.manifests[app].titlebar}`)
+			} else {
+				titlebar = Deno.readTextFileSync(`static/titlebar.htm`)
+				break
+			}
+		}
+		// Return the titlebar
+		return [ titlebar, "text/html; charset=UTF-8" ]
+	}
+	// Get command for an app or all app manifests
+	manifests(queries: string[]) {
+		// Return string
+		let manifests: string = ""
+		// For all apps the request contains
+		for (const app of queries) {
+			// If no app specified, send the full app list
+			if (!app) {
+				manifests = `,${JSON.stringify(this.manifests)}`
+				break
+			}
+			// Return the app manifest or an empty object
+			manifests += `,${JSON.stringify(this.manifests[app] || { })}`
+		}
+		// Return the manifests
+		return [ manifests.substring(1), "application/json" ]
+	}
+	indexers: WebdeskIndexers = {
+		// Indexes webdesk's index page
+		async index() { webdesk.index = (await Deno.readTextFile("static/index.htm")) },
+		// Indexes webdesk's frontend script
+		async scripts() { webdesk.script = await Deno.readTextFile(`static/script.js`) },
+		// Indexes webdesk's service worker
+		async serviceWorker() { webdesk.sw = await Deno.readTextFile(`static/serviceWorker.js`) },
+		// Indexes webdesk's manifest
+		async manifest() { webdesk.manifest = await Deno.readTextFile(`static/manifest.json`) },
+		// Indexes webdesk's API commands
+		commands() {
+			this.commands["/api/_/manifest"] = webdesk.manifests
+			this.commands["/api/_/titlebar"] = webdesk.titlebar
+			this.commands["/api/_/intro"] = webdesk.intro
+		},
+		// Compiles all CSS files into one and adds indexes the result
+		async css() {
+			// Read all the css files
+			const processingQueue = ["base.css", "customization.css", "intro.css", "animations.css"].map(async (cssFile) => {
+				return await Deno.readTextFile(`${config.cssStylesPath}/${cssFile}`)
+			})
+			// Compile all the css files into a single endpoint
+			webdesk.css = (await Promise.all(processingQueue)).join("\n")
+		},
+	}
+}
+
+const applications = new class {
 	// Indexes all the wanted app assets in parallel
-	private async indexAppAssets(appName: string, ignore: string[], path: string = "") {
+	private async indexAssets(appName: string, custom: Record<string, string>, ignore: string[], path: string = "") {
+		// Contains an apps assets
+		const assets: Record<string, Uint8Array> = {}
 		// Processing queue
-		const indexingTasks: Promise<void>[] = []
+		const indexingTasks: Promise<Record<string, Uint8Array<ArrayBufferLike>>>[] = []
 		// Read all the files in the current folder
 		for await (const entry of Deno.readDir(`apps/${appName}${path}`)) {
 			// If the ignore list contains the relative path of an entry, skip indexing
@@ -75,159 +127,76 @@ export const resources = new class {
 				continue
 			}
 			// If the entry is a folder, queue it to index
-			else if (entry.isDirectory) { indexingTasks.push(this.indexAppAssets(appName, ignore, `${path}/${entry.name}`)) }
+			else if (entry.isDirectory) { indexingTasks.push(this.indexAssets(appName, custom, ignore, `${path}/${entry.name}`)) }
 			// If the entry is a file, add it to the app assets
 			else if (entry.isFile) {
-				this.assets[`/apps/${appName}${path}/${entry.name}`] = Deno.readFileSync(`apps/${appName}${path}/${entry.name}`)
+				// If the file is supposed to have a custom path, use it
+				if (custom[`apps/${appName}${path}/${entry.name}`]) { assets[custom[`apps/${appName}${path}/${entry.name}`]] = Deno.readFileSync(`apps/${appName}${path}/${entry.name}`) }
+				// Otherwise save it as the relative path
+				else { assets[`/apps/${appName}${path}/${entry.name}`] = Deno.readFileSync(`apps/${appName}${path}/${entry.name}`) }
+
 				log.debug(`Indexed app ${appName}'s ${entry.name} (from "apps/${appName}${path}")`)
 			}
 		}
 		// Wait for all subfolders to finish indexing
-		await Promise.all(indexingTasks)
-	}
-	// Override the default indexes with custom ones
-	private indexCustomAssets(appName: string, custom: Record<string, string>) {
-		// For every custom route
-		for (const route of Object.keys(custom)) {
-			// Save the new endpoint with the value of the default asset
-			this.assets[`/apps/${appName}/${route}`] = this.assets[`/apps/${appName}/${custom[route]}`]
-			// Remove the default asset
-			delete this.assets[`/apps/${appName}/${custom[route]}`]
-			log.debug(`Replaced app ${appName}'s asset endpoint (from "apps/${appName}/${custom[route]}" to "apps/${appName}/${route}")`)
-		}
+		const subfolders = await Promise.all(indexingTasks)
+		
+		// Add the assets from the subfolders
+		Object.assign(assets, ...subfolders)
+
+		// Return the assets object
+		return assets
 	}
 	// Register the commands of an app
-	private async indexAppCommands(appName: string, commands: string[] = []) {
-		// For every file containing server commands
-		for (const command of commands) {
+	private async indexCommands(appName: string, modules: string[] = []) {
+		const commands: Record<string, unknown> = {}
+		// For each file with server commands
+		for (const path of modules) {
 			// Import the module
-			const module = await import(`../apps/${appName}${command}`)
+			const module = await import(`../apps/${appName}${path}`)
 			// For each export of the module, map it to an endpoint
 			for (const entry of Object.keys(module)) {
-				this.commands[`/api/${appName}/${entry}`] = module[entry]
+				commands[`/api/${appName}/${entry}`] = module[entry]
 				log.info(`Binded ${entry} to "/api/${appName}/${entry}" (from ${appName} module "/apps/${appName}/${command}")`)
 			}
 		}
+
+		// Retun the app commands
+		return commands
 	}
 	// Indexes an app, assets and commands included
-	private async indexApp(appName: string) {
+	async index(appName: string) {
 		// Read and normalize the manifest
 		const manifest: WebdeskApplicationManifest = {...(new WebdeskApplicationManifest), ...JSON.parse(await Deno.readTextFile(`apps/${appName}/manifest.json`))}
-		// Save the manifest
-		this.manifests[appName] = manifest
 		// Compile a list of files that will skip indexing
 		const fullIgnoreList: string[] = [...manifest.ignore, ...manifest.commands, "/manifest.json", ]
 		// Index the app commands
-		await this.indexAppCommands(appName, manifest.commands)
+		const commands = await this.indexCommands(appName, manifest.commands)
 		// Index the app default assets
-		await this.indexAppAssets(appName, fullIgnoreList)
-		// Index the app custom assets
-		this.indexCustomAssets(appName, manifest.routes)
+		const assets = await this.indexAssets(appName, manifest.routes, fullIgnoreList)
+		// Return all the app stuff
+		return [ manifest, assets, commands ]
 	}
-	// Indexes the webdesk base page
-	async indexWebdesk() {
-		// Read the index file and index it
-		this.webdesk.index = (await Deno.readTextFile("static/index.htm"))
-	}
-	// Indexes the webdesk base commands
-	indexWebdeskCommands() {
-		// Get command for an app or all app manifests
-		this.commands["/api/_/manifest"] = (queries: string[]) => {
-			// Return string
-			let manifests: string = ""
-			// For all apps the request contains
-			for (const app of queries) {
-				// If no app specified, send the full app list
-				if (!app) {
-					manifests = `,${JSON.stringify(resources.manifests)}`
-					break
-				}
-				// Return the app manifest or an empty object
-				manifests += `,${JSON.stringify(resources.manifests[app] || { })}`
+}
+
+export const resources = new class {
+	// Contains the endpoints and the associated assets contents
+	assets: AssetsLookupTable = {}
+	// Contains the endpoints and the associated functions
+	commands: CommandsLookupTable = {}
+	// Contains the manifests of the installed apps
+	manifests: Record<string, WebdeskApplicationManifest> = {}
+	webdesk = webdesk
+	apps = applications
+
+	constructor() {
+		// Index Webdesk's main files
+		for (const method of Object.values(webdesk.indexers)) { method.bind(this)() }
+
+		;(async () => {
+			for await (const app of Deno.readDir(`apps`)) {
+				if (app.isDirectory) { this.apps.index(app.name) }
 			}
-			// Return the manifests
-			return [ manifests.substring(1), "application/json" ]
-		}
-		// Command for fetching the default app titlebar
-		this.commands["/api/_/titlebar"] = (queries: string[]) => {
-			// Return html string
-			let titlebar: string = ""
-			for (const app of queries) {
-				// If the app has a titlebar specified, read the html and return it
-				// If no app specified, return the default titlebar
-				if (app && resources.manifests[app].titlebar) {
-					titlebar = Deno.readTextFileSync(`apps/${app}/${resources.manifests[app].titlebar}`)
-				} else {
-					titlebar = Deno.readTextFileSync(`static/titlebar.htm`)
-					break
-				}
-			}
-			// Return the titlebar
-			return [ titlebar, "text/html; charset=UTF-8" ]
-		}
-		// Returns the intro page
-		this.commands["/api/_/intro-index"] = (_queries: string[]) => {
-			return [ Deno.readFileSync("static/intropage.htm"), "text/html; charset=UTF-8" ]
-		}
+		})()
 	}
-	async indexServiceWorker() {
-		this.webdesk.sw = await Deno.readTextFile(`static/serviceWorker.js`)
-	}
-	async indexWebappManifest() {
-		this.webdesk.manifest = await Deno.readTextFile(`static/manifest.json`)
-	}
-	// Compiles into a single file the css and adds it to the endpoint
-	async indexCSS() {
-		// Add all CSS files to the processing queue
-		const cssNames: Set<string> = new Set(["base.css", "customization.css", "intro.css", "animations.css"])
-		// Read all the css files
-		const processingQueue = [...cssNames].map(async (cssFile) => {
-			return await Deno.readTextFile(`${config.cssStylesPath}/${cssFile}`)
-		})
-		// Compile all the css files into a single endpoint
-		this.webdesk.css = (await Promise.all(processingQueue)).join("\n")
-	}
-	// Adds the endpoint for the webdesk script
-	async indexScripts() {
-		// Read the script file
-		this.webdesk.script = await Deno.readTextFile(`static/script.js`)
-	}
-	// Add all webdesk endpoints
-	async initWebdesk() {
-		const tasks: (Promise<void> | void)[] = []
-
-		tasks.push(this.indexCSS())
-		tasks.push(this.indexWebdesk())
-		tasks.push(this.indexScripts())
-		tasks.push(this.indexWebdeskCommands())
-		tasks.push(this.indexWebappManifest())
-		tasks.push(this.indexServiceWorker())
-
-		await Promise.all(tasks)
-	}
-
-	constructor() {(async () => {
-		// const initTasks: Promise<void>[] = []
-
-		// initTasks.push(this.initWebdesk())
-		this.initWebdesk()
-
-		for await (const app of Deno.readDir("apps")) {
-			// if (app.isDirectory) { initTasks.push(this.indexApp(app.name)) }
-			if (app.isDirectory) { this.indexApp(app.name) }
-		}
-
-		for await (const _event of Deno.watchFs(".")) {
-			this.initWebdesk()
-			log.info("Change detected - Reindexing apps")
-
-			for await (const app of Deno.readDir("apps")) {
-				// if (app.isDirectory) { initTasks.push(this.indexApp(app.name)) }
-				if (app.isDirectory) { this.indexApp(app.name) }
-			}
-		}
-
-		// Promise.all(initTasks)
-			// .then(resources.readyResolve)
-	})()}
 }

@@ -360,7 +360,6 @@ const WindowManager = new class {
 	boundryBoxes = new WeakMap()
 	create = {
 		// Assembles a webdesk window
-		// TODO: With old normalization of index and icon it could be made super efficient and quick
 		skeletonizeWindow(details, emit = true) {
 			// Make the wrapping element for the window
 			const windowSkeleton = document.createElement("article")
@@ -1068,5 +1067,5 @@ if (newUser) {
 
 	WindowManager.move.centerWindow({target: introWindow})
 	WindowManager.basic.focusWindow({target: introWindow})
-	introWindow.querySelector("iframe").src = "/api/_/intro-index"
+	introWindow.querySelector("iframe").src = "/api/_/intro"
 }
