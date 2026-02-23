@@ -9,12 +9,25 @@ type CommandsLookupTable = {
 	[key: string]: Function
 }
 
+type TitlebarProprieties = {
+	path: string,
+	dynamic: boolean,
+	buttons: Record<string, string>
+}
+
 class WebdeskApplicationManifest {
 	routes: Record<string, string> = {}
 	description: string = ""
 	commands: string[] = []
 	ignore: string[] = []
-	titlebar: string = ""
+	titlebar: TitlebarProprieties = {
+		path: "",
+		dynamic: false,
+		buttons: {
+			"minimize": "default",
+			"maximise": "default",
+		}
+	}
 	index: string = ""
 	icon: string = ""
 }

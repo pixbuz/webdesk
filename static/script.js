@@ -14,11 +14,10 @@ const Utilities = new class {
 			LAUNCHER_EVENT: {
 				app: null,
 			},
-			WINDOW_OPENING_EVENT: {
+			WINDOW_READY_EVENT: {
 				element: null,
 				titlebar: null,
-				content: null,
-				app: null,
+				iframe: null,
 			},
 			WINDOW_OPEN_EVENT: {
 				id: null,
@@ -261,14 +260,11 @@ const Utilities = new class {
 			this.webdeskDB.updateLock = Promise.resolve()
 		},
 		// Fetches all the application manifests
+		// TODO: Auto cache manifests to service woerker level(?)
 		apps() {
-			this.manifests = new Promise(async (res) => {
-				// Request all installed apps manifests
-				const request = await fetch("/api/_/manifest")
-				// Convert the response to json
-				const json = await request.json()
-				// Resolve the promise with the json
-				res(json)
+			fetch("/api/_/manifest").then(async (response) => {
+				this.manifests = await response.json()
+				Utilities.events.MANIFESTS_READY.emit(this.manifests)
 			})
 		}
 	}
@@ -283,9 +279,11 @@ const Utilities = new class {
 
 		for (const initFunction of Object.values(this.inits)) { initFunction.bind(this)() }
 
+		this.events.MANIFESTS_READY = new this.WebdeskEvent("manifests_fetched", this.manifests)
+
 		this.events.LAUNCHER_CLICK = new this.WebdeskEvent("launcher_click", this.events.templates.LAUNCHER_EVENT)
 
-		this.events.WINDOW_OPENING = new this.WebdeskEvent("window_opening", this.events.templates.WINDOW_OPENING_EVENT)
+		this.events.WINDOW_READY = new this.WebdeskEvent("window_ready", this.events.templates.WINDOW_READY_EVENT)
 
 		this.events.WINDOW_OPEN = new this.WebdeskEvent("window_open", this.events.templates.WINDOW_OPEN_EVENT)
 		this.events.WINDOW_MOVE = new this.WebdeskEvent("window_move", this.events.templates.WINDOW_OPEN_EVENT)
@@ -341,14 +339,16 @@ const LauncherManager = new class {
 		// When clicked, dispatch the LAUNCHER_CLICK event
 		launcher.addEventListener("click", () => { Utilities.events.LAUNCHER_CLICK.emit({app: appName}) })
 	}
-
-	constructor() {(async () => {
-		const installedApps = await Utilities.manifests
-
-		for (const appName of Object.keys(installedApps)) {
-			this.addLauncher(appName, installedApps[appName])
+	// Adds every installed app launcher once the manifests load
+	initLaunchers(details) {
+		for (const appName of Object.keys(details).sort()) {
+			LauncherManager.addLauncher(appName, details[appName])
 		}
-	})()}
+	}
+
+	constructor() {
+		Utilities.events.MANIFESTS_READY.on([this.initLaunchers])
+	}
 }
 
 const WindowManager = new class {
@@ -358,15 +358,15 @@ const WindowManager = new class {
 	space = document.querySelector(".Window.Space")
 	// Tracks the position of every window element
 	boundryBoxes = new WeakMap()
-	basic = {
-		// Assembles a blank window
+	create = {
+		// Assembles a webdesk window
+		// TODO: With old normalization of index and icon it could be made super efficient and quick
 		skeletonizeWindow(details, emit = true) {
 			// Make the wrapping element for the window
 			const windowSkeleton = document.createElement("article")
 			// Make the iframe wrapper element
 			const contentWrapper = document.createElement("section")
 			// Make the titlebar element
-			// TODO: Make it so the iframe page title reflects the titlebar title
 			const titlebar = document.createElement("header")
 			// Make the app content iframe
 			const content = document.createElement("iframe")
@@ -382,16 +382,29 @@ const WindowManager = new class {
 
 			windowSkeleton.setAttribute("app", details.app)	// Set the app name
 			windowSkeleton.id = WindowManager.rollingID	// Set the app id
+			WindowManager.rollingID++	// Update the rolling id
+
 			titlebar.classList.add("titlebar")	// Add the titlebar class
 			contentWrapper.classList.add("wrapper")	// Add the iframe wrapper class
 			content.setAttribute("frameborder", 0)	// Aesthetic fix for the iframe
 
-			// Escalate the event (LAUNCHER_CLICKED -> WINDOW_OPENING)
-			if (emit) { Utilities.events.WINDOW_OPENING.emit({ app: details.app, element: windowSkeleton, titlebar: titlebar, content: content }) }
-			else { WindowManager.space.appendChild(windowSkeleton); return windowSkeleton }
-			// Update the rolling id
-			WindowManager.rollingID++
+			WindowManager.space.appendChild(windowSkeleton)
+
+			// Dispatch the event
+			// TODO: make sure it works for the intro window
+			if (emit) { Utilities.events.WINDOW_READY.emit({ app: details.app, element: windowSkeleton, titlebar: titlebar, content: content }) }
+			else { return windowSkeleton }
 		},
+		// Pre fetch the titlebar, process it, and then append it to the window once ready
+		prepareTitlebar() {
+
+		},
+		// Pre fetch the index page and then append it to the window once ready
+		prepareIframe() {
+
+		}
+	}
+	basic = {
 		// Fills a blank window with it's proprieties
 		async openWindow(details) {
 			// Wait for the app manifest
@@ -416,9 +429,6 @@ const WindowManager = new class {
 			WindowManager.space.appendChild(details.element)
 			// Escalate the event (WINDOW_OPENING -> WINDOW_OPEN)
 			Utilities.events.WINDOW_OPEN.emit({ app: details.app, target: details.element, id: WindowManager.rollingID })
-			// DEBUG !!! !!! !!!
-			if (details.app == "settings") { details.element.querySelector(".maximise").dispatchEvent(new Event("click")) }
-			// !!! !!! !!!
 		},
 		// Closes a window
 		closeWindow(event) {
@@ -725,11 +735,20 @@ const WindowManager = new class {
 	}
 
 	constructor() {
-		Utilities.events.LAUNCHER_CLICK.on([this.basic.skeletonizeWindow.bind(this)])
-		Utilities.events.WINDOW_OPENING.on([this.basic.openWindow.bind(this)])
+		// VVVV uuhhhhh stranghe call susadora (should be an animation thing) (maybe am trippin, there's no animation) VVVVVV
 		Utilities.events.WINDOW_OPEN.on([this.move.centerWindow.bind(this)])
-		Utilities.events.WINDOW_INTERACTION.on([this.move.checkEnable.bind(this), this.resize.checkEnable.bind(this)])
 		Utilities.events.WINDOW_CLOSE.on([this.basic.shiftFocus.bind(this)])
+
+		Utilities.events.WINDOW_INTERACTION.on([
+			this.move.checkEnable.bind(this),
+			this.resize.checkEnable.bind(this)
+		])
+
+		Utilities.events.LAUNCHER_CLICK.on([
+			this.create.skeletonizeWindow.bind(this),
+			this.create.prepareIframe.bind(this),
+			this.create.prepareTitlebar.bind(this)
+		])
 
 		this.move.updatePositionIfCollision.bind(this).onEvent(
 			Utilities.events.WINDOW_RESIZE_END,
