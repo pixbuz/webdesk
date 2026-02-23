@@ -131,11 +131,15 @@ const applications = new class {
 			// If the entry is a file, add it to the app assets
 			else if (entry.isFile) {
 				// If the file is supposed to have a custom path, use it
-				if (custom[`apps/${appName}${path}/${entry.name}`]) { assets[custom[`apps/${appName}${path}/${entry.name}`]] = Deno.readFileSync(`apps/${appName}${path}/${entry.name}`) }
+				if (custom[`${path}${entry.name}`]) {
+					assets[`apps/${appName}/${custom[`${path}${entry.name}`]}`] = Deno.readFileSync(`apps/${appName}${path}/${entry.name}`)
+					log.debug(`Indexed app ${appName}'s ${entry.name} (from "apps/${appName}${path}") on "apps/${appName}/${custom[`${path}${entry.name}`]}"`)
+				}
 				// Otherwise save it as the relative path
-				else { assets[`/apps/${appName}${path}/${entry.name}`] = Deno.readFileSync(`apps/${appName}${path}/${entry.name}`) }
-
-				log.debug(`Indexed app ${appName}'s ${entry.name} (from "apps/${appName}${path}")`)
+				else {
+					assets[`/apps/${appName}${path}/${entry.name}`] = Deno.readFileSync(`apps/${appName}${path}/${entry.name}`)
+					log.debug(`Indexed app ${appName}'s ${entry.name} (from "apps/${appName}${path}") on "/apps/${appName}${path}/${entry.name}"`)
+				}
 			}
 		}
 		// Wait for all subfolders to finish indexing
@@ -157,7 +161,7 @@ const applications = new class {
 			// For each export of the module, map it to an endpoint
 			for (const entry of Object.keys(module)) {
 				commands[`/api/${appName}/${entry}`] = module[entry]
-				log.info(`Binded ${entry} to "/api/${appName}/${entry}" (from ${appName} module "/apps/${appName}/${command}")`)
+				log.info(`Binded ${entry} to "/api/${appName}/${entry}" (from ${appName} module "/apps/${appName}/${path}")`)
 			}
 		}
 
