@@ -32,42 +32,27 @@ function requestHandler(browserRequest: Request, _connInfo: Deno.ServeHandlerInf
 	const requestURL: URL = new URL(browserRequest.url)
 	const requestTree: string[] = requestURL.pathname.substring(1).split("/")
 
-	log.info(`Recived request for ${requestURL.pathname} (tree: "${requestTree.join(", ")}")`)
-
-	switch(requestTree[0]) {
-		case "apps": return appsAssetsReplier(requestURL)
-		case "api": return apiReplier(requestURL)
-		default: return webdeskReplier(requestURL)
+	if (requestTree[0] == "api") {
+		log.info(`API request for app ${requestTree[1] === "_" ? "webdesk" : requestTree[1]}, with search "${requestURL.search}"`)
+		return apiReplier(requestURL)
 	}
-}
-// Returns main webdesk html files
-function webdeskReplier(request: URL) {
-	switch(request.pathname) {
-		// Return the main
-		case "/": return new Response(resources.webdesk.index, { status: 200, headers: { "content-type": "text/html, charset=UTF-8" } })
-		// Return the style
-		case "/style": return new Response(resources.webdesk.css, { status: 200, headers: { "content-type": "text/css, charset=UTF-8" } })
-		// Return the script
-		case "/script": return new Response(resources.webdesk.script, { status: 200, headers: { "content-type": "text/javascript, charset=UTF-8" } })
-		// Return the service worker
-		case "/sw": return new Response(resources.webdesk.sw, { status: 200, headers: { "content-type": "text/javascript, charset=UTF-8" } })
-		// Return the web app manifest
-		case "/manifest": return new Response(resources.webdesk.manifest, { status: 200, headers: { "content-type": "application/json, charset=UTF-8" } })
-		// Return an error if the requested file doesn't exist
-		default: return new ErrorResponse(`Recived request: ${request}\n${" ".repeat(17)}^ isn't a valid webdesk file`)
+	else {
+		log.info(`Recived request for asset "${requestURL.pathname}"`)
+		return assetsReplier(requestURL)
 	}
 }
 // Returns the contents of an app's asset
-function appsAssetsReplier(request: URL): Response {
+function assetsReplier(request: URL): Response {
 	// If the asset exists
 	if (resources.assets[request.pathname]) {
 		// Extract the mime from the asset path
+		// TODO: Auto compute the mime inside resources
 		const mime = contentType(request.pathname.split(".").at(-1)!)
 		log.info(`Replying with asset of type ${mime}`)
 		// Return the asset
 		return new Response(resources.assets[request.pathname], { status: 200, headers: { "content-type": `${mime}, charset=UTF-8` } })
 	} else {
-		log.info(`Request is for a non existing asset`)
+		log.info(`Asset doesn't exist!`)
 		// Send an user error response
 		return new ErrorResponse(`Recived asset request: ${request.pathname}\n${" ".repeat(23)}^isn't a valid asset`)
 	}
@@ -79,10 +64,10 @@ function apiReplier(request: URL): Response {
 		// Sandbox the function, in case return the error
 		try {
 			// Run the function and save the result and mime
-			const result: [computed: unknown, type: string] = resources.commands[request.pathname](request.search.substring(1).split("&"))
-			log.info(`Replying with asset of type ${result[1]}`)
+			const [result, mime] = resources.commands[request.pathname](request.search.substring(1).split("&"))
+			log.info(`Replying with asset of MIME "${mime}"`)
 			// Return the result with the right mime
-			return new Response(result[0] as BodyInit, { status: 200, headers: { "content-type": result[1] } })
+			return new Response(result as BodyInit, { status: 200, headers: { "content-type": mime } })
 		}
 		catch(error) {
 			const errorStack = (error as Error).stack!.split("\n")

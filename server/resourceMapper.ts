@@ -1,5 +1,4 @@
 import { log } from "./log.ts"
-import { config } from "../server.config.ts"
 
 type AssetsLookupTable = {
 	[key: string]: Uint8Array<ArrayBuffer> | string
@@ -16,20 +15,34 @@ type TitlebarProprieties = {
 }
 
 class WebdeskApplicationManifest {
-	routes: Record<string, string> = {}
-	description: string = ""
-	commands: string[] = []
-	ignore: string[] = []
-	titlebar: TitlebarProprieties = {
-		path: "",
-		dynamic: false,
-		buttons: {
-			"minimize": "default",
-			"maximise": "default",
+	routes: Record<string, string>
+	description: string
+	commands: string[]
+	ignore: string[]
+	titlebar: TitlebarProprieties
+	index: string
+	icon: string
+
+	constructor(manifest: WebdeskApplicationManifest) {
+		this.description = manifest.description || "Undefined description"
+		this.commands = manifest.commands || []
+		this.routes = manifest.routes || {}
+		this.index = manifest.index || ""
+		this.icon = manifest.icon || ""
+
+		this.ignore = [
+			...manifest.ignore || [],
+			...this.commands,
+			"/manifest.json",
+		]
+
+		this.titlebar = {
+			path: "",
+			buttons: {},
+			dynamic: false,
 		}
+		this.titlebar = { ...this.titlebar, ...manifest.titlebar}
 	}
-	index: string = ""
-	icon: string = ""
 }
 
 // Returns the intro page
@@ -70,13 +83,13 @@ function manifests(queries: string[]) {
 	// Return the manifests
 	return [ manifests.substring(1), "application/json" ]
 }
-
+// Webdesk logic class
 const webdesk = new class {
 	css: string = "" // CSS
 	html: string = "" // HTML
-	manifest: string = "" // PWA Manifest
+	manifest: string = "" // PWA manifest
 	script: string = "" // Frontend script
-	sw: string = "" // Service Worker script
+	sw: string = "" // Service worker script
 
 	// Indexes webdesk's API commands
 	commander() {
@@ -89,15 +102,6 @@ const webdesk = new class {
 		// Return the object for processing
 		return result
 	}
-	// // Compiles all CSS files into one and adds indexes the result
-	// async csser() {
-	// 	// Read all the css files
-	// 	const processingQueue = ["base.css", "customization.css", "intro.css", "animations.css"].map(async (cssFile) => {
-	// 		return await Deno.readTextFile(`${config.cssStylesPath}/${cssFile}`)
-	// 	})
-	// 	// Compile all the css files into a single endpoint
-	// 	webdesk.css = (await Promise.all(processingQueue)).join("\n")
-	// }
 	// TODO: Ugly sad miserable hack
 	index() {
 		// Contains webdesk's assets
@@ -106,7 +110,7 @@ const webdesk = new class {
 			"/script": Deno.readTextFileSync(`static/script.js`),
 			"/sw": Deno.readTextFileSync(`static/serviceWorker.js`),
 			"/manifest": Deno.readTextFileSync(`static/manifest.json`),
-			"/css": `${Deno.readTextFileSync(`static/base.css`)}\n${Deno.readTextFileSync(`static/customization.css`)}\n${Deno.readTextFileSync(`static/intro.css`)}\n${Deno.readTextFileSync(`static/animations.css`)}`,
+			"/style": `${Deno.readTextFileSync(`static/css/base.css`)}\n${Deno.readTextFileSync(`static/css/customization.css`)}\n${Deno.readTextFileSync(`static/css/intro.css`)}\n${Deno.readTextFileSync(`static/css/animations.css`)}`,
 		}
 		// Contains webdesk's commands
 		const commands: CommandsLookupTable = this.commander()
@@ -114,7 +118,7 @@ const webdesk = new class {
 		return [ assets, commands ]
 	}
 }
-
+// Application indexer logic class
 const applications = new class {
 	// Contains the manifests of the installed apps
 	manifests: Record<string, WebdeskApplicationManifest> = {}
@@ -131,25 +135,20 @@ const applications = new class {
 				log.debug(`Skipped indexing of ${appName}'s ${entry.name} (from "apps/${appName}${path}")`)
 				continue
 			}
+			// If the entry is a link, espooky
+			else if (entry.isSymlink) {
+				log.debug(`Skipped indexing of ${appName}'s symlink ${entry.name} (from "apps/${appName}${path}")`)
+				continue
+			}
 			// If the entry is a folder, queue it to index
 			else if (entry.isDirectory) { indexingTasks.push(this.indexAssets(appName, custom, ignore, `${path}/${entry.name}`)) }
-			// If the entry is a file, add it to the app assets
-			else if (entry.isFile) {
-				// If the file is supposed to have a custom path, use it
-				if (custom[`${path}${entry.name}`]) {
-					assets[`apps/${appName}/${custom[`${path}${entry.name}`]}`] = Deno.readFileSync(`apps/${appName}${path}/${entry.name}`)
-					log.debug(`Indexed app ${appName}'s ${entry.name} (from "apps/${appName}${path}") on "apps/${appName}/${custom[`${path}${entry.name}`]}"`)
-				}
-				// Otherwise save it as the relative path
-				else {
-					assets[`/apps/${appName}${path}/${entry.name}`] = Deno.readFileSync(`apps/${appName}${path}/${entry.name}`)
-					log.debug(`Indexed app ${appName}'s ${entry.name} (from "apps/${appName}${path}") on "/apps/${appName}${path}/${entry.name}"`)
-				}
-			}
+			// If the file is supposed to have a custom path, use it
+			else if (custom[`${path}${entry.name}`]) { assets[`apps/${appName}/${custom[`${path}${entry.name}`]}`] = Deno.readFileSync(`apps/${appName}${path}/${entry.name}`) }
+			// Otherwise save it as the relative path
+			else { assets[`/apps/${appName}${path}/${entry.name}`] = Deno.readFileSync(`apps/${appName}${path}/${entry.name}`) }
 		}
 		// Wait for all subfolders to finish indexing
 		const subfolders = await Promise.all(indexingTasks)
-		
 		// Add the assets from the subfolders
 		Object.assign(assets, ...subfolders)
 
@@ -166,7 +165,6 @@ const applications = new class {
 			// For each export of the module, map it to an endpoint
 			for (const entry of Object.keys(module)) {
 				commands[`/api/${appName}/${entry}`] = module[entry]
-				log.info(`Binded ${entry} to "/api/${appName}/${entry}" (from ${appName} module "/apps/${appName}/${path}")`)
 			}
 		}
 
@@ -176,45 +174,60 @@ const applications = new class {
 	// Indexes an app, assets and commands included
 	async index(appName: string) {
 		// Read and normalize the manifest
-		const manifest: WebdeskApplicationManifest = {...(new WebdeskApplicationManifest), ...JSON.parse(await Deno.readTextFile(`apps/${appName}/manifest.json`))}
+		const manifest: WebdeskApplicationManifest = new WebdeskApplicationManifest(JSON.parse(await Deno.readTextFile(`apps/${appName}/manifest.json`)))
 		// Save the application manifest
 		applications.manifests[appName] = manifest
-		// Compile a list of files that will skip indexing
-		const fullIgnoreList: string[] = [
-			...manifest.ignore,
-			...manifest.commands,
-			manifest.index,
-			manifest.icon,
-			"/manifest.json"
-		]
+		// Index the app default assets
+		const assets = await this.indexAssets(appName, manifest.routes, manifest.ignore)
+		// Evil incefficiency that allows us some crazy work
+		Object.assign(assets, {
+			[`/apps/${appName}/icon`]: assets[`/apps/${appName}/${manifest.icon}`],
+			[`/apps/${appName}/index`]: assets[`/apps/${appName}/${manifest.index}`],
+		})
 		// Index the app commands
 		const commands = await this.indexCommands(appName, manifest.commands)
-		// Index the app default assets
-		const assets = await this.indexAssets(appName, manifest.routes, fullIgnoreList)
 		// Return all the app stuff
 		return [ assets, commands ]
 	}
 }
-
+// 
 export const resources = new class {
 	// Contains the endpoints and the associated assets contents
 	assets: AssetsLookupTable = {}
 	// Contains the endpoints and the associated functions
 	commands: CommandsLookupTable = {}
-	// Webdesk logic class
-	webdesk = webdesk
-	// Application indexer logic class
-	apps = applications
+	// Batch log stuff
+	private logRegistred(message: string, endpoints: string[]) {
+		for (const endpoint of endpoints) {
+			log.info(`${message} "${endpoint}"`)
+		}
+	}
 	// Register a server asset
-	private registerAssets(asset: AssetsLookupTable = {}) {
-		Object.assign(this.assets, ...asset)
+	private registerAssets(asset = {}) {
+		this.logRegistred("Registred asset on ", Object.keys(asset))
+		Object.assign(this.assets, asset)
 	}
 	// Register a server command
-	private registerCommand(command: object = {}) {
-		Object.assign(this.commands, ...command)
+	private registerCommand(command = {}) {
+		this.logRegistred("Registred command on ", Object.keys(command))
+		Object.assign(this.commands, command)
 	}
 
 	constructor() {(async () => {
-		const assets = webdesk.index()
+		// For every app in the app folder
+		for await (const entry of Deno.readDir("apps/")) {
+			// TODO: ensure the manifest is present before indexing
+			if (!entry.isDirectory) { continue }
+			// Register the app resources to the server
+			applications.index(entry.name).then(([assets, commands]) => {
+				this.registerAssets(assets)
+				this.registerCommand(commands)
+			})
+		}
+
+		// Register webdesk resources to the server
+		const [webdeskAssets, webdeskCommands] = webdesk.index()
+		this.registerAssets(webdeskAssets)
+		this.registerCommand(webdeskCommands)
 	})()}
 }
