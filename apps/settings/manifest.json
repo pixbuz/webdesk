@@ -2,6 +2,9 @@
 	"icon": "icon.svg",
 	"index": "index.html",
 	"description": "Customize Webdesk",
+	"commands": [
+		"test.ts"
+	],
 	"titlebar": {
 		"path": "titlebar.html",
 		"dynamic": "true",

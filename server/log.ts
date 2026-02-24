@@ -1,3 +1,5 @@
+import { config } from "../server.config.ts"
+
 enum LogColors {
 	TIME = "color: darkgray",
 	DEBUG = "color: cyan",
@@ -38,6 +40,7 @@ export const log = new class {
 	}
 
 	async debug(message: string) {
+		if (!config.logDebug) { return }
 		const absTime = this.getAbsTime(), relTime = this.getRelTime()
 
 		console.log(`%c●    %c${absTime.join("    ")}    ${relTime}    %c${message}`, LogColors.DEBUG, LogColors.TIME, `${LogColors.DEBUG};${LogDecorations.DEBUG}`)

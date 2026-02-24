@@ -1,3 +1,5 @@
+/* --- Basic customization --- */
+
 * {
 	margin: 0;
 	padding: 0;
@@ -307,3 +309,212 @@ body:has([app].resizeX) { cursor: e-resize; }
 body:has([app].resizeY) { cursor: n-resize; }
 body:has([app].resizeXY1) { cursor: nw-resize; }
 body:has([app].resizeXY2) { cursor: ne-resize; }
+
+/* --- Color customization --- */
+
+/* App Dock */
+.AppDock {
+	background: var(--appdock-color-background);
+	border: var(--appdock-appearance-border-style) var(--appdock-color-border) var(--appdock-appearance-border-width);
+	color: var(--appdock-color-text);
+}
+
+/* App Dock Clock */
+.AppDock .Clock p {
+	color: transparent;
+	background: var(--appdock-color-text);
+	background-clip: text;
+}
+
+/* Launcher */
+[launcher] {
+	color: var(--launchers-color-text);
+}
+
+/* Unfocused Window Border */
+[app] {
+	background: var(--windows-color-border);
+	color: var(--windows-color-title);
+}
+
+/* Unfocused Window Background */
+[app]::before {
+	background: var(--windows-color-background);
+}
+
+/* Unfocused Window Dots */
+[app]::after {
+	background: radial-gradient(circle, var(--windows-color-dots) 37.5%, transparent 50%);
+	background-size: 4px 4px;
+	background-repeat: space;
+}
+
+/* Focused Window Border */
+[app].focus {
+	background: var(--windows-color-focus-border);
+}
+
+/* Focused Window Background */
+[app].focus::before {
+	background: var(--windows-color-focus-background);
+}
+
+/* Focused Window Dots */
+[app].focus::after {
+	background: radial-gradient(circle, var(--windows-color-focus-dots) 37.5%, transparent 50%);
+	background-size: 4px 4px;
+	background-repeat: space;
+}
+
+/* Unfocused Window Buttons */
+[app] .titlebar button.minimise { background: var(--windows-color-buttons-mini); }
+[app] .titlebar button.maximise { background: var(--windows-color-buttons-maxi); }
+[app] .titlebar button.close { background: var(--windows-color-buttons-close); }
+
+/* Focused Window Buttons */
+[app].focus .titlebar button.minimise { background: var(--windows-color-focus-buttons-mini); }
+[app].focus .titlebar button.maximise { background: var(--windows-color-focus-buttons-maxi); }
+[app].focus .titlebar button.close { background: var(--windows-color-focus-buttons-close); }
+
+/* --- Intro window customization --- */
+.introBanner {
+	background: rgba(0, 0, 0, 37.5%);
+	backdrop-filter: blur(1px);
+	position: absolute;
+	height: 100svh;
+	width: 100svw;
+	z-index: 99;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex-flow: column nowrap;
+}
+
+.introBanner .deco {
+	translate: -25% 0;
+	height: 10vmin;
+	width: 200svw;
+	left: 0;
+}
+
+.deco.top {
+	translate: 0 0%;
+	rotate: 2deg;
+}
+
+.deco.bottom {
+	translate: 0 0%;
+	rotate: 2deg;
+}
+
+.introBanner section {
+	background: rgba(0, 0, 0, 25%);
+	flex-flow: column nowrap;
+	border-radius: 1vmin;
+	padding: 2vmax;
+	width: 25vmax;
+	height: 25vmin;
+	display: flex;
+}
+
+.introBanner input {
+	aspect-ratio: 2;
+	width: 2vmax;
+	border: none;
+}
+
+.introBanner input ::before {
+	background: red;
+	content: "";
+	inset: 0;
+}
+
+.introBanner h1 {
+	text-align: center;
+	color: white;
+	width: 100%;
+}
+
+.introBanner p {
+	color: white;
+	width: 100%;
+	flex: 1;
+}
+
+.introBanner div {
+	justify-content: space-between;
+	flex-flow: row nowrap;
+	display: flex;
+}
+
+.introBanner button {
+	text-align: center;
+	color: black;
+	width: 25%;
+	padding: 2vmin;
+}
+
+/* --- Animations --- */
+
+body:has(.maximised) .AppDock:hover {
+	opacity: 1;
+	animation: AppDock-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
+}
+
+body:has(.maximised) .AppDock {
+	opacity: 0;
+	animation: AppDock-maximised-down 250ms cubic-bezier(.25, -0.25, .5, 0) normal none;
+}
+
+.AppDock {
+	animation: AppDock-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
+}
+
+[app] {
+	transition: transform 25ms cubic-bezier(.25, .5, 1, 1);
+}
+
+[app].maximised::before {
+	border-radius: 0;
+	inset: 0;
+	transition: inset 100ms linear,
+		border-radius 100ms linear;
+}
+
+[app].maximised {
+	transition: transform 100ms cubic-bezier(.25, .5, 1, 1),
+		width 100ms cubic-bezier(.25, .5, 1, 1),
+		height 100ms cubic-bezier(.25, .5, 1, 1);
+}
+
+[app].from-maximised {
+	transition: transform 100ms cubic-bezier(.25, .5, 1, 1),
+		width 100ms cubic-bezier(.25, .5, 1, 1),
+		height 100ms cubic-bezier(.25, .5, 1, 1);
+}
+
+[app].closing {
+	transition-duration: 100ms;
+}
+
+@keyframes AppDock-maximised-up {
+	from {
+		opacity: 1;
+		translate: 0 200%;
+	}
+	to {
+		opacity: 1;
+		translate: 0 0;
+	}
+}
+
+@keyframes AppDock-maximised-down {
+	from {
+		opacity: 1;
+		translate: 0 0;
+	}
+	to {
+		opacity: 1;
+		translate: 0 200%;
+	}
+}

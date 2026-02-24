@@ -1,7 +1,6 @@
 import { log } from "./log.ts"
 import { config } from "../server.config.ts"
 import { resources } from "./resourceMapper.ts"
-import { contentType, allExtensions, getCharset } from "@std/media-types"
 
 class ErrorResponse extends Response {
 	constructor(message: string | undefined, code: number = 400) {
@@ -45,12 +44,9 @@ function requestHandler(browserRequest: Request, _connInfo: Deno.ServeHandlerInf
 function assetsReplier(request: URL): Response {
 	// If the asset exists
 	if (resources.assets[request.pathname]) {
-		// Extract the mime from the asset path
-		// TODO: Auto compute the mime inside resources
-		const mime = contentType(request.pathname.split(".").at(-1)!)
-		log.info(`Replying with asset of type ${mime}`)
+		log.info(`Replying with asset of type ${resources.mime[request.pathname]}`)
 		// Return the asset
-		return new Response(resources.assets[request.pathname], { status: 200, headers: { "content-type": `${mime}, charset=UTF-8` } })
+		return new Response(resources.assets[request.pathname] as BodyInit, { status: 200, headers: { "content-type": `${resources.mime[request.pathname]}, charset=UTF-8` } })
 	} else {
 		log.info(`Asset doesn't exist!`)
 		// Send an user error response
@@ -60,11 +56,11 @@ function assetsReplier(request: URL): Response {
 // Runs and returns a server function
 function apiReplier(request: URL): Response {
 	// If the command requested doesn't exist
-	if (resources.commands[request.pathname]) {
+	if (resources.commands[request.pathname] instanceof Function) {
 		// Sandbox the function, in case return the error
 		try {
 			// Run the function and save the result and mime
-			const [result, mime] = resources.commands[request.pathname](request.search.substring(1).split("&"))
+			const [result, mime] = (resources.commands[request.pathname] as (queries: string[]) => [unknown, string])(request.search.substring(1).split("&"))
 			log.info(`Replying with asset of MIME "${mime}"`)
 			// Return the result with the right mime
 			return new Response(result as BodyInit, { status: 200, headers: { "content-type": mime } })
@@ -72,10 +68,13 @@ function apiReplier(request: URL): Response {
 		catch(error) {
 			const errorStack = (error as Error).stack!.split("\n")
 			log.warn(`Command function for "${request.pathname}" failed: ${errorStack[0]}`)
-			errorStack.slice(1).forEach((line) => { log.warn(line) })
+			errorStack.slice(1).forEach((line) => { log.warn(line.trim()) })
 			// Send an server error response
 			return new ErrorResponse((error as Error).stack, 500)
 		}
+	
+	} else if (resources.commands[request.pathname]) {
+		return new Response(resources.commands[request.pathname] as BodyInit, { status: 200 })
 	} else {
 		log.info(`Request is for a non existing command`)
 		// Send an user error response
