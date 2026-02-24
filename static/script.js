@@ -670,7 +670,7 @@ const WindowManager = new class {
 			}
 		},
 		// Interprets where a user clicked and runs the appropriate rescaling of a window
-		// NEEDS INSANE REWORK(?)
+		// NEEDS INSANE REWORK(?) (aint gonna happen i guess)
 		resizeWindow(event) {
 			// Target the current resizing window
 			const resizingWindow = WindowManager.space.querySelector(".resizing")
@@ -852,7 +852,7 @@ const AppDockManager = new class {
 		this.initClockElement()
 		Utilities.events.CLOCK_UPDATE.on([this.updateClockElement])
 
-		Utilities.events.WINDOW_OPENING.on([this.icons.add])
+		// Utilities.events.WINDOW_OPENING.on([this.icons.add])
 		Utilities.events.WINDOW_CLOSE.on([this.icons.updateClosedWindow])
 
 		Utilities.events.WINDOW_MINIMISE.on([this.icons.minimised.add])
