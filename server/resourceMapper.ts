@@ -153,13 +153,15 @@ const applications = new class {
 			else if (entry.isDirectory) { indexingTasks.push(this.indexAssets(appName, custom, ignore, `${path}/${entry.name}`)) }
 			// If the file is supposed to have a custom path, use it
 			else if (custom[`${path}${entry.name}`]) {
-				assets[`/${config.appFolder}/${appName}/${custom[`${path}${entry.name}`]}`] = Deno.readFileSync(`${config.appFolder}/${appName}${path}/${entry.name}`)
-				origins[`/${config.appFolder}/${appName}/${custom[`${path}${entry.name}`]}`] = `${config.appFolder}/${appName}${path}/${entry.name}`
+				assets[`/${config.appFolder}/${appName}/${custom[`${path}${entry.name}`]}`] = Deno.readFileSync(
+					origins[`/${config.appFolder}/${appName}/${custom[`${path}${entry.name}`]}`] = `${config.appFolder}/${appName}${path}/${entry.name}`
+				)
 			}
 			// Otherwise save it as the relative path
 			else {
-				assets[`/${config.appFolder}/${appName}${path}/${entry.name}`] = Deno.readFileSync(`${config.appFolder}/${appName}${path}/${entry.name}`)
-				origins[`/${config.appFolder}/${appName}${path}/${entry.name}`] = `${config.appFolder}/${appName}${path}/${entry.name}`
+				assets[`/${config.appFolder}/${appName}${path}/${entry.name}`] = Deno.readFileSync(
+					origins[`/${config.appFolder}/${appName}${path}/${entry.name}`] = `${config.appFolder}/${appName}${path}/${entry.name}`
+				)
 			}
 		}
 		// Wait for all subfolders to finish indexing
@@ -176,7 +178,10 @@ const applications = new class {
 	}
 	// Register the app's titlebar
 	private async indexTitlebar(appName: string, path: string) {
-		return { [`/apps/${appName}/titlebar`]: await Deno.readTextFile(path.indexOf(config.staticFolder) == 0 ? path : `${config.appFolder}/${path}`) }
+		const result: { [endpoint: string]: unknown } = { [`/apps/${appName}/titlebar`]: undefined }
+		if (path == "") { result.endpoint = await Deno.readTextFile(`${config.staticFolder}/titlebar.htm`) } }
+		else { result }
+		return { [endpoint]: await Deno.readTextFile(`${config.appFolder}/${path}`) }
 	}
 	// Register the commands of an app
 	private async indexCommands(appName: string, modules: string[] = []) {
