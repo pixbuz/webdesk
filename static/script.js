@@ -405,7 +405,7 @@ const WindowManager = new class {
 		}
 	}
 	basic = {
-		// Fills a blank window with it's proprieties
+		// Creates a window
 		async openWindow(details) {
 			// Wait for the app manifest
 			const manifest = (await Utilities.manifests)[details.app]

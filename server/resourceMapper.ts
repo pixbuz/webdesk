@@ -1,7 +1,7 @@
 import { log } from "./log.ts"
 import { config } from "../server.config.ts"
 
-const MIMES: Record<string, string> = Object.freeze({
+const MIMES: Readonly<Record<string, string>> = Object.freeze({
 	"html": "text/html",
 	"htm": "text/html",
 	"css": "text/css",
@@ -33,65 +33,44 @@ const MIMES: Record<string, string> = Object.freeze({
 })
 
 type TitlebarProprieties = {
-	path: string,
+	path?: string,
 	dynamic: boolean,
 	buttons: Record<string, string>
 }
 
 class WebdeskApplicationManifest {
-	routes: Record<string, string>
-	description: string
-	commands: string[]
-	ignore: string[]
-	titlebar: TitlebarProprieties
-	index: string
-	icon: string
+	routes: Record<string, string> = {}
+	titlebar: TitlebarProprieties = {
+		path: undefined,
+		buttons: {},
+		dynamic: false
+	}
+	description: string = "No description"
+	commands: string[] = []
+	ignore: string[] = []
+	index: string = ""
+	icon: string = ""
 
-	constructor(manifest: WebdeskApplicationManifest) {
-		this.description = manifest.description || "Undefined description"
-		this.commands = manifest.commands || []
-		this.routes = manifest.routes || {}
-		this.index = manifest.index || ""
-		this.icon = manifest.icon || ""
+	// Normalize the data
+	constructor(manifest?: WebdeskApplicationManifest) {
+		if (manifest) {
+			const empty = new WebdeskApplicationManifest()
+			const norm = { ...empty, ...manifest }
+			norm.ignore = [
+				...manifest.ignore || [],
+				...this.commands,
+				this.titlebar.path || "",
+				"manifest.json",
+			]
 
-		this.titlebar = {
-			path: "",
-			buttons: {},
-			dynamic: false,
+			return norm
 		}
-
-		this.titlebar = { ...this.titlebar, ...manifest.titlebar }
-
-		this.ignore = [
-			...manifest.ignore || [],
-			...this.commands,
-			this.titlebar.path,
-			"manifest.json",
-		]
 	}
 }
 
 // Returns the intro page
 function intro(_queries: string[]) {
-	return [ Deno.readFileSync("${config.staticFolder}/intropage.htm"), "text/html; charset=UTF-8" ] as [unknown, string]
-}
-// Command for fetching the default app titlebar
-// TODO: Deprecate
-function titlebar(queries: string[]) {
-	// Return html string
-	let titlebar: string = ""
-	for (const app of queries) {
-		// If the app has a titlebar specified, read the html and return it
-		// If no app specified, return the default titlebar
-		if (app && applications.manifests[app].titlebar) {
-			titlebar = Deno.readTextFileSync(`${config.appFolder}/${app}/${applications.manifests[app].titlebar}`)
-		} else {
-			titlebar = Deno.readTextFileSync(`${config.staticFolder}/titlebar.htm`)
-			break
-		}
-	}
-	// Return the titlebar
-	return [ titlebar, "text/html; charset=UTF-8" ] as [unknown, string]
+	return [ Deno.readFileSync(`${config.staticFolder}/intropage.htm`), "text/html; charset=UTF-8" ] as [unknown, string]
 }
 // Get command for an app or all app manifests
 function manifests(queries: string[]) {
@@ -123,9 +102,8 @@ const webdesk = new class {
 		// Contains the endpoints mapped to the functions
 		const result: Record<string, unknown> = {}
 		result["/api/_/manifest"] = manifests	// Retuns all the manifests
-		result["/api/_/titlebar"] = titlebar	// Retuns an application titlebar
-							// TODO: Passive indexing
 		result["/api/_/intro"] = intro	// Returns the intro page
+
 		// Return the object for processing
 		return result
 	}
@@ -196,6 +174,10 @@ const applications = new class {
 		// Return the assets object
 		return [ assets, origins ]
 	}
+	// Register the app's titlebar
+	private async indexTitlebar(appName: string, path: string) {
+		return { [`/apps/${appName}/titlebar`]: await Deno.readTextFile(path.indexOf(config.staticFolder) == 0 ? path : `${config.appFolder}/${path}`) }
+	}
 	// Register the commands of an app
 	private async indexCommands(appName: string, modules: string[] = []) {
 		// Contains the application commands
@@ -223,6 +205,7 @@ const applications = new class {
 		applications.manifests[appName] = manifest
 		// Index the app default assets
 		const [assets, origins] = await this.indexAssets(appName, manifest.routes, manifest.ignore)
+		Object.assign(assets, this.indexTitlebar(appName, manifest.titlebar.path))
 		// Index the app commands
 		const commands = await this.indexCommands(appName, manifest.commands)
 		// Return all the app stuff

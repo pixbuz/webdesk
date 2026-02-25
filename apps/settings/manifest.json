@@ -6,7 +6,7 @@
 		"test.ts"
 	],
 	"titlebar": {
-		"path": "titlebar.html",
+		"path": "",
 		"dynamic": "true",
 		"buttons": {
 			"search": "search"
