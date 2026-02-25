@@ -32,7 +32,7 @@ function requestHandler(browserRequest: Request, _connInfo: Deno.ServeHandlerInf
 	const requestTree: string[] = requestURL.pathname.substring(1).split("/")
 
 	if (requestTree[0] == "api") {
-		log.info(`API request for app ${requestTree[1] === "_" ? "webdesk" : requestTree[1]}, with search "${requestURL.search}"`)
+		log.info(`API request for app ${requestTree[1] === "_" ? "webdesk" : requestTree[1]}, on "${requestURL.pathname}" with search "${requestURL.search}"`)
 		return apiReplier(requestURL)
 	}
 	else {
@@ -61,7 +61,7 @@ function apiReplier(request: URL): Response {
 		try {
 			// Run the function and save the result and mime
 			const [result, mime] = (resources.commands[request.pathname] as (queries: string[]) => [unknown, string])(request.search.substring(1).split("&"))
-			log.info(`Replying with asset of MIME "${mime}"`)
+			log.info(`Command ${(resources.commands[request.pathname] as Function).name} replied with MIME "${mime}"`)
 			// Return the result with the right mime
 			return new Response(result as BodyInit, { status: 200, headers: { "content-type": mime } })
 		}

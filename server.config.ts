@@ -3,6 +3,7 @@
 export const config = Object.freeze({
 	staticFolder: "static",
 	hostname: "localhost",
+	appFolder: "apps",
 	logDebug: true,
 	port: 8000,
 	ssl: false,

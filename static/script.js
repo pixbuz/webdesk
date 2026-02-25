@@ -341,6 +341,7 @@ const LauncherManager = new class {
 	}
 	// Adds every installed app launcher once the manifests load
 	initLaunchers(details) {
+		// Sort the keys to have the same app order every visit
 		for (const appName of Object.keys(details).sort()) {
 			LauncherManager.addLauncher(appName, details[appName])
 		}

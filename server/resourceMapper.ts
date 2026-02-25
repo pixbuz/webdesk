@@ -84,7 +84,7 @@ function titlebar(queries: string[]) {
 		// If the app has a titlebar specified, read the html and return it
 		// If no app specified, return the default titlebar
 		if (app && applications.manifests[app].titlebar) {
-			titlebar = Deno.readTextFileSync(`apps/${app}/${applications.manifests[app].titlebar}`)
+			titlebar = Deno.readTextFileSync(`${config.appFolder}/${app}/${applications.manifests[app].titlebar}`)
 		} else {
 			titlebar = Deno.readTextFileSync(`${config.staticFolder}/titlebar.htm`)
 			break
@@ -165,23 +165,23 @@ const applications = new class {
 		// Processing queue
 		const indexingTasks: Promise<[Record<string, Uint8Array>, Record<string, string>]>[] = []
 		// Read all the files in the current folder
-		for await (const entry of Deno.readDir(`apps/${appName}${path}`)) {
+		for await (const entry of Deno.readDir(`${config.appFolder}/${appName}${path}`)) {
 			// If the ignore list contains the relative path of an entry, skip indexing
 			if (ignore.includes(`${path}${entry.name}`) || entry.isSymlink) {
-				log.debug(`Skipped indexing of ${appName}'s ${entry.name} (from "apps/${appName}${path}")`)
+				log.debug(`Skipped indexing of ${appName}'s ${entry.name} (from "${config.appFolder}/${appName}${path}")`)
 				continue
 			}
 			// If the entry is a folder, queue it to index
 			else if (entry.isDirectory) { indexingTasks.push(this.indexAssets(appName, custom, ignore, `${path}/${entry.name}`)) }
 			// If the file is supposed to have a custom path, use it
 			else if (custom[`${path}${entry.name}`]) {
-				assets[`/apps/${appName}/${custom[`${path}${entry.name}`]}`] = Deno.readFileSync(`apps/${appName}${path}/${entry.name}`)
-				origins[`/apps/${appName}/${custom[`${path}${entry.name}`]}`] = `apps/${appName}${path}/${entry.name}`
+				assets[`/${config.appFolder}/${appName}/${custom[`${path}${entry.name}`]}`] = Deno.readFileSync(`${config.appFolder}/${appName}${path}/${entry.name}`)
+				origins[`/${config.appFolder}/${appName}/${custom[`${path}${entry.name}`]}`] = `${config.appFolder}/${appName}${path}/${entry.name}`
 			}
 			// Otherwise save it as the relative path
 			else {
-				assets[`/apps/${appName}${path}/${entry.name}`] = Deno.readFileSync(`apps/${appName}${path}/${entry.name}`)
-				origins[`/apps/${appName}${path}/${entry.name}`] = `apps/${appName}${path}/${entry.name}`
+				assets[`/${config.appFolder}/${appName}${path}/${entry.name}`] = Deno.readFileSync(`${config.appFolder}/${appName}${path}/${entry.name}`)
+				origins[`/${config.appFolder}/${appName}${path}/${entry.name}`] = `${config.appFolder}/${appName}${path}/${entry.name}`
 			}
 		}
 		// Wait for all subfolders to finish indexing
@@ -204,7 +204,7 @@ const applications = new class {
 		// For each file with server commands
 		for (const path of modules) {
 			// Import the module
-			const module = await import(`../apps/${appName}/${path}`)
+			const module = await import(`../${config.appFolder}/${appName}/${path}`)
 			// For each export of the module, map it to an endpoint
 			for (const entry of Object.keys(module)) {
 				commands[`/api/${appName}/${entry}`] = module[entry]
@@ -218,16 +218,11 @@ const applications = new class {
 	// TODO: titlebar indexing
 	async index(appName: string) {
 		// Read and normalize the manifest
-		const manifest: WebdeskApplicationManifest = new WebdeskApplicationManifest(JSON.parse(await Deno.readTextFile(`apps/${appName}/manifest.json`)))
+		const manifest: WebdeskApplicationManifest = new WebdeskApplicationManifest(JSON.parse(await Deno.readTextFile(`${config.appFolder}/${appName}/manifest.json`)))
 		// Save the application manifest
 		applications.manifests[appName] = manifest
 		// Index the app default assets
 		const [assets, origins] = await this.indexAssets(appName, manifest.routes, manifest.ignore)
-		// Evil incefficiency that allows us some crazy work
-		Object.assign(assets, {
-			[`/apps/${appName}/icon`]: assets[`/apps/${appName}/${manifest.icon}`],
-			[`/apps/${appName}/index`]: assets[`/apps/${appName}/${manifest.index}`],
-		})
 		// Index the app commands
 		const commands = await this.indexCommands(appName, manifest.commands)
 		// Return all the app stuff
@@ -268,7 +263,7 @@ export const resources = new class {
 
 	constructor() {(async () => {
 		// For every app in the app folder
-		for await (const entry of Deno.readDir("apps/")) {
+		for await (const entry of Deno.readDir(`${config.appFolder}/`)) {
 			// TODO: ensure the manifest is present before indexing
 			if (!entry.isDirectory) { continue }
 			// Register the app resources to the server
