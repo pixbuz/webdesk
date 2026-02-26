@@ -32,33 +32,37 @@ const MIMES: Readonly<Record<string, string>> = Object.freeze({
 	"wav": "audio/wav",
 })
 
+// Describes the titlebar propriety fields
 type TitlebarProprieties = {
 	path?: string,
+	icon: boolean,
 	dynamic: boolean,
-	buttons: Record<string, string>
+	buttons: Record<string, string>,
 }
 
+// Provided a manifest object, returns it normalized
+// ^^^^^^^^ with no manifest, returns an empty manifest
 class WebdeskApplicationManifest {
 	routes: Record<string, string> = {}
 	titlebar: TitlebarProprieties = {
-		path: undefined,
+		icon: true,
 		buttons: {},
-		dynamic: false
+		dynamic: false,
+		path: undefined,
 	}
 	description: string = "No description"
-	commands: string[] = []
+	modules: string[] = []
 	ignore: string[] = []
 	index: string = ""
 	icon: string = ""
 
-	// Normalize the data
 	constructor(manifest?: WebdeskApplicationManifest) {
 		if (manifest) {
 			const empty = new WebdeskApplicationManifest()
 			const norm = { ...empty, ...manifest }
 			norm.ignore = [
 				...manifest.ignore || [],
-				...this.commands,
+				...this.modules,
 				this.titlebar.path || "",
 				"manifest.json",
 			]
@@ -177,11 +181,18 @@ const applications = new class {
 		return [ assets, origins ]
 	}
 	// Register the app's titlebar
-	private async indexTitlebar(appName: string, path: string) {
-		const result: { [endpoint: string]: unknown } = { [`/apps/${appName}/titlebar`]: undefined }
-		if (path == "") { result.endpoint = await Deno.readTextFile(`${config.staticFolder}/titlebar.htm`) } }
-		else { result }
-		return { [endpoint]: await Deno.readTextFile(`${config.appFolder}/${path}`) }
+	private async indexTitlebar(appName: string, path?: string) {
+		// Contains the titlebar endpoint
+		const result: { [endpoint: string]: string } = { }
+
+		// If a titlebar isn't specified, save the default one
+		if (path == "" || path == undefined) { result[`/apps/${appName}/titlebar`] = await Deno.readTextFile(`${config.staticFolder}/titlebar.htm`) }
+		// Otherwise, save the specified one
+		else { result[`/apps/${appName}/titlebar`] = await Deno.readTextFile(`${config.appFolder}/${appName}/${path}`) }
+
+		console.log(result)
+
+		return result
 	}
 	// Register the commands of an app
 	private async indexCommands(appName: string, modules: string[] = []) {
@@ -212,7 +223,7 @@ const applications = new class {
 		const [assets, origins] = await this.indexAssets(appName, manifest.routes, manifest.ignore)
 		Object.assign(assets, this.indexTitlebar(appName, manifest.titlebar.path))
 		// Index the app commands
-		const commands = await this.indexCommands(appName, manifest.commands)
+		const commands = await this.indexCommands(appName, manifest.modules)
 		// Return all the app stuff
 		return [ assets, origins, commands ]
 	}
