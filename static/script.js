@@ -204,7 +204,7 @@ const Utilities = new class {
 			Function.prototype.onEvent = function(...eventsList) {
 				// For every event passed, register the function to it
 				eventsList.map((event) => { event.on([this]) })
-				// Return the function for more chaining
+
 				return this
 			}
 		},
@@ -270,7 +270,6 @@ const Utilities = new class {
 	}
 	// Utility method to get the information of a window
 	getWindowInfo(webdeskWindow) {
-		// Return the window ID, name and element
 		return { id: webdeskWindow.getAttribute("id"), target: webdeskWindow, app: webdeskWindow.getAttribute("app") }
 	}
 
@@ -353,7 +352,7 @@ const LauncherManager = new class {
 }
 
 const WindowManager = new class {
-	// Rolling id for windows
+	// Increases every new window
 	rollingID = 0
 	// Space for new windows
 	space = document.querySelector(".Window.Space")
@@ -361,7 +360,11 @@ const WindowManager = new class {
 	boundryBoxes = new WeakMap()
 	create = {
 		// Assembles a webdesk window
-		skeletonizeWindow(details, emit = true) {
+		async skeletonizeWindow(details, emit = true) {
+			// Contains the application manifest
+			const appManifest = Utilities.manifests[details.app]
+			// Contains the titlebar proprieties
+			const titlebarProprieties = appManifest.titlebar
 			// Make the wrapping element for the window
 			const windowSkeleton = document.createElement("article")
 			// Make the iframe wrapper element
@@ -382,54 +385,100 @@ const WindowManager = new class {
 
 			windowSkeleton.setAttribute("app", details.app)	// Set the app name
 			windowSkeleton.id = WindowManager.rollingID	// Set the app id
-			WindowManager.rollingID++	// Update the rolling id
+			WindowManager.rollingID++	// Give the app an id and update the rolling id
 
 			titlebar.classList.add("titlebar")	// Add the titlebar class
 			contentWrapper.classList.add("wrapper")	// Add the iframe wrapper class
 			content.setAttribute("frameborder", 0)	// Aesthetic fix for the iframe
+			content.src = `/apps/${details.app}/${appManifest.index}`	// Show the index page of the app
 
+			// Contains a response from a fetch function
+			let titlebarFetch
+
+			// If the application manifest specifies a titlebar, request it
+			if (titlebarProprieties.path && titlebarProprieties.path != "") { titlebarFetch = await fetch(`/apps/${details.app}/${titlebarProprieties.path}`) }
+			// Otherwise, request the default one
+			else { titlebarFetch = await fetch(`/api/_/titlebar`) }
+
+			// Put the titlebar inside its wrapper
+			titlebar.innerHTML = await titlebarFetch.text()
+
+			// Titlebar icon
+			if (titlebarProprieties.icon) {
+				const icon = titlebar.querySelector(".icon")
+				icon.src = `/apps/${details.app}/${appManifest.icon}`
+			}
+
+			// Dynamic window title
+			if (titlebarProprieties.dynamic) {
+				const title = titlebar.querySelector(".title")
+				content.addEventListener("load", (event) => { title.innerText = (event.target.contentDocument || event.target.contentWindow.document).title })
+			} else {
+				const title = titlebar.querySelector(".title")
+				title.innerText = details.app
+			}
+
+			// Custom button logic
+			let miniButton = titlebar.querySelector(".minimise")
+			if (!miniButton) {
+				miniButton = document.createElement("button")
+				titlebar.append(miniButton)
+			}
+
+			let maxiButton = titlebar.querySelector(".maximise")
+			if (!maxiButton) {
+				maxiButton = document.createElement("button")
+				titlebar.append(maxiButton)
+			}
+
+			for (const button of Object.keys(titlebarProprieties.buttons)) {
+				console.log(button)
+			}
+
+			let closeButton = titlebar.querySelector(".close")
+			if (!closeButton) {
+				closeButton = document.createElement("button")
+				titlebar.append(closeButton)
+			}
+
+			// Add event listeners to the buttons
+			miniButton.addEventListener("click", WindowManager.basic.minimiseWindow)
+			maxiButton.addEventListener("click", WindowManager.basic.maximiseWindow)
+			closeButton.addEventListener("click", WindowManager.basic.closeWindow)
+
+			// Add the window to the window space
 			WindowManager.space.appendChild(windowSkeleton)
 
 			// Dispatch the event
 			// TODO: make sure it works for the intro window
-			if (emit) { Utilities.events.WINDOW_READY.emit({ app: details.app, element: windowSkeleton, titlebar: titlebar, content: content }) }
+			if (emit) { Utilities.events.WINDOW_OPEN.emit({ app: details.app, target: windowSkeleton, id: windowSkeleton.id }) }
 			else { return windowSkeleton }
 		},
-		// Pre fetch the titlebar, process it, and then append it to the window once ready
-		prepareTitlebar() {
+		// // Creates a window
+		// async openWindow(details) {
+		// 	// Wait for the app manifest
+		// 	const manifest = Utilities.manifests[details.app]
 
-		},
-		// Pre fetch the index page and then append it to the window once ready
-		prepareIframe() {
+		// 	// Set the window iframe to the index of the app
+		// 	details.content.src = `apps/${details.app}/${manifest.index}?${details.element.id}`
+		// 	// Add the titlebar HTML to the window
+		// 	details.titlebar.innerHTML = await titlebarHTML
+		// 	// Set the titlebar icon to the window icon
+		// 	details.titlebar.querySelector("img").src = `apps/${details.app}/${manifest.icon}`
+		// 	// Set the titlebar title to the window name
+		// 	details.titlebar.querySelector(".title").innerText = details.app
+		// 	// Add the titlebar event listeners
+		// 	details.element.querySelector(".close").addEventListener("click", WindowManager.basic.closeWindow)
+		// 	details.element.querySelector(".minimise").addEventListener("click", WindowManager.basic.minimiseWindow)
+		// 	details.element.querySelector(".maximise").addEventListener("click", WindowManager.basic.maximiseWindow)
 
-		}
+		// 	// Add the new window to the window space
+		// 	WindowManager.space.appendChild(details.element)
+		// 	// Escalate the event (WINDOW_OPENING -> WINDOW_OPEN)
+		// 	Utilities.events.WINDOW_OPEN.emit({ app: details.app, target: details.element, id: WindowManager.rollingID })
+		// },
 	}
 	basic = {
-		// Creates a window
-		async openWindow(details) {
-			// Wait for the app manifest
-			const manifest = (await Utilities.manifests)[details.app]
-			// Wait for the app titlebar HTML
-			const titlebarHTML = (await fetch(`api/_/titlebar?${details.app}`)).text()
-
-			// Set the window iframe to the index of the app
-			details.content.src = `apps/${details.app}/${manifest.index}?${details.element.id}`
-			// Add the titlebar HTML to the window
-			details.titlebar.innerHTML = await titlebarHTML
-			// Set the titlebar icon to the window icon
-			details.titlebar.querySelector("img").src = `apps/${details.app}/${manifest.icon}`
-			// Set the titlebar title to the window name
-			details.titlebar.querySelector(".title").innerText = details.app
-			// Add the titlebar event listeners
-			details.element.querySelector(".close").addEventListener("click", WindowManager.basic.closeWindow)
-			details.element.querySelector(".minimise").addEventListener("click", WindowManager.basic.minimiseWindow)
-			details.element.querySelector(".maximise").addEventListener("click", WindowManager.basic.maximiseWindow)
-
-			// Add the new window to the window space
-			WindowManager.space.appendChild(details.element)
-			// Escalate the event (WINDOW_OPENING -> WINDOW_OPEN)
-			Utilities.events.WINDOW_OPEN.emit({ app: details.app, target: details.element, id: WindowManager.rollingID })
-		},
 		// Closes a window
 		closeWindow(event) {
 			// Get the target window
@@ -688,7 +737,7 @@ const WindowManager = new class {
 				// Resize the window according to the user movement
 				WindowManager.interaction.window.style.height = `${boundingBox.height - event.y + WindowManager.interaction.offsets[1]}px`
 				WindowManager.interaction.window.style.width = `${boundingBox.width - event.x + WindowManager.interaction.offsets[0]}px`
-				// Ignore the next events
+				// Ignore the next checks
 				return
 			}
 			
@@ -745,9 +794,7 @@ const WindowManager = new class {
 		])
 
 		Utilities.events.LAUNCHER_CLICK.on([
-			this.create.skeletonizeWindow.bind(this),
-			this.create.prepareIframe.bind(this),
-			this.create.prepareTitlebar.bind(this)
+			this.create.skeletonizeWindow.bind(this)
 		])
 
 		this.move.updatePositionIfCollision.bind(this).onEvent(
@@ -853,7 +900,7 @@ const AppDockManager = new class {
 		this.initClockElement()
 		Utilities.events.CLOCK_UPDATE.on([this.updateClockElement])
 
-		// Utilities.events.WINDOW_OPENING.on([this.icons.add])
+		Utilities.events.WINDOW_OPEN.on([this.icons.add])
 		Utilities.events.WINDOW_CLOSE.on([this.icons.updateClosedWindow])
 
 		Utilities.events.WINDOW_MINIMISE.on([this.icons.minimised.add])

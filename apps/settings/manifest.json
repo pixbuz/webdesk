@@ -2,7 +2,7 @@
 	"icon": "icon.svg",
 	"index": "index.html",
 	"description": "Customize Webdesk",
-	"commands": [
+	"modules": [
 		"test.ts"
 	],
 	"titlebar": {

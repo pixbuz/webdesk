@@ -23,7 +23,7 @@ const options = config.ssl ? {
 
 const _server = Deno.serve({
 	...options,
-	onListen({hostname, port}) { log.info(`Server listening on ${config.ssl ? "https://" : "http://"}${hostname}:${port}`) }
+	onListen({hostname, port}) { log.info(`Server listening on ${config.ssl ? "https:" : "http:"}//${hostname}:${port}`) }
 })
 
 // Responds to the incoming browser requests for webdesk
@@ -44,7 +44,7 @@ function requestHandler(browserRequest: Request, _connInfo: Deno.ServeHandlerInf
 function assetsReplier(request: URL): Response {
 	// If the asset exists
 	if (resources.assets[request.pathname]) {
-		log.info(`Replying with asset of type ${resources.mime[request.pathname]}`)
+		log.info(`Replying with asset of type "${resources.mime[request.pathname]}"`)
 		// Return the asset
 		return new Response(resources.assets[request.pathname] as BodyInit, { status: 200, headers: { "content-type": `${resources.mime[request.pathname]}, charset=UTF-8` } })
 	} else {

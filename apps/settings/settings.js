@@ -10,4 +10,4 @@ function show(subSectionName) {
 	currentSubSection = subSection
 }
 
-console.log(window.parent.utilities)
+// console.log(window.parent.utilities)

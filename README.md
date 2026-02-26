@@ -40,6 +40,7 @@ Webdesk is a passion project of mine with the aim of making an OS type experienc
 	- [ ] Make a Custom Lock Screen
 	- [ ] Make the FS read only up to the app folder
 	- [ ] Generate a private ID for each app at server init to authorize certain actions (read/write and indexedb)
+	- [ ] Try catch every read and write operation
 - Finalized Webdesk
 	- [ ] Improve the service worker caching
 	- [ ] Make an offline experience possible

@@ -87,7 +87,7 @@ body {
 	height: 100%;
 }
 
-[icon] img {
+[icon] .icon {
 	max-height: 100%;
 	aspect-ratio: 1;
 }
@@ -150,7 +150,7 @@ body {
 	border: none;
 }
 
-[launcher] img {
+[launcher] .icon {
 	aspect-ratio: 1;
 	max-width: 100%;
 }
@@ -236,7 +236,7 @@ body {
 	width: 100%;
 }
 
-[app] .titlebar .icon {
+[app] .titlebar .iconWrapper {
 	justify-content: flex-start;
 	align-content: center;
 	pointer-events: none;
@@ -247,7 +247,7 @@ body {
 	flex: 1;
 }
 
-[app] .titlebar .icon img {
+[app] .titlebar .iconWrapper .icon {
 	aspect-ratio: 1;
 	max-width: 100%;
 }
@@ -456,12 +456,12 @@ body:has([app].resizeXY2) { cursor: ne-resize; }
 
 /* --- Animations --- */
 
-body:has(.maximised) .AppDock:hover {
+.Window.Space:has(.maximised) ~ .AppDock:hover {
 	opacity: 1;
 	animation: AppDock-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
 }
 
-body:has(.maximised) .AppDock {
+.Window.Space:has(.maximised) ~ .AppDock {
 	opacity: 0;
 	animation: AppDock-maximised-down 250ms cubic-bezier(.25, -0.25, .5, 0) normal none;
 }
