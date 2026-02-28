@@ -5,34 +5,92 @@
 
 var newUser = false
 
+// Custom webdesk event constructor
+const WebdeskEvent = class {
+	constructor(objectTemplate = {}) {
+		this.name = Math.random().toString(36).substring(2)
+		this.template = objectTemplate
+	}
+	// Used to trigger an event
+	emit(data = {}) {
+		// Merge the template with the passed data
+		const details = { ...this.template, ...data }
+		// Create the event
+		const event = new CustomEvent(this.name, {
+			detail: details,
+			bubbles: true,
+			composed: true
+		})
+		// Dispatch the event
+		window.dispatchEvent(event)
+	}
+	// Binds multiple functions to a webdesk event
+	on(callBackFunctions = [], oneTime = false) {
+		// For every function passed
+		callBackFunctions.map((callBackFunction) => {
+			// Add an event listener for the event
+			window.addEventListener(this.name, (event) => { callBackFunction(event.detail) }, { once: oneTime })
+		})
+	}
+}
+
 const Utilities = new class {
 	// App manifests
 	manifests
 	// Contains all the template objects for the events
-	events = {
-		templates: {
-			LAUNCHER: {
-				app: null,
-			},
-			WINDOW_READY: {
-				element: null,
-				titlebar: null,
-				iframe: null,
-			},
-			WINDOW: {
-				id: null,
-				app: null,
-				target: null,
-			},
-			CLOCK: {
-				target: [ ],
-			},
-			MOVE: {
-				target: null,
-				x: null,
-				y: null,
-			}
+	templates = {
+		MANIFEST: {},
+		LAUNCHER: {
+			app: null,
+		},
+		READY: {
+			app: null,
+			target: null,
+		},
+		WINDOW: {
+			id: null,
+			app: null,
+			target: null,
+		},
+		CLOCK: {
+			target: [ ],
+		},
+		MOVE: {
+			target: null,
+			x: null,
+			y: null,
 		}
+	}
+	events = {
+		MANIFESTS_READY: new WebdeskEvent(this.templates.MANIFEST),
+
+		LAUNCHER_CLICK: new WebdeskEvent(this.templates.LAUNCHER),
+
+		TITLEBAR_LOADED: new WebdeskEvent(this.templates.READY),
+		TITLEBAR_READY: new WebdeskEvent(this.templates.READY),
+		WINDOW_READY: new WebdeskEvent(this.templates.READY),
+
+		WINDOW_MOVE_START: new WebdeskEvent(this.templates.MOVE),
+		WINDOW_MOVE: new WebdeskEvent(this.templates.MOVE),
+		WINDOW_MOVE_END: new WebdeskEvent(this.templates.MOVE),
+
+		WINDOW_OPEN: new WebdeskEvent(this.templates.WINDOW),
+		WINDOW_CLOSE: new WebdeskEvent(this.templates.WINDOW),
+		WINDOW_CLICK: new WebdeskEvent(this.templates.WINDOW),
+
+		WINDOW_UPDATED_FOCUS: new WebdeskEvent(this.templates.WINDOW),
+		
+		WINDOW_MAXIMISE: new WebdeskEvent(this.templates.WINDOW),
+		WINDOW_MAXIMISE_END: new WebdeskEvent(this.templates.WINDOW),
+
+		WINDOW_MINIMISE: new WebdeskEvent(this.templates.WINDOW),
+		WINDOW_MINIMISE_END: new WebdeskEvent(this.templates.WINDOW),
+
+		WINDOW_RESIZE_START: new WebdeskEvent(this.templates.WINDOW),
+		WINDOW_RESIZE: new WebdeskEvent(this.templates.WINDOW),
+		WINDOW_RESIZE_END: new WebdeskEvent(this.templates.WINDOW),
+
+		CLOCK_UPDATE: new WebdeskEvent(this.templates.CLOCK),
 	}
 	// Time
 	time = {
@@ -174,34 +232,6 @@ const Utilities = new class {
 			return Utilities.webdeskDB.updateLock
 		}
 	}
-	// Custom webdesk event constructor
-	WebdeskEvent = class {
-		constructor(objectTemplate = {}) {
-			this.name = Math.random().toString(36).substring(2)
-			this.template = objectTemplate
-		}
-		// Used to trigger an event
-		emit(data = {}) {
-			// Merge the template with the passed data
-			const details = { ...this.template, ...data }
-			// Create the event
-			const event = new CustomEvent(this.name, {
-				detail: details,
-				bubbles: true,
-				composed: true
-			})
-			// Dispatch the event
-			window.dispatchEvent(event)
-		}
-		// Binds multiple functions to a webdesk event
-		on(callBackFunctions = [], oneTime = false) {
-			// For every function passed
-			callBackFunctions.map((callBackFunction) => {
-				// Add an event listener for the event
-				window.addEventListener(this.name, (event) => { callBackFunction(event.detail) }, { once: oneTime })
-			})
-		}
-	}
 	inits = {
 		// Allows registering functions to multiple events
 		monkeyPatch() {
@@ -282,34 +312,6 @@ const Utilities = new class {
 		window.utilities = this
 
 		for (const initFunction of Object.values(this.inits)) { initFunction.bind(this)() }
-
-		this.events.MANIFESTS_READY = new this.WebdeskEvent(this.manifests)
-
-		this.events.LAUNCHER_CLICK = new this.WebdeskEvent(this.events.templates.LAUNCHER)
-
-		this.events.WINDOW_READY = new this.WebdeskEvent(this.events.templates.WINDOW_READY)
-
-		this.events.WINDOW_MOVE_START = new this.WebdeskEvent(this.events.templates.MOVE)
-		this.events.WINDOW_MOVE = new this.WebdeskEvent(this.events.templates.MOVE)
-		this.events.WINDOW_MOVE_END = new this.WebdeskEvent(this.events.templates.MOVE)
-
-		this.events.WINDOW_OPEN = new this.WebdeskEvent(this.events.templates.WINDOW)
-		this.events.WINDOW_CLOSE = new this.WebdeskEvent(this.events.templates.WINDOW)
-		this.events.WINDOW_CLICK = new this.WebdeskEvent(this.events.templates.WINDOW)
-
-		this.events.WINDOW_UPDATED_FOCUS = new this.WebdeskEvent(this.events.templates.WINDOW)
-		
-		this.events.WINDOW_MAXIMISE = new this.WebdeskEvent(this.events.templates.WINDOW)
-		this.events.WINDOW_MAXIMISE_END = new this.WebdeskEvent(this.events.templates.WINDOW)
-
-		this.events.WINDOW_MINIMISE = new this.WebdeskEvent(this.events.templates.WINDOW)
-		this.events.WINDOW_MINIMISE_END = new this.WebdeskEvent(this.events.templates.WINDOW)
-
-		this.events.WINDOW_RESIZE_START = new this.WebdeskEvent(this.events.templates.WINDOW)
-		this.events.WINDOW_RESIZE = new this.WebdeskEvent(this.events.templates.WINDOW)
-		this.events.WINDOW_RESIZE_END = new this.WebdeskEvent(this.events.templates.WINDOW)
-
-		this.events.CLOCK_UPDATE = new this.WebdeskEvent(this.events.templates.CLOCK)
 	}
 }
 
@@ -369,7 +371,7 @@ const WindowManager = new class {
 		// Assembles a webdesk window
 		async skeletonizeWindow(details, emit = true) {
 			// Contains the application manifest
-			const appManifest = Utilities.manifests[details.app]
+			const manifest = Utilities.manifests[details.app]
 
 			const windowSkeleton = document.createElement("article"),	// Make the wrapping element for the window
 				contentWrapper = document.createElement("section"),	// Make the iframe wrapper element
@@ -381,63 +383,15 @@ const WindowManager = new class {
 			content.setAttribute("frameborder", 0)
 			titlebar.setAttribute("frameborder", 0)
 
-			content.src = `/apps/${details.app}/${appManifest.index}`
+			// Show the index page of the app
+			content.src = `/apps/${details.app}/${manifest.index}`
 
-			if (appManifest.titlebar.path != "") { titlebar.src = `/apps/${details.app}/${appManifest.titlebar.path}` }
+			// If the app has no custom titlebar, set the default one
+			if (manifest.titlebar.path != "") { titlebar.src = `/apps/${appName}/${manifest.titlebar.path}` }
 			else { titlebar.src = `/api/_/titlebar` }
 
-			// Initial load
-			titlebar.addEventListener("load", () => {
-				// If the titlebar is the default one, add the icon
-				const iframeDocument = titlebar.contentDocument
-				if (appManifest.titlebar.path == "") {
-					if (iframeDocument.querySelector(".icon")) { iframeDocument.querySelector(".icon").src = `/apps/${details.app}/${appManifest.icon}` }
-				}
-				// Make the window able to move
-				iframeDocument.body.addEventListener("pointerdown", (event) => {
-					// If the element clicked is a button, ignore the mousedown
-					if (event.target.tagName === "BUTTON") { return }
-
-					windowSkeleton.classList.add("moving")
-					iframeDocument.body.setPointerCapture(event.pointerId)
-
-					// Dispath the custom event
-					Utilities.events.WINDOW_MOVE_START.emit({ x: event.screenX, y: event.screenY, target: windowSkeleton })
-				})
-				iframeDocument.body.addEventListener("pointermove", (event) => {
-					// Dispath the custom event
-					Utilities.events.WINDOW_MOVE.emit({ x: event.screenX, y: event.screenY, target: windowSkeleton })
-				})
-				iframeDocument.body.addEventListener("pointerup", (event) => {
-					// If the element clicked is a button, ignore the mousedown
-					if (event.target.tagName === "BUTTON") { return }
-
-					windowSkeleton.classList.remove("moving")
-					iframeDocument.body.releasePointerCapture(event.pointerId)
-
-					// Dispath a custom event
-					Utilities.events.WINDOW_MOVE_END.emit({ x: event.screenX, y: event.screenY, target: windowSkeleton })
-				})
-				// If the titlebar has a title, add the app name
-				if (iframeDocument.querySelector(".title")) {
-					iframeDocument.querySelector(".title").innerText = content.contentDocument.title
-				}
-				// If there is a close button, make it close the window
-				if (iframeDocument.querySelector(".close")) {
-					iframeDocument.querySelector(".close").addEventListener("click", () => { WindowManager.basic.closeWindow(windowSkeleton) })
-				}
-				// If there is a maximise button, make it maximise the window
-				if (iframeDocument.querySelector(".maximise")) {
-					iframeDocument.querySelector(".maximise").addEventListener("click", () => { WindowManager.basic.maximiseWindow(windowSkeleton) })
-				}
-				// If there is a minimise button, make it minimise the window
-				if (iframeDocument.querySelector(".minimise")) {
-					iframeDocument.querySelector(".minimise").addEventListener("click", () => { WindowManager.basic.minimiseWindow(windowSkeleton) })
-				}
-				if (appManifest.titlebar.dynamic) {
-					titlebar.addEventListener("load", () => { iframeDocument.querySelector(".title").innerText = content.contentDocument.title })
-				}
-			}, { once: true })
+			// Setup the titlebar
+			titlebar.addEventListener("load", WindowManager.create.setupTitlebar, { once: true })
 
 			// Wrap the iframes
 			contentWrapper.append(content)
@@ -465,6 +419,60 @@ const WindowManager = new class {
 			if (emit) { Utilities.events.WINDOW_OPEN.emit({ app: details.app, target: windowSkeleton }) }
 			else { return windowSkeleton }
 		},
+		// Setup the titlebar
+		async setupTitlebar(event) {
+			const titlebar = event.target
+			const targetWindow = event.target.closest("[app]")
+			const content = targetWindow.querySelector(".content")
+			const appName = targetWindow.getAttribute("app")
+			const manifest = Utilities.manifests[appName]
+			const iframeDocument = titlebar.contentDocument
+
+			// If the titlebar is the default one, add the icon
+			if (manifest.titlebar.path == "") {
+				if (iframeDocument.querySelector(".icon")) { iframeDocument.querySelector(".icon").src = `/apps/${appName}/${manifest.icon}` }
+			}
+			// Send an event when the user clicks in the titlebar
+			iframeDocument.body.addEventListener("pointerdown", (event) => {
+				// If the element clicked is a button, ignore the mousedown
+				if (event.target.tagName === "BUTTON") { return }
+
+				windowSkeleton.classList.add("moving")
+				iframeDocument.body.setPointerCapture(event.pointerId)
+
+				// Emit the event
+				Utilities.events.WINDOW_MOVE_START.emit({ x: event.screenX, y: event.screenY, target: windowSkeleton })
+			})
+			// Send an event when the user moves
+			iframeDocument.body.addEventListener("pointermove", (event) => { Utilities.events.WINDOW_MOVE.emit({ x: event.screenX, y: event.screenY, target: windowSkeleton }) })
+			// Send an event when releases the click in the titlebar
+			iframeDocument.body.addEventListener("pointerup", (event) => {
+				windowSkeleton.classList.remove("moving")
+				iframeDocument.body.releasePointerCapture(event.pointerId)
+
+				// Emit the event
+				Utilities.events.WINDOW_MOVE_END.emit({ x: event.screenX, y: event.screenY, target: windowSkeleton })
+			})
+			// If the titlebar has a title, add the app name
+			if (iframeDocument.querySelector(".title")) {
+				iframeDocument.querySelector(".title").innerText = content.contentDocument.title
+			}
+			// If there is a close button, make it close the window
+			if (iframeDocument.querySelector(".close")) {
+				iframeDocument.querySelector(".close").addEventListener("click", () => { WindowManager.basic.closeWindow(windowSkeleton) })
+			}
+			// If there is a maximise button, make it maximise the window
+			if (iframeDocument.querySelector(".maximise")) {
+				iframeDocument.querySelector(".maximise").addEventListener("click", () => { WindowManager.basic.maximiseWindow(windowSkeleton) })
+			}
+			// If there is a minimise button, make it minimise the window
+			if (iframeDocument.querySelector(".minimise")) {
+				iframeDocument.querySelector(".minimise").addEventListener("click", () => { WindowManager.basic.minimiseWindow(windowSkeleton) })
+			}
+			if (manifest.titlebar.dynamic) {
+				titlebar.addEventListener("load", () => { iframeDocument.querySelector(".title").innerText = content.contentDocument.title })
+			}
+		}
 	}
 	basic = {
 		// Closes a window
