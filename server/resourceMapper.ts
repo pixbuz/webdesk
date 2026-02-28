@@ -35,9 +35,7 @@ const MIMES: Readonly<Record<string, string>> = Object.freeze({
 // Describes the titlebar propriety fields
 type TitlebarProprieties = {
 	path: string,
-	icon: boolean,
 	dynamic: boolean,
-	buttons: Record<string, string>,
 }
 
 // Provided a manifest object, returns it normalized
@@ -45,8 +43,6 @@ type TitlebarProprieties = {
 class WebdeskApplicationManifest {
 	routes: Record<string, string> = {}
 	titlebar: TitlebarProprieties = {
-		icon: true,
-		buttons: {},
 		dynamic: false,
 		path: "",
 	}

@@ -219,8 +219,6 @@ body {
 }
 
 [app] header {
-	padding: 0 1vmin 4px 1vmin;
-	border-radius: 4px;
 	overflow: hidden;
 	height: 2.5vmin;
 	width: 100%;

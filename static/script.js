@@ -11,21 +11,26 @@ const Utilities = new class {
 	// Contains all the template objects for the events
 	events = {
 		templates: {
-			LAUNCHER_EVENT: {
+			LAUNCHER: {
 				app: null,
 			},
-			WINDOW_READY_EVENT: {
+			WINDOW_READY: {
 				element: null,
 				titlebar: null,
 				iframe: null,
 			},
-			WINDOW_OPEN_EVENT: {
+			WINDOW_OPEN: {
 				id: null,
 				app: null,
-				target: null
+				target: null,
 			},
-			CLOCK_EVENT: {
-				target: [ ]
+			CLOCK: {
+				target: [ ],
+			},
+			TITLEBAR: {
+				target: null,
+				x: null,
+				y: null,
 			}
 		}
 	}
@@ -171,8 +176,8 @@ const Utilities = new class {
 	}
 	// Custom webdesk event constructor
 	WebdeskEvent = class {
-		constructor(eventName, objectTemplate = {}) {
-			this.name = `webdesk-${eventName}`
+		constructor(objectTemplate = {}) {
+			this.name = Math.random().toString(36).substring(2)
 			this.template = objectTemplate
 		}
 		// Used to trigger an event
@@ -278,27 +283,31 @@ const Utilities = new class {
 
 		for (const initFunction of Object.values(this.inits)) { initFunction.bind(this)() }
 
-		this.events.MANIFESTS_READY = new this.WebdeskEvent("manifests_fetched", this.manifests)
+		this.events.MANIFESTS_READY = new this.WebdeskEvent(this.manifests)
 
-		this.events.LAUNCHER_CLICK = new this.WebdeskEvent("launcher_click", this.events.templates.LAUNCHER_EVENT)
+		this.events.LAUNCHER_CLICK = new this.WebdeskEvent(this.events.templates.LAUNCHER)
 
-		this.events.WINDOW_READY = new this.WebdeskEvent("window_ready", this.events.templates.WINDOW_READY_EVENT)
+		this.events.TITLEBAR_MOUSEDOWN = new this.WebdeskEvent(this.events.templates.LAUNCHER)
+		this.events.TITLEBAR_MOUSEMOVE = new this.WebdeskEvent(this.events.templates.LAUNCHER)
+		this.events.TITLEBAR_MOUSEUP = new this.WebdeskEvent(this.events.templates.LAUNCHER)
 
-		this.events.WINDOW_OPEN = new this.WebdeskEvent("window_open", this.events.templates.WINDOW_OPEN_EVENT)
-		this.events.WINDOW_MOVE = new this.WebdeskEvent("window_move", this.events.templates.WINDOW_OPEN_EVENT)
-		this.events.WINDOW_CLOSE = new this.WebdeskEvent("window_close", this.events.templates.WINDOW_OPEN_EVENT)
-		this.events.WINDOW_INTERACTION = new this.WebdeskEvent("window_click_within", this.events.templates.WINDOW_OPEN_EVENT)
-		this.events.WINDOW_UPDATED_FOCUS = new this.WebdeskEvent("window_focus_update", this.events.templates.WINDOW_OPEN_EVENT)
-		this.events.WINDOW_MAXIMISE = new this.WebdeskEvent("window_is_maximised", this.events.templates.WINDOW_OPEN_EVENT)
-		this.events.WINDOW_MAXIMISE_END = new this.WebdeskEvent("window_was_maximised", this.events.templates.WINDOW_OPEN_EVENT)
-		this.events.WINDOW_MINIMISE = new this.WebdeskEvent("window_is_minimised", this.events.templates.WINDOW_OPEN_EVENT)
-		this.events.WINDOW_MINIMISE_END = new this.WebdeskEvent("window_was_minimised", this.events.templates.WINDOW_OPEN_EVENT)
-		this.events.WINDOW_RESIZE = new this.WebdeskEvent("window_is_resizing", this.events.templates.WINDOW_OPEN_EVENT)
-		this.events.WINDOW_RESIZE_END = new this.WebdeskEvent("window_was_resizing", this.events.templates.WINDOW_OPEN_EVENT)
-		this.events.WINDOW_MOVE = new this.WebdeskEvent("window_is_moving", this.events.templates.WINDOW_OPEN_EVENT)
-		this.events.WINDOW_MOVE_END = new this.WebdeskEvent("window_was_moving", this.events.templates.WINDOW_OPEN_EVENT)
+		this.events.WINDOW_READY = new this.WebdeskEvent(this.events.templates.WINDOW_READY)
 
-		this.events.CLOCK_UPDATE = new this.WebdeskEvent("clock_updated", this.events.templates.CLOCK_EVENT)
+		this.events.WINDOW_OPEN = new this.WebdeskEvent(this.events.templates.WINDOW_OPEN)
+		this.events.WINDOW_MOVE = new this.WebdeskEvent(this.events.templates.WINDOW_OPEN)
+		this.events.WINDOW_CLOSE = new this.WebdeskEvent(this.events.templates.WINDOW_OPEN)
+		this.events.WINDOW_INTERACTION = new this.WebdeskEvent(this.events.templates.WINDOW_OPEN)
+		this.events.WINDOW_UPDATED_FOCUS = new this.WebdeskEvent(this.events.templates.WINDOW_OPEN)
+		this.events.WINDOW_MAXIMISE = new this.WebdeskEvent(this.events.templates.WINDOW_OPEN)
+		this.events.WINDOW_MAXIMISE_END = new this.WebdeskEvent(this.events.templates.WINDOW_OPEN)
+		this.events.WINDOW_MINIMISE = new this.WebdeskEvent(this.events.templates.WINDOW_OPEN)
+		this.events.WINDOW_MINIMISE_END = new this.WebdeskEvent(this.events.templates.WINDOW_OPEN)
+		this.events.WINDOW_RESIZE = new this.WebdeskEvent(this.events.templates.WINDOW_OPEN)
+		this.events.WINDOW_RESIZE_END = new this.WebdeskEvent(this.events.templates.WINDOW_OPEN)
+		this.events.WINDOW_MOVE = new this.WebdeskEvent(this.events.templates.WINDOW_OPEN)
+		this.events.WINDOW_MOVE_END = new this.WebdeskEvent(this.events.templates.WINDOW_OPEN)
+
+		this.events.CLOCK_UPDATE = new this.WebdeskEvent(this.events.templates.CLOCK)
 	}
 }
 
@@ -382,12 +391,59 @@ const WindowManager = new class {
 			if (appManifest.titlebar.path != "") { titlebar.src = `/apps/${details.app}/${appManifest.titlebar.path}` }
 			else { titlebar.src = `/api/_/titlebar` }
 
-			if (appManifest.titlebar.dynamic) {
-				titlebar.addEventListener("load", () => {
-					const title = titlebar.querySelector(".title")
-					if (title) { title.innerText = content.document.title } 
+			// Initial load
+			titlebar.addEventListener("load", () => {
+				// If the titlebar is the default one, add the icon
+				const iframeDocument = titlebar.contentDocument
+				if (appManifest.titlebar.path == "") {
+					if (iframeDocument.querySelector(".icon")) { iframeDocument.querySelector(".icon").src = `/apps/${details.app}/${appManifest.icon}` }
+				}
+				// Make the window able to move
+				iframeDocument.body.addEventListener("mousedown", (event) => {
+					// If the element clicked is a button, ignore the mousedown
+					if (event.target.tagName === "BUTTON") { return }
+
+					windowSkeleton.classList.add("moving")
+					titlebar.setPointerCapture(event.pointerId)
+
+					// Dispath the custom event
+					Utilities.events.TITLEBAR_MOUSEDOWN.emit({ x: event.clientX, y: event.clientY, target: windowSkeleton })
 				})
-			}
+				iframeDocument.body.addEventListener("mousemove", (event) => {
+					// Dispath the custom event
+					Utilities.events.TITLEBAR_MOUSEMOVE.emit({ x: event.clientX, y: event.clientY, target: windowSkeleton })
+				})
+				iframeDocument.body.addEventListener("mouseup", (event) => {
+					// If the element clicked is a button, ignore the mousedown
+					if (event.target.tagName === "BUTTON") { return }
+
+					windowSkeleton.classList.remove("moving")
+					titlebar.releasePointerCapture(event.pointerId)
+
+					// Dispath a custom event
+					Utilities.events.TITLEBAR_MOUSEUP.emit({ x: event.clientX, y: event.clientY, target: windowSkeleton })
+				})
+				// ^^^^^^^^^^^ It's like im back to the old times
+				// If the titlebar has a title, add the app name
+				if (iframeDocument.querySelector(".title")) {
+					iframeDocument.querySelector(".title").innerText = content.contentDocument.title
+				}
+				// If there is a close button, make it close the window
+				if (iframeDocument.querySelector(".close")) {
+					iframeDocument.querySelector(".close").addEventListener("click", () => { WindowManager.basic.closeWindow(windowSkeleton) })
+				}
+				// If there is a maximise button, make it maximise the window
+				if (iframeDocument.querySelector(".maximise")) {
+					iframeDocument.querySelector(".maximise").addEventListener("click", () => { WindowManager.basic.maximiseWindow(windowSkeleton) })
+				}
+				// If there is a minimise button, make it minimise the window
+				if (iframeDocument.querySelector(".minimise")) {
+					iframeDocument.querySelector(".minimise").addEventListener("click", () => { WindowManager.basic.minimiseWindow(windowSkeleton) })
+				}
+				if (appManifest.titlebar.dynamic) {
+					titlebar.addEventListener("load", () => { iframeDocument.querySelector(".title").innerText = content.contentDocument.title })
+				}
+			}, { once: true })
 
 			// Wrap the iframes
 			contentWrapper.append(content)
@@ -418,9 +474,7 @@ const WindowManager = new class {
 	}
 	basic = {
 		// Closes a window
-		closeWindow(event) {
-			// Get the target window
-			const targetWindow = event.target.closest("[app]")
+		closeWindow(targetWindow) {
 			// Stop tracking the window position
 			WindowManager.boundryBoxes.delete(targetWindow)
 			// Removes the window
@@ -430,9 +484,7 @@ const WindowManager = new class {
 			Utilities.events.WINDOW_CLOSE.emit(Utilities.getWindowInfo(targetWindow))
 		},
 		// Handles the maximising of windows
-		maximiseWindow(event) {
-			// Get the target window
-			const targetWindow = event.target.closest("[app]")
+		maximiseWindow(targetWindow) {
 			// If the window is maximised
 			if (targetWindow.classList.contains("maximised")) {
 				// Remove the maximised class and send the end maximised event
@@ -445,9 +497,7 @@ const WindowManager = new class {
 			}
 		},
 		// Handles the minimising of windows
-		minimiseWindow(event) {
-			// Get the target window
-			const targetWindow = event.target.closest("[app]")
+		minimiseWindow(targetWindow) {
 			// Remove the maximised class
 			targetWindow.classList.remove("maximised")
 			// If the window is minimised
@@ -514,11 +564,12 @@ const WindowManager = new class {
 			WindowManager.interaction.offsets = [ event.x , event.y ]
 
 			// If the user clicked on the window element, set direct click to true
-			// If the user clicked on a button, ignore
-			// If the user clicked on a maximised window, ignore
 			if (event.target.getAttribute("app")) { WindowManager.interaction.directClick = true }
+			// If the user clicked on a button, ignore
 			else if (event.target.tagName === "BUTTON") { return }
+			// If the user clicked on a maximised window, ignore
 			else if (WindowManager.interaction.window.classList.contains("maximised")) { return }
+
 			// If everything looks good, send an interaction event
 			Utilities.events.WINDOW_INTERACTION.emit(Utilities.getWindowInfo(WindowManager.interaction.window))
 		},
@@ -530,6 +581,16 @@ const WindowManager = new class {
 		}
 	}
 	move = {
+		relX: 0,
+		relY: 0,
+		pos: null,
+		moving: false,
+		saveOffests(details) {
+			WindowManager.move.relX = details.offsetX
+			WindowManager.move.relY = details.offsetY
+			WindowManager.move.moving = true
+			WindowManager.move.pos = details.target.getBoundingClientRect()
+		},
 		// Used to center a newly opened window
 		centerWindow(details) {
 			// Get the window bounding box
@@ -544,17 +605,6 @@ const WindowManager = new class {
 			// Apply the transform
 			details.target.style.transform = `translate(${boundingBox.x}px,${boundingBox.y}px)`
 		},
-		// Enables movement for a window when conditions are met
-		// This is going to need rework for custom titlebars
-		checkEnable(details) {
-			// If the user didn't click the window element then it has to be the titlebar
-			if (!WindowManager.interaction.directClick) {
-				// Add the moving class to the window
-				details.target.classList.add("moving")
-				// Emit the window move event
-				Utilities.events.WINDOW_MOVE.emit(details)
-			}
-		},
 		// Move a window by x (and y) pixels
 		moveBy(targetWindow, x, y) {
 			const boundingBox = WindowManager.boundryBoxes.get(targetWindow)
@@ -564,17 +614,21 @@ const WindowManager = new class {
 			targetWindow.style.transform = `translate(${ boundingBox.x + x }px,${ boundingBox.y + y }px)`
 		},
 		// Moves a window to the cursor
-		followCursor(event) {
-			const movingWindow = WindowManager.space.querySelector(".moving")
-			if (!movingWindow) { return }
+		followCursor(details) {
+			if (WindowManager.move.moving) { return }
 
-			// Calculate the translate values of the move:
-			// current mouse position - the click offset + the old position (before starting the movement)
-			const xPos = event.x - WindowManager.interaction.offsets[0] + WindowManager.boundryBoxes.get(movingWindow).x
-			const yPos = event.y - WindowManager.interaction.offsets[1] + WindowManager.boundryBoxes.get(movingWindow).y
+			// Calculate the space covered by the movement
+			const deltaX = WindowManager.move.relX - details.offsetX
+			const deltaY = WindowManager.move.relY - details.offsetY
 
-			// Set the Translate values
-			movingWindow.style.transform = `translate(${xPos}px,${yPos}px)`
+			console.log(WindowManager.move.pos)
+
+			details.target.x -= deltaX
+			details.target.y -= deltaY
+
+			// Update the relatives
+			WindowManager.move.relX = details.offsetX
+			WindowManager.move.relY = details.offsetY
 		},
 		// Ensures that a window is not clipped by the viewport
 		updatePositionIfCollision(details) {
@@ -601,15 +655,8 @@ const WindowManager = new class {
 			for (const openWindow of document.querySelectorAll("[app]")) { updatePositionIfCollision(openWindow) }
 		},
 		// Handles the end of a window movement
-		reset(event) {
-			// Get the current moving window
-			const movingWindow = WindowManager.space.querySelector(".moving")
-			// If there is no moving window, ignore the mouse up event
-			if (!movingWindow) { return }
-			// Remove the move classes
-			movingWindow.classList.remove("moving")
-			// Emit the move end event
-			Utilities.events.WINDOW_MOVE_END.emit(Utilities.getWindowInfo(movingWindow))
+		reset(details) {
+			WindowManager.move.moving = false
 		}
 	}
 	resize = {
@@ -726,8 +773,11 @@ const WindowManager = new class {
 		Utilities.events.WINDOW_OPEN.on([this.move.centerWindow.bind(this)])
 		Utilities.events.WINDOW_CLOSE.on([this.basic.shiftFocus.bind(this)])
 
+		Utilities.events.TITLEBAR_MOUSEDOWN.on([this.move.saveOffests])
+		Utilities.events.TITLEBAR_MOUSEMOVE.on([this.move.followCursor])
+		Utilities.events.TITLEBAR_MOUSEUP.on([(details) => { console.log(details) }])
+
 		Utilities.events.WINDOW_INTERACTION.on([
-			this.move.checkEnable.bind(this),
 			this.resize.checkEnable.bind(this)
 		])
 
@@ -750,7 +800,7 @@ const WindowManager = new class {
 		document.addEventListener("mouseup", this.resize.reset.bind(this))
 		document.addEventListener("mouseup", this.interaction.reset.bind(this))
 
-		document.addEventListener("mousemove", this.move.followCursor.bind(this))
+		// document.addEventListener("mousemove", this.move.followCursor.bind(this))
 		document.addEventListener("mousemove", this.resize.resizeWindow.bind(this))
 	}
 }
