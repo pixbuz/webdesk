@@ -1,4 +1,4 @@
-/* --- Basic customization --- */
+/* ----- Size and layout customization ----- */
 
 * {
 	margin: 0;
@@ -33,11 +33,11 @@ body {
 
 .Space > * { pointer-events: all; }
 
-.Background	{ z-index: 00; }
-.Launcher	{ z-index: 10; }
-.Window 	{ z-index: 20; }
-.AppDock	{ z-index: 30; }
-.Error		{ z-index: 40; }
+.Space.Background{ z-index: 00; }
+.Space.Launcher  { z-index: 10; }
+.Space.Window 	 { z-index: 20; }
+.Space.AppDock	 { z-index: 30; }
+.Space.Error	 { z-index: 40; }
 
 .Background {
 	pointer-events: none;
@@ -49,6 +49,15 @@ body {
 .Background > * {
 	width: 100%;
 	height: 100%;
+}
+
+.Launcher {
+	justify-content: flex-start;
+	align-content: flex-start;
+	flex-flow: column wrap;
+	display: flex;
+	padding: 8px;
+	gap: 4px 8px;
 }
 
 .AppDock {
@@ -129,15 +138,6 @@ body {
 	display: inline;
 }
 
-.Launcher {
-	justify-content: flex-start;
-	align-content: flex-start;
-	flex-flow: column wrap;
-	display: flex;
-	padding: 8px;
-	gap: 4px 8px;
-}
-
 [launcher] {
 	flex-flow: column nowrap;
 	justify-content: center;
@@ -196,12 +196,6 @@ body {
 
 [app].focus::after { opacity: 100%; }
 
-[app].resizeX,
-[app].resizeY,
-[app].resizeXY1,
-[app].resizeXY2,
-[app].opening { transition: none; }
-
 [app].from-maximised {
 	max-height: 100%;
 	max-width: 100%;
@@ -224,63 +218,18 @@ body {
 	opacity: 0;
 }
 
-[app] .titlebar {
-	justify-content: space-between;
-	padding: 0 1vmin 4px 1vmin;
-	align-content: center;
-	flex-flow: row nowrap;
-	border-radius: 4px;
-	user-select: none;
+[app] header {
+	overflow: hidden;
 	height: 2.5vmin;
-	display: flex;
 	width: 100%;
 }
 
-[app] .titlebar .iconWrapper {
-	justify-content: flex-start;
-	align-content: center;
-	pointer-events: none;
-	user-select: none;
-	aspect-ratio: 1;
-	display: flex;
+[app] header .titlebar {
+	width: 100%;
 	height: 100%;
-	flex: 1;
 }
 
-[app] .titlebar .iconWrapper .icon {
-	aspect-ratio: 1;
-	max-width: 100%;
-}
-
-[app] .titlebar .title {
-	text-transform: capitalize;
-	text-align: center;
-	font-size: 1.25vmin;
-	margin: auto;
-	flex: 1;
-}
-
-[app] .titlebar .buttons {
-	justify-content: flex-end;
-	flex-flow: row nowrap;
-	pointer-events: none;
-	align-items: center;
-	overflow: hidden;
-	display: flex;
-	height: 100%;
-	gap: .5vmin;
-	flex: 1;
-}
-
-[app] .titlebar .buttons button {
-	pointer-events: all;
-	border-radius: 4px;
-	aspect-ratio: 1.25;
-	height: 75%;
-	border: 0;
-}
-
-[app] .wrapper {
+[app] section {
 	height: calc(100% - 2.5vmin);
 	pointer-events: none;
 	border-radius: 4px;
@@ -289,9 +238,9 @@ body {
 	width: 100%;
 }
 
-[app].focus .wrapper { pointer-events: all; }
+[app].focus section { pointer-events: all; }
 
-[app] .wrapper iframe {
+[app] section iframe {
 	width: 100%;
 	height: 100%;
 }
@@ -304,13 +253,13 @@ body {
 	pointer-events: none !important;
 }
 
-body:has([app].moving) { cursor: grabbing; }
-body:has([app].resizeX) { cursor: e-resize; }
-body:has([app].resizeY) { cursor: n-resize; }
-body:has([app].resizeXY1) { cursor: nw-resize; }
-body:has([app].resizeXY2) { cursor: ne-resize; }
+.Window:has([app].moving) { cursor: grabbing; }
+.Window:has([app].resizeX) { cursor: e-resize; }
+.Window:has([app].resizeY) { cursor: n-resize; }
+.Window:has([app].resizeXY1) { cursor: nw-resize; }
+.Window:has([app].resizeXY2) { cursor: ne-resize; }
 
-/* --- Color customization --- */
+/* ----- Color customization ----- */
 
 /* App Dock */
 .AppDock {
@@ -366,95 +315,7 @@ body:has([app].resizeXY2) { cursor: ne-resize; }
 	background-repeat: space;
 }
 
-/* Unfocused Window Buttons */
-[app] .titlebar button.minimise { background: var(--windows-color-buttons-mini); }
-[app] .titlebar button.maximise { background: var(--windows-color-buttons-maxi); }
-[app] .titlebar button.close { background: var(--windows-color-buttons-close); }
-
-/* Focused Window Buttons */
-[app].focus .titlebar button.minimise { background: var(--windows-color-focus-buttons-mini); }
-[app].focus .titlebar button.maximise { background: var(--windows-color-focus-buttons-maxi); }
-[app].focus .titlebar button.close { background: var(--windows-color-focus-buttons-close); }
-
-/* --- Intro window customization --- */
-.introBanner {
-	background: rgba(0, 0, 0, 37.5%);
-	backdrop-filter: blur(1px);
-	position: absolute;
-	height: 100svh;
-	width: 100svw;
-	z-index: 99;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	flex-flow: column nowrap;
-}
-
-.introBanner .deco {
-	translate: -25% 0;
-	height: 10vmin;
-	width: 200svw;
-	left: 0;
-}
-
-.deco.top {
-	translate: 0 0%;
-	rotate: 2deg;
-}
-
-.deco.bottom {
-	translate: 0 0%;
-	rotate: 2deg;
-}
-
-.introBanner section {
-	background: rgba(0, 0, 0, 25%);
-	flex-flow: column nowrap;
-	border-radius: 1vmin;
-	padding: 2vmax;
-	width: 25vmax;
-	height: 25vmin;
-	display: flex;
-}
-
-.introBanner input {
-	aspect-ratio: 2;
-	width: 2vmax;
-	border: none;
-}
-
-.introBanner input ::before {
-	background: red;
-	content: "";
-	inset: 0;
-}
-
-.introBanner h1 {
-	text-align: center;
-	color: white;
-	width: 100%;
-}
-
-.introBanner p {
-	color: white;
-	width: 100%;
-	flex: 1;
-}
-
-.introBanner div {
-	justify-content: space-between;
-	flex-flow: row nowrap;
-	display: flex;
-}
-
-.introBanner button {
-	text-align: center;
-	color: black;
-	width: 25%;
-	padding: 2vmin;
-}
-
-/* --- Animations --- */
+/* ----- Animations ----- */
 
 .Window.Space:has(.maximised) ~ .AppDock:hover {
 	opacity: 1;
@@ -473,6 +334,12 @@ body:has([app].resizeXY2) { cursor: ne-resize; }
 [app] {
 	transition: transform 25ms cubic-bezier(.25, .5, 1, 1);
 }
+
+[app].resizeX,
+[app].resizeY,
+[app].resizeXY1,
+[app].resizeXY2,
+[app].opening { transition: none; }
 
 [app].maximised::before {
 	border-radius: 0;
@@ -496,6 +363,8 @@ body:has([app].resizeXY2) { cursor: ne-resize; }
 [app].closing {
 	transition-duration: 100ms;
 }
+
+/* ----- Keyframes animations ----- */
 
 @keyframes AppDock-maximised-up {
 	from {

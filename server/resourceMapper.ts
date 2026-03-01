@@ -34,10 +34,8 @@ const MIMES: Readonly<Record<string, string>> = Object.freeze({
 
 // Describes the titlebar propriety fields
 type TitlebarProprieties = {
-	path?: string,
-	icon: boolean,
+	path: string,
 	dynamic: boolean,
-	buttons: Record<string, string>,
 }
 
 // Provided a manifest object, returns it normalized
@@ -45,10 +43,8 @@ type TitlebarProprieties = {
 class WebdeskApplicationManifest {
 	routes: Record<string, string> = {}
 	titlebar: TitlebarProprieties = {
-		icon: true,
-		buttons: {},
 		dynamic: false,
-		path: undefined,
+		path: "",
 	}
 	description: string = "No description"
 	modules: string[] = []
@@ -108,7 +104,7 @@ const webdesk = new class {
 		const commands: Record<string, unknown> = {}
 		commands["/api/_/manifest"] = manifests	// Retuns all the manifests
 		commands["/api/_/intro"] = intro	// Returns the intro page
-		commands["/api/_/titlebar"] = Deno.readTextFileSync(`${config.staticFolder}/titlebar.htm`)
+		commands["/api/_/titlebar"] = Deno.readFileSync(`${config.staticFolder}/titlebar.htm`)
 
 		return commands
 	}
@@ -188,9 +184,7 @@ const applications = new class {
 			// Import the module
 			const module = await import(`../${config.appFolder}/${appName}/${path}`)
 			// For each export of the module, map it to an endpoint
-			for (const entry of Object.keys(module)) {
-				commands[`/api/${appName}/${entry}`] = module[entry]
-			}
+			for (const entry of Object.keys(module)) { commands[`/api/${appName}/${entry}`] = module[entry] }
 		}
 
 		return commands
