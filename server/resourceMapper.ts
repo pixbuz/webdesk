@@ -68,28 +68,11 @@ class WebdeskApplicationManifest {
 	}
 }
 
-// Returns the intro page
-function intro(_queries: string[]) {
-	return [ Deno.readFileSync(`${config.staticFolder}/intropage.htm`), "text/html; charset=UTF-8" ] as [unknown, string]
+function returnManifests(request: Request) {
+	
+	return new Response(JSON.stringify(applications.manifests), { status: 200, headers: { "content-type": MIMES.json } })
 }
-// Get command for an app or all app manifests
-function manifests(queries: string[]) {
-	// Return string
-	let manifests: string = ""
 
-	// For all apps the request contains
-	for (const app of queries) {
-		// If no app specified, send the full app list
-		if (!app) {
-			manifests = `,${JSON.stringify(applications.manifests)}`
-			break
-		}
-		// Return the app manifest or an empty object
-		manifests += `,${JSON.stringify(applications.manifests[app] || { })}`
-	}
-
-	return [ manifests.substring(1), "application/json" ] as [unknown, string]
-}
 // Webdesk logic class
 const webdesk = new class {
 	css: string = "" // CSS
@@ -102,8 +85,8 @@ const webdesk = new class {
 	command() {
 		// Contains the endpoints mapped to the functions
 		const commands: Record<string, unknown> = {}
-		commands["/api/_/manifest"] = manifests	// Retuns all the manifests
-		commands["/api/_/intro"] = intro	// Returns the intro page
+		commands["/api/_/manifest"] = returnManifests
+		commands["/api/_/intro"] = Deno.readFileSync(`${config.staticFolder}/intropage.htm`)
 		commands["/api/_/titlebar"] = Deno.readFileSync(`${config.staticFolder}/titlebar.htm`)
 
 		return commands

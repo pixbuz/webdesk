@@ -32,8 +32,8 @@ function requestHandler(browserRequest: Request, _connInfo: Deno.ServeHandlerInf
 	const requestTree: string[] = requestURL.pathname.substring(1).split("/")
 
 	if (requestTree[0] == "api") {
-		log.info(`API request for app ${requestTree[1] === "_" ? "webdesk" : requestTree[1]}, on "${requestURL.pathname}" with search "${requestURL.search}"`)
-		return apiReplier(requestURL)
+		log.info(`API request for app ${requestTree[1] === "_" ? "webdesk" : requestTree[1]}, on "${requestURL.pathname}"`)
+		return apiReplier(browserRequest)
 	}
 	else {
 		log.info(`Recived request for asset "${requestURL.pathname}"`)
@@ -54,30 +54,33 @@ function assetsReplier(request: URL): Response {
 	}
 }
 // Runs and returns a server function
-function apiReplier(request: URL): Response {
+function apiReplier(browserRequest: Request): Response {
+	const requestURL: URL = new URL(browserRequest.url)
 	// If the command requested doesn't exist
-	if (resources.commands[request.pathname] instanceof Function) {
-		// Sandbox the function, in case return the error
+	if (resources.commands[requestURL.pathname] instanceof Function) {
+		// Sandbox the function, in case it errors
 		try {
-			// Run the function and save the result and mime
-			const [result, mime] = (resources.commands[request.pathname] as (queries: string[]) => [unknown, string])(request.search.substring(1).split("&"))
-			log.info(`Command ${(resources.commands[request.pathname] as Function).name} replied with MIME "${mime}"`)
-			// Return the result with the right mime
-			return new Response(result as BodyInit, { status: 200, headers: { "content-type": mime } })
+			// Run the function and save the result
+			const result = (resources.commands[requestURL.pathname] as (request: Request) => unknown)(browserRequest)
+			// Log the successful execution
+			log.debug(`Command "${(resources.commands[requestURL.pathname] as Function).name}" executed without errors`)
+			// If a response is produced, return the result
+			if (result instanceof Response) { return result }
+			else { return new Response(result as BodyInit, { status: 200 }) }
 		}
 		catch(error) {
 			const errorStack = (error as Error).stack!.split("\n")
-			log.warn(`Command function for "${request.pathname}" failed: ${errorStack[0]}`)
+			log.warn(`Command function for "${requestURL.pathname}" failed: ${errorStack[0]}`)
 			errorStack.slice(1).forEach((line) => { log.warn(line.trim()) })
 			// Send an server error response
 			return new ErrorResponse((error as Error).stack, 500)
 		}
 	
-	} else if (resources.commands[request.pathname]) {
-		return new Response(resources.commands[request.pathname] as BodyInit, { status: 200 })
+	} else if (resources.commands[requestURL.pathname]) {
+		return new Response(resources.commands[requestURL.pathname] as BodyInit, { status: 200 })
 	} else {
 		log.info(`Request is for a non existing command`)
 		// Send an user error response
-		return new ErrorResponse(`Recived api request: ${request.pathname}\n${" ".repeat(23)}^isn't a valid command`)
+		return new ErrorResponse(`Recived api request: ${requestURL.pathname}\n${" ".repeat(23)}^isn't a valid command`)
 	}
 }

@@ -1,5 +1,6 @@
 {
 	"icon": "icon.svg",
 	"index": "index.html",
-	"description": "Random fun app"
+	"description": "Random fun app",
+	"modules": [ "backend.ts" ]
 }

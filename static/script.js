@@ -421,6 +421,7 @@ const WindowManager = new class {
 			else { return windowSkeleton }
 		},
 		// Setup the titlebar
+		// TODO: Perhaps make it so the favicon is the titlebar icon like the <title> is the title
 		async setupTitlebar(event) {
 			const titlebar = event.target
 			const targetWindow = event.target.closest("[app]")
@@ -752,9 +753,10 @@ const WindowManager = new class {
 			Utilities.events.WINDOW_MOVE_END	// Make sure a window isn't clipping the viewport after a movement
 		)
 
+		// IDEA: Quick window switching with Utilities.events.WINDOW_MOVE instead of Utilities.events.WINDOW_MOVE_START
 		this.basic.focusWindow.bind(this).onEvent(
-			Utilities.events.WINDOW_RESIZE,	// Focus a window after a resize
-			Utilities.events.WINDOW_MOVE,	// Focus a window after a movement
+			Utilities.events.WINDOW_RESIZE_START,	// Focus a window after a resize
+			Utilities.events.WINDOW_MOVE_START,	// Focus a window after a movement
 			Utilities.events.WINDOW_OPEN	// Focus a window after a window is opened
 		)
 

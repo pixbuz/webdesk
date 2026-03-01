@@ -1,0 +1,36 @@
+* {
+	box-sizing: border-box;
+	padding: 0;
+	margin: 0;
+	font-family: system-ui, -apple-system;
+}
+
+html,
+body {
+	width: 100%;
+	height: 100%;
+	background: black;
+	color: oklch(0.7319 0.1858 52.98); /* rgb(255, 128, 0) */
+}
+
+body {
+	justify-content: start;
+	flex-flow: row nowrap;
+	align-items: start;
+	display: flex;
+	gap: 4px;
+}
+
+label {
+	user-select: none;
+	height: 20px;
+}
+
+input {
+	color: oklch(0.7319 0.1858 52.98);
+	outline: transparent;
+	background: none;
+	border: none;
+	height: 20px;
+	flex: 1;
+}
