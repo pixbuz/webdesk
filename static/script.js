@@ -68,11 +68,16 @@ const Utilities = new class {
 
 		TITLEBAR_LOADED: new WebdeskEvent(this.templates.READY),
 		TITLEBAR_READY: new WebdeskEvent(this.templates.READY),
+
 		WINDOW_READY: new WebdeskEvent(this.templates.READY),
 
 		WINDOW_MOVE_START: new WebdeskEvent(this.templates.MOVE),
 		WINDOW_MOVE: new WebdeskEvent(this.templates.MOVE),
 		WINDOW_MOVE_END: new WebdeskEvent(this.templates.MOVE),
+
+		WINDOW_RESIZE_START: new WebdeskEvent(this.templates.WINDOW),
+		WINDOW_RESIZE: new WebdeskEvent(this.templates.WINDOW),
+		WINDOW_RESIZE_END: new WebdeskEvent(this.templates.WINDOW),
 
 		WINDOW_OPEN: new WebdeskEvent(this.templates.WINDOW),
 		WINDOW_CLOSE: new WebdeskEvent(this.templates.WINDOW),
@@ -80,15 +85,11 @@ const Utilities = new class {
 
 		WINDOW_UPDATED_FOCUS: new WebdeskEvent(this.templates.WINDOW),
 		
-		WINDOW_MAXIMISE: new WebdeskEvent(this.templates.WINDOW),
-		WINDOW_MAXIMISE_END: new WebdeskEvent(this.templates.WINDOW),
+		// WINDOW_MAXIMISE: new WebdeskEvent(this.templates.WINDOW),
+		// WINDOW_MAXIMISE_END: new WebdeskEvent(this.templates.WINDOW),
 
-		WINDOW_MINIMISE: new WebdeskEvent(this.templates.WINDOW),
-		WINDOW_MINIMISE_END: new WebdeskEvent(this.templates.WINDOW),
-
-		WINDOW_RESIZE_START: new WebdeskEvent(this.templates.WINDOW),
-		WINDOW_RESIZE: new WebdeskEvent(this.templates.WINDOW),
-		WINDOW_RESIZE_END: new WebdeskEvent(this.templates.WINDOW),
+		// WINDOW_MINIMISE: new WebdeskEvent(this.templates.WINDOW),
+		// WINDOW_MINIMISE_END: new WebdeskEvent(this.templates.WINDOW),
 
 		CLOCK_UPDATE: new WebdeskEvent(this.templates.CLOCK),
 	}
@@ -437,21 +438,21 @@ const WindowManager = new class {
 				// If the element clicked is a button, ignore the mousedown
 				if (event.target.tagName === "BUTTON") { return }
 
-				windowSkeleton.classList.add("moving")
+				targetWindow.classList.add("moving")
 				iframeDocument.body.setPointerCapture(event.pointerId)
 
 				// Emit the event
-				Utilities.events.WINDOW_MOVE_START.emit({ x: event.screenX, y: event.screenY, target: windowSkeleton })
+				Utilities.events.WINDOW_MOVE_START.emit({ x: event.screenX, y: event.screenY, target: targetWindow })
 			})
 			// Send an event when the user moves
-			iframeDocument.body.addEventListener("pointermove", (event) => { Utilities.events.WINDOW_MOVE.emit({ x: event.screenX, y: event.screenY, target: windowSkeleton }) })
+			iframeDocument.body.addEventListener("pointermove", (event) => { Utilities.events.WINDOW_MOVE.emit({ x: event.screenX, y: event.screenY, target: targetWindow }) })
 			// Send an event when releases the click in the titlebar
 			iframeDocument.body.addEventListener("pointerup", (event) => {
-				windowSkeleton.classList.remove("moving")
+				targetWindow.classList.remove("moving")
 				iframeDocument.body.releasePointerCapture(event.pointerId)
 
 				// Emit the event
-				Utilities.events.WINDOW_MOVE_END.emit({ x: event.screenX, y: event.screenY, target: windowSkeleton })
+				Utilities.events.WINDOW_MOVE_END.emit({ x: event.screenX, y: event.screenY, target: targetWindow })
 			})
 			// If the titlebar has a title, add the app name
 			if (iframeDocument.querySelector(".title")) {
@@ -459,15 +460,15 @@ const WindowManager = new class {
 			}
 			// If there is a close button, make it close the window
 			if (iframeDocument.querySelector(".close")) {
-				iframeDocument.querySelector(".close").addEventListener("click", () => { WindowManager.basic.closeWindow(windowSkeleton) })
+				iframeDocument.querySelector(".close").addEventListener("click", () => { WindowManager.basic.closeWindow(targetWindow) })
 			}
 			// If there is a maximise button, make it maximise the window
 			if (iframeDocument.querySelector(".maximise")) {
-				iframeDocument.querySelector(".maximise").addEventListener("click", () => { WindowManager.basic.maximiseWindow(windowSkeleton) })
+				iframeDocument.querySelector(".maximise").addEventListener("click", () => { WindowManager.basic.maximiseWindow(targetWindow) })
 			}
 			// If there is a minimise button, make it minimise the window
 			if (iframeDocument.querySelector(".minimise")) {
-				iframeDocument.querySelector(".minimise").addEventListener("click", () => { WindowManager.basic.minimiseWindow(windowSkeleton) })
+				iframeDocument.querySelector(".minimise").addEventListener("click", () => { WindowManager.basic.minimiseWindow(targetWindow) })
 			}
 			if (manifest.titlebar.dynamic) {
 				titlebar.addEventListener("load", () => { iframeDocument.querySelector(".title").innerText = content.contentDocument.title })
@@ -475,10 +476,9 @@ const WindowManager = new class {
 		}
 	}
 	basic = {
+		maximisedPos: { x: null, y: null },
 		// Closes a window
 		closeWindow(targetWindow) {
-			// Stop tracking the window position
-			WindowManager.boundryBoxes.delete(targetWindow)
 			// Removes the window
 			// setTimeout(() => { targetWindow.remove() }, 100)
 			targetWindow.remove()
@@ -486,16 +486,22 @@ const WindowManager = new class {
 			Utilities.events.WINDOW_CLOSE.emit(Utilities.getWindowInfo(targetWindow))
 		},
 		// Handles the maximising of windows
+		// TODO: Understand why the translate goes to 0px when un maximising and fix
 		maximiseWindow(targetWindow) {
 			// If the window is maximised
 			if (targetWindow.classList.contains("maximised")) {
 				// Remove the maximised class and send the end maximised event
 				targetWindow.classList.remove("maximised")
-				Utilities.events.WINDOW_MAXIMISE_END.emit(Utilities.getWindowInfo(targetWindow))
+				targetWindow.style.transform = `translate(${WindowManager.basic.maximisedPos.x}px,${WindowManager.basic.maximisedPos.y}px)`
+				// Utilities.events.WINDOW_MAXIMISE_END.emit(Utilities.getWindowInfo(targetWindow))
 			} else {
 				// Add the maximised class and send the start maximised event
 				targetWindow.classList.add("maximised")
-				Utilities.events.WINDOW_MAXIMISE.emit(Utilities.getWindowInfo(targetWindow))
+				const pos = targetWindow.style.transform.slice(10, -3).replace("px", "").split(",")
+				WindowManager.basic.maximisedPos = { x: pos[0], y: pos[1] }
+				targetWindow.style.transform = ""
+
+				// Utilities.events.WINDOW_MAXIMISE.emit(Utilities.getWindowInfo(targetWindow))
 			}
 		},
 		// Handles the minimising of windows
@@ -506,11 +512,11 @@ const WindowManager = new class {
 			if (targetWindow.classList.contains("minimized")) {
 				// Remove the minimised class and send the end minimised event
 				targetWindow.classList.remove("minimized")
-				Utilities.events.WINDOW_MINIMISE_END.emit(Utilities.getWindowInfo(targetWindow))
+				// Utilities.events.WINDOW_MINIMISE_END.emit(Utilities.getWindowInfo(targetWindow))
 			} else {
 				// Add the minimised class and send the start minimised event
 				targetWindow.classList.add("minimized")
-				Utilities.events.WINDOW_MINIMISE.emit(Utilities.getWindowInfo(targetWindow))
+				// Utilities.events.WINDOW_MINIMISE.emit(Utilities.getWindowInfo(targetWindow))
 			}
 		},
 		// Makes a window the "active" window
@@ -554,7 +560,7 @@ const WindowManager = new class {
 	move = {
 		x: 0,
 		y: 0,
-		position: null,
+		position: { x: null, y: null },
 		init(details) {
 			WindowManager.move.x = details.x
 			WindowManager.move.y = details.y
@@ -843,11 +849,11 @@ const AppDockManager = new class {
 		Utilities.events.WINDOW_OPEN.on([this.icons.add])
 		Utilities.events.WINDOW_CLOSE.on([this.icons.updateClosedWindow])
 
-		Utilities.events.WINDOW_MINIMISE.on([this.icons.minimised.add])
-		Utilities.events.WINDOW_MINIMISE_END.on([this.icons.maximised.remove])
+		// Utilities.events.WINDOW_MINIMISE.on([this.icons.minimised.add])
+		// Utilities.events.WINDOW_MINIMISE_END.on([this.icons.maximised.remove])
 
-		Utilities.events.WINDOW_MAXIMISE.on([this.icons.maximised.add])
-		Utilities.events.WINDOW_MAXIMISE_END.on([this.icons.maximised.remove])
+		// Utilities.events.WINDOW_MAXIMISE.on([this.icons.maximised.add])
+		// Utilities.events.WINDOW_MAXIMISE_END.on([this.icons.maximised.remove])
 	}
 }
 

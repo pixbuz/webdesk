@@ -202,7 +202,6 @@ body {
 }
 
 [app].maximised {
-	transform: translate(0) !important;
 	height: 100% !important;
 	width: 100% !important;
 	max-height: 100%;
