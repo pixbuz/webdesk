@@ -3,7 +3,7 @@
 // Window proprieties inside utilities replacing window boundry boxes and window dock icon map
 // Customization for the Titlebar compiler's event listeners and callback functions
 
-var newUser = false
+let newUser = false
 
 // Custom webdesk event constructor
 const WebdeskEvent = class {
@@ -34,7 +34,7 @@ const WebdeskEvent = class {
 	}
 }
 
-const Utilities = new class {
+var Utilities = new class {
 	// App manifests
 	manifests
 	// Contains all the template objects for the events
@@ -147,6 +147,7 @@ const Utilities = new class {
 		}
 	}
 	// Simplifies IndexDB interactions
+	// TODO: Remove blocking logic race conditions are for the winners
 	webdeskDB = {
 		// Helper for the main functions for interacting with the database
 		async _run(tableName, mode, callback) {
@@ -310,9 +311,9 @@ const Utilities = new class {
 	}
 
 	constructor() {
-		window.utilities = this
-
-		for (const initFunction of Object.values(this.inits)) { initFunction.bind(this)() }
+		for (const initFunction of Object.values(this.inits)) {
+			initFunction.bind(this)()
+		}
 	}
 }
 

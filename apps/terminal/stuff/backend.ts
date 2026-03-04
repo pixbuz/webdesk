@@ -8,9 +8,9 @@ export function socket(request: Request) {
 
 function commandInterpreter(event: MessageEvent) {
 	const commandTree: string[] = event.data.split(" ")
+	const socket: WebSocket = event.target as WebSocket
 	switch(commandTree[0]) {
-		case "help": break
-		case "echo": (event.target as WebSocket).send(commandTree.slice(1).join(" "))
-		default: break
+		case "echo": socket.send(commandTree.slice(1).join(" "))
+		default: 
 	}
 }
