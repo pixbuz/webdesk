@@ -1,6 +1,15 @@
 # **Webdesk**
-## **Description**
-Webdesk is a passion project of mine with the aim of making an OS type experience in a web app.
+Webdesk is a passion project of mine with the aim of making an OS type experience in a web app. Webdesk's objective is to provide maximum customization inside the browser, primarly for fun.
+## **Desctiption**
+Webdesk is a PWA that uses a Deno backend and HTML/JS for the frontend. The main gimmick of Webdesk are the **Applications**, which are static or dynamic web sites viewed inside the main page. These applications are opened from **Launchers** on the desktop. The applications are viewed from inside **Windows** that can be moved, resized and closed. The user can keep track of the open applications by checking the **App Dock** that contains the icons of the open applications, clicking on the icons will bring the corresponding application to the foreground and focus it. The windows use iframes for both the main content and the titlebar, allowing for custom functionalities tailored for the window application. The windows can also specify commands for the backend **API** for processing custom requests, allowing the windows to communicate with the backend using `fetch()` or directly using a `WebSocket`. Webdesk is built using event driven logic for maintainability and modularity in the frontend and static assets tables in the backend for speed, necessitating only a pathname lookup. A **Service Worker** is used to cache pages on the client side, relieving strain on the server and allowing offline use **(WIP)**. Webdesk supports custom color themes and backgrounds with light or dark icons.
+
+(Event propagation tree diagram)
+
+![Diagram showing the structure of a application window](images/window_diagram.svg)
+
+As stated above the main part of Webdesk are windows. These `<article>` elements use two iframes to make use straightforward for both the user and application developer.
+
+
 ## **Progress**
 - Make an App Launcher Template
 	- [x] Make it Reflect the App's Information
@@ -48,23 +57,3 @@ Webdesk is a passion project of mine with the aim of making an OS type experienc
 	- [ ] Icons for the Apps
 	- [ ] Animations for the Opening, Closing, Maximising, Minimizing a Window
 	- [ ] Animations for the Opening, Closing, Maximising, Minimizing a Window App Dock Icon
-
-### **Notes**
-
-~~Change the code to event driven actions~~
-
-Titlebar button name -> callback function system for custom titlebars
-
-Add settings and customization options with CSS variables
-- ~~Different Color Palettes~~
-- ~~Desktop Image~~
-- Preferences
-- ~~Themes~~
-
-~~Add the first time tutorial~~
-
-Make a file system(?)
-
-Game in the terminal app
-
-System info app as CV
