@@ -5,6 +5,8 @@ Webdesk is a PWA that uses a Deno backend and HTML/JS for the frontend. The main
 
 (Event propagation tree diagram)
 
+This diagram shows how different events are triggered and what methods run with a high level description of what they do.
+
 ![Diagram showing the structure of a application window](images/window_diagram.svg)
 
 As stated above the main part of Webdesk are windows. These `<article>` elements use two iframes to make use straightforward for both the user and application developer.

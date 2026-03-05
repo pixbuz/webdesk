@@ -5,16 +5,12 @@
 	font-family: system-ui, -apple-system;
 }
 
-html,
 body {
 	color: oklch(0.7319 0.1858 52.98); /* rgb(255, 128, 0) */
 	background: black;
+	padding: 4px;
 	height: 100%;
 	width: 100%;
-}
-
-body {
-	padding: 4px;
 }
 
 body > div {
@@ -25,8 +21,10 @@ body > div {
 }
 
 .prompt {
-	position: relative;
-	bottom: 0;
+	position: sticky;
+	display: flex;
+	gap: 4px;
+	top: 4px;
 }
 
 label {
@@ -46,5 +44,9 @@ input {
 .output {
 	flex-flow: column-reverse nowrap;
 	display: flex;
+	gap: 0;
+}
 
+.output p {
+	line-height: 1;
 }

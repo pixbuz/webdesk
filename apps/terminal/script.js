@@ -1,8 +1,7 @@
-const cli = document.querySelector(`[name="cli"]`)
-const commandSocket = new WebSocket("/api/terminal/socket")
 const webdeskDB = window.parent.Utilities.webdeskDB
+const cli = document.querySelector(`[name="cli"]`)
 const output = document.querySelector(".output")
-let commHistory
+let commHistory, pos
 
 ;(async () => {
 	commHistory = await webdeskDB.get("terminal", "history")
@@ -10,29 +9,44 @@ let commHistory
 	if (commHistory == undefined) {
 		await webdeskDB.createTable("terminal")
 		await webdeskDB.set("terminal", "history", [])
+		commHistory = []
 	}
 
-	commHistory = []
+	pos = commHistory.length
 })()
 
-// TODO: Add histiory
-// TODO: Fix command view order
+document.addEventListener("keydown", async (event) => {
+	if (event.key == "Enter" && cli.value) {
+		fetch(`/api/terminal/command?${cli.value}`)
+			.then(showCommandResult)
+			.catch(commandError)
 
-document.addEventListener("keydown", (event) => {
-	if (event.key == "Enter") {
-		commandSocket.send(cli.value)
-		commHistory.push(cli.value)
+		if (commHistory.at(pos) != cli.value) {
+			commHistory.push(cli.value)
+			pos = commHistory.length
+			webdeskDB.set("terminal", "history", commHistory)
+		}
+	} else if (event.key == "ArrowUp") {
+		pos -= (pos - 1) < 0 ? 0 : 1
+		cli.value = commHistory.at(pos)
+	} else if (event.key == "ArrowDown") {
+		pos += (pos + 1) >= commHistory.length ? 0 : 1
+		cli.value = commHistory.at(pos)
 	} else if (document.activeElement != cli) {
 		cli.focus()
 	}
 })
 
-commandSocket.onmessage = (event) => {
-	const line = document.createElement("p")
-	webdeskDB.set("terminal", "history", commHistory)
+function commandError(reason) {
+	console.log(reason)
+}
 
+async function showCommandResult(response) {
+	const line = document.createElement("p")
 	output.append(line)
 
-	line.innerText = `${cli.value}\n${event.data}`
-	cli.value = ""
+	response.text().then((text) => {
+		line.innerHTML += `<span>>> ${cli.value}</span><br>${text}`
+		cli.value = ""
+	})
 }
