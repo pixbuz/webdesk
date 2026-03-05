@@ -7,9 +7,11 @@ let newUser = false
 
 // Custom webdesk event constructor
 const WebdeskEvent = class {
-	constructor(objectTemplate = {}) {
-		this.name = Math.random().toString(36).substring(2)
-		this.template = objectTemplate
+	constructor(eventTemplate = {}) {
+		this.name = Math.random()
+				.toString(36)
+				.substring(2)
+		this.template = eventTemplate
 	}
 	// Used to trigger an event
 	emit(data = {}) {
@@ -44,19 +46,19 @@ var Utilities = new class {
 			app: null,
 		},
 		READY: {
-			app: null,
 			target: null,
+			app: null,
 		},
 		WINDOW: {
-			id: null,
-			app: null,
 			target: null,
+			app: null,
 		},
 		CLOCK: {
 			target: [ ],
 		},
-		MOVE: {
+		INTERACTION: {
 			target: null,
+			pID: null,
 			x: null,
 			y: null,
 		}
@@ -71,25 +73,26 @@ var Utilities = new class {
 
 		WINDOW_READY: new WebdeskEvent(this.templates.READY),
 
-		WINDOW_MOVE_START: new WebdeskEvent(this.templates.MOVE),
-		WINDOW_MOVE: new WebdeskEvent(this.templates.MOVE),
-		WINDOW_MOVE_END: new WebdeskEvent(this.templates.MOVE),
+		WINDOW_CLICK: new WebdeskEvent(this.templates.INTERACTION),
 
-		WINDOW_RESIZE_START: new WebdeskEvent(this.templates.WINDOW),
-		WINDOW_RESIZE: new WebdeskEvent(this.templates.WINDOW),
-		WINDOW_RESIZE_END: new WebdeskEvent(this.templates.WINDOW),
+		WINDOW_MOVE_START: new WebdeskEvent(this.templates.INTERACTION),
+		WINDOW_MOVE: new WebdeskEvent(this.templates.INTERACTION),
+		WINDOW_MOVE_END: new WebdeskEvent(this.templates.INTERACTION),
+
+		WINDOW_RESIZE_START: new WebdeskEvent(this.templates.INTERACTION),
+		WINDOW_RESIZE: new WebdeskEvent(this.templates.INTERACTION),
+		WINDOW_RESIZE_END: new WebdeskEvent(this.templates.INTERACTION),
 
 		WINDOW_OPEN: new WebdeskEvent(this.templates.WINDOW),
 		WINDOW_CLOSE: new WebdeskEvent(this.templates.WINDOW),
-		WINDOW_CLICK: new WebdeskEvent(this.templates.WINDOW),
 
 		WINDOW_UPDATED_FOCUS: new WebdeskEvent(this.templates.WINDOW),
 		
-		// WINDOW_MAXIMISE: new WebdeskEvent(this.templates.WINDOW),
-		// WINDOW_MAXIMISE_END: new WebdeskEvent(this.templates.WINDOW),
+		WINDOW_MAXIMISE: new WebdeskEvent(this.templates.WINDOW),
+		WINDOW_MAXIMISE_END: new WebdeskEvent(this.templates.WINDOW),
 
-		// WINDOW_MINIMISE: new WebdeskEvent(this.templates.WINDOW),
-		// WINDOW_MINIMISE_END: new WebdeskEvent(this.templates.WINDOW),
+		WINDOW_MINIMISE: new WebdeskEvent(this.templates.WINDOW),
+		WINDOW_MINIMISE_END: new WebdeskEvent(this.templates.WINDOW),
 
 		CLOCK_UPDATE: new WebdeskEvent(this.templates.CLOCK),
 	}
@@ -147,7 +150,7 @@ var Utilities = new class {
 		}
 	}
 	// Simplifies IndexDB interactions
-	// TODO: Remove blocking logic race conditions are for the winners
+	// TODO: Remove blocking logic
 	webdeskDB = {
 		// Helper for the main functions for interacting with the database
 		async _run(tableName, mode, callback) {
@@ -307,7 +310,7 @@ var Utilities = new class {
 	}
 	// Utility method to get the information of a window
 	getWindowInfo(webdeskWindow) {
-		return { id: webdeskWindow.getAttribute("id"), target: webdeskWindow, app: webdeskWindow.getAttribute("app") }
+		return { target: webdeskWindow, app: webdeskWindow.getAttribute("app") }
 	}
 
 	constructor() {
@@ -351,7 +354,7 @@ const LauncherManager = new class {
 		this.space.appendChild(launcher)
 
 		// When clicked, dispatch the LAUNCHER_CLICK event
-		launcher.addEventListener("click", () => { Utilities.events.LAUNCHER_CLICK.emit({app: appName}) })
+		launcher.addEventListener("click", () => { Utilities.events.LAUNCHER_CLICK.emit({ app: appName }) })
 	}
 	// Adds every installed app launcher once the manifests load
 	initLaunchers(details) {
@@ -406,10 +409,25 @@ const WindowManager = new class {
 			// Nest the titlebar and content wrapper in the window
 			windowSkeleton.append(titlebarWrapper, contentWrapper)
 
-			// Add the event listeners for the different window elements
-			Utilities.events.WINDOW_UPDATED_FOCUS.on([() => { WindowManager.basic.updateZIndex(windowSkeleton) }])	// When the focus is shifted, update own z index
-			windowSkeleton.addEventListener("mousedown", WindowManager.resize.checkEnable)	// When a click happens inside a window, start resizing
+			// When the focus is shifted, update own z index
+			Utilities.events.WINDOW_UPDATED_FOCUS.on([() => { WindowManager.basic.updateZIndex(windowSkeleton) }])
 
+			// When a click happens inside a window, start resizing
+			windowSkeleton.addEventListener("pointerdown", (event) => {
+				windowSkeleton.setPointerCapture(event.pointerId)
+
+				Utilities.events.WINDOW_RESIZE_START.emit({ target: windowSkeleton, x: event.x, y: event.y })
+			})
+			
+			// Resize the window when the user moves the pointer
+			windowSkeleton.addEventListener("pointermove", (event) => { Utilities.events.WINDOW_RESIZE.emit({ target: windowSkeleton, x: event.x, y: event.y }) })
+			
+			// Stop the resizing when the user releases the pointer
+			windowSkeleton.addEventListener("pointerup", (event) => {
+				windowSkeleton.releasePointerCapture(event.pointerId)
+
+				Utilities.events.WINDOW_RESIZE_END.emit({ target: windowSkeleton, x: event.x, y: event.y })
+			})
 			// Set the app name
 			windowSkeleton.setAttribute("app", details.app)
 
@@ -435,6 +453,7 @@ const WindowManager = new class {
 			if (manifest.titlebar.path == "") {
 				if (iframeDocument.querySelector(".icon")) { iframeDocument.querySelector(".icon").src = `/apps/${appName}/${manifest.icon}` }
 			}
+			
 			// Send an event when the user clicks in the titlebar
 			iframeDocument.body.addEventListener("pointerdown", (event) => {
 				// If the element clicked is a button, ignore the mousedown
@@ -444,17 +463,19 @@ const WindowManager = new class {
 				iframeDocument.body.setPointerCapture(event.pointerId)
 
 				// Emit the event
-				Utilities.events.WINDOW_MOVE_START.emit({ x: event.screenX, y: event.screenY, target: targetWindow })
+				Utilities.events.WINDOW_MOVE_START.emit({ x: event.screenX, y: event.screenY, target: targetWindow, pID: event.pointerId })
 			})
+			
 			// Send an event when the user moves
-			iframeDocument.body.addEventListener("pointermove", (event) => { Utilities.events.WINDOW_MOVE.emit({ x: event.screenX, y: event.screenY, target: targetWindow }) })
+			iframeDocument.body.addEventListener("pointermove", (event) => { Utilities.events.WINDOW_MOVE.emit({ x: event.screenX, y: event.screenY, target: targetWindow, pID: event.pointerId }) })
+			
 			// Send an event when releases the click in the titlebar
 			iframeDocument.body.addEventListener("pointerup", (event) => {
 				targetWindow.classList.remove("moving")
 				iframeDocument.body.releasePointerCapture(event.pointerId)
 
 				// Emit the event
-				Utilities.events.WINDOW_MOVE_END.emit({ x: event.screenX, y: event.screenY, target: targetWindow })
+				Utilities.events.WINDOW_MOVE_END.emit({ x: event.screenX, y: event.screenY, target: targetWindow, pID: event.pointerId })
 			})
 			// If the titlebar has a title, add the app name
 			if (iframeDocument.querySelector(".title")) {
@@ -495,7 +516,7 @@ const WindowManager = new class {
 				// Remove the maximised class and send the end maximised event
 				targetWindow.classList.remove("maximised")
 				targetWindow.style.transform = `translate(${WindowManager.basic.maximisedPos.x}px,${WindowManager.basic.maximisedPos.y}px)`
-				// Utilities.events.WINDOW_MAXIMISE_END.emit(Utilities.getWindowInfo(targetWindow))
+				Utilities.events.WINDOW_MAXIMISE_END.emit(Utilities.getWindowInfo(targetWindow))
 			} else {
 				// Add the maximised class and send the start maximised event
 				targetWindow.classList.add("maximised")
@@ -503,7 +524,7 @@ const WindowManager = new class {
 				WindowManager.basic.maximisedPos = { x: pos[0], y: pos[1] }
 				targetWindow.style.transform = ""
 
-				// Utilities.events.WINDOW_MAXIMISE.emit(Utilities.getWindowInfo(targetWindow))
+				Utilities.events.WINDOW_MAXIMISE.emit(Utilities.getWindowInfo(targetWindow))
 			}
 		},
 		// Handles the minimising of windows
@@ -514,11 +535,11 @@ const WindowManager = new class {
 			if (targetWindow.classList.contains("minimized")) {
 				// Remove the minimised class and send the end minimised event
 				targetWindow.classList.remove("minimized")
-				// Utilities.events.WINDOW_MINIMISE_END.emit(Utilities.getWindowInfo(targetWindow))
+				Utilities.events.WINDOW_MINIMISE_END.emit(Utilities.getWindowInfo(targetWindow))
 			} else {
 				// Add the minimised class and send the start minimised event
 				targetWindow.classList.add("minimized")
-				// Utilities.events.WINDOW_MINIMISE.emit(Utilities.getWindowInfo(targetWindow))
+				Utilities.events.WINDOW_MINIMISE.emit(Utilities.getWindowInfo(targetWindow))
 			}
 		},
 		// Makes a window the "active" window
@@ -635,15 +656,14 @@ const WindowManager = new class {
 		box: null,
 		// Saves the interaction start
 		init(details) {
-			console.log(details)
 			WindowManager.resize.x = details.x
 			WindowManager.resize.y = details.y
 
 			WindowManager.resize.box = details.target.getBoundingClientRect()
 
 			// Calculate where inside the window the click happened
-			const relClickX = WindowManager.interaction.offsets[0] - WindowManager.resize.box.x
-			const relClickY = WindowManager.interaction.offsets[1] - WindowManager.resize.box.y
+			const relClickX = WindowManager.resize.x - WindowManager.resize.box.x
+			const relClickY = WindowManager.resize.y - WindowManager.resize.box.y
 
 			// Update the window grab position
 			WindowManager.resize.grabPosition = [
@@ -671,23 +691,22 @@ const WindowManager = new class {
 			}
 
 			// Emit the event
-			Utilities.events.WINDOW_RESIZE_START.emit(Utilities.getWindowInfo(resizingWindow))
+			Utilities.events.WINDOW_RESIZE.emit(details)
 		},
 		// Interprets where a user clicked and runs the appropriate rescaling of a window
-		// NEEDS INSANE REWORK(?) (aint gonna happen i guess)
-		resizeWindow(event) {
+		followCursor(event) {
 			// Target the current resizing window
 			const resizingWindow = WindowManager.space.querySelector(".resizing")
-			// If none, ignore the mouse movement
+			// If none, ignore the movement
 			if (!resizingWindow) { return }
 		
 			// If the user clicked on the top left corner
 			if (WindowManager.resize.grabPosition[0] && WindowManager.resize.grabPosition[3]) {
 				// Move the window to the bottom right
-				targetWindow.style.transform = `translate(${ WindowManager.resize.box.x + event.x - WindowManager.interaction.offsets[0] }px,${ WindowManager.resize.box.y + event.y - WindowManager.interaction.offsets[1] }px)`
+				resizingWindow.style.transform = `translate(${ WindowManager.resize.box.x + event.x - WindowManager.resize.x }px,${ WindowManager.resize.box.y + event.y - WindowManager.resize.y }px)`
 				// Resize the window according to the user movement
-				resizingWindow.style.height = `${WindowManager.resize.box.height - event.y + WindowManager.interaction.offsets[1]}px`
-				resizingWindow.style.width = `${WindowManager.resize.box.width - event.x + WindowManager.interaction.offsets[0]}px`
+				resizingWindow.style.height = `${WindowManager.resize.box.height - event.y + WindowManager.resize.y}px`
+				resizingWindow.style.width = `${WindowManager.resize.box.width - event.x + WindowManager.resize.x}px`
 				// Ignore the next checks
 				return
 			}
@@ -695,31 +714,28 @@ const WindowManager = new class {
 			// If the user clicked on the top edge
 			if (WindowManager.resize.grabPosition[0]) {
 				// Move the window to the bottom
-				targetWindow.style.transform = `translate(${ WindowManager.resize.box.x }px,${ WindowManager.resize.box.y + event.y - WindowManager.interaction.offsets[1] }px)`
+				resizingWindow.style.transform = `translate(${ WindowManager.resize.box.x }px,${ WindowManager.resize.box.y + event.y - WindowManager.resize.y }px)`
 				// Resize the window height
-				resizingWindow.style.height = `${WindowManager.resize.box.height - event.y + WindowManager.interaction.offsets[1]}px`
+				resizingWindow.style.height = `${ WindowManager.resize.box.height - event.y + WindowManager.resize.y }px`
 			}
 			// If the user clicked on the bottom edge
 			else if (WindowManager.resize.grabPosition[2]) {
 				// Resize the window
-				resizingWindow.style.height = `${WindowManager.resize.box.height + event.y - WindowManager.interaction.offsets[1]}px`
+				resizingWindow.style.height = `${ WindowManager.resize.box.height + event.y - WindowManager.resize.y }px`
 			}
 
 			// If the user clicked on the left edge
 			if (WindowManager.resize.grabPosition[3]) {
 				// Move the window to the left
-				targetWindow.style.transform = `translate(${ WindowManager.resize.box.x + event.x - WindowManager.interaction.offsets[0] }px,${ WindowManager.resize.box.y }px)`
+				resizingWindow.style.transform = `translate(${ WindowManager.resize.box.x + event.x - WindowManager.resize.x }px,${ WindowManager.resize.box.y }px)`
 				// Resize the window height
-				resizingWindow.style.width = `${WindowManager.resize.box.width - event.x + WindowManager.interaction.offsets[0]}px`
+				resizingWindow.style.width = `${ WindowManager.resize.box.width - event.x + WindowManager.resize.x }px`
 			}
 			// If the user clicked on the right edge
 			else if (WindowManager.resize.grabPosition[1]) {
 				// Resize the window width
-				resizingWindow.style.width = `${WindowManager.resize.box.width + event.x - WindowManager.interaction.offsets[0]}px`
+				resizingWindow.style.width = `${ WindowManager.resize.box.width + event.x - WindowManager.resize.x }px`
 			}
-
-			// Emit the event
-			Utilities.events.WINDOW_RESIZE.emit(Utilities.getWindowInfo(resizingWindow))
 		},
 		// Handles the end of a window resizing
 		reset(event) {
@@ -730,22 +746,25 @@ const WindowManager = new class {
 
 			// Remove resize classes
 			resizingWindow.classList.remove("resizeX", "resizeY", "resizeXY1", "resizeXY2", "resizing")
-
-			// Emit the event
-			Utilities.events.WINDOW_RESIZE_END.emit(Utilities.getWindowInfo(resizingWindow))
 		}
 	}
 
 	constructor() {
 		Utilities.events.LAUNCHER_CLICK.on([this.create.skeletonizeWindow])	// Open a window when a launcher is clicked
 
-		// TODO: Make it toggleable from settings
+		// TODO: Make it toggle-able from settings
 		Utilities.events.WINDOW_OPEN.on([this.move.centerWindow.bind(this)])	// Center a window when a window is opened
 		Utilities.events.WINDOW_CLOSE.on([this.basic.shiftFocus.bind(this)])	// Move the focus when a window is closed
 
-		Utilities.events.WINDOW_MOVE_START.on([this.move.init])	// Save the offsets when user click on a titlebar
-		Utilities.events.WINDOW_MOVE.on([this.move.followCursor])	// Move the window when the user moves the pointer
+		Utilities.events.WINDOW_MOVE_START.on([this.move.init])	// Save the offsets when the user clicks on a titlebar
+		Utilities.events.WINDOW_MOVE.on([this.move.followCursor])	// Move a window when the user moves the pointer
 		Utilities.events.WINDOW_MOVE_END.on([this.move.reset])	// Stop the movement when the user releases the pointer
+
+		Utilities.events.WINDOW_RESIZE_START.on([this.resize.init])	// Save the offsets when the user clicks on a window
+		Utilities.events.WINDOW_RESIZE.on([this.resize.followCursor])	// Resize a window when the user moves the pointer
+		Utilities.events.WINDOW_RESIZE_END.on([this.resize.reset])	// Stop the resizing when the user releases the pointer
+
+		Utilities.events.WINDOW_RESIZE_START.on([this.resize.init])	// Save the offsets when the user clicks on a window
 
 		Utilities.events.WINDOW_CLICK.on([this.resize.init])	// Check how to resize the window
 
@@ -760,9 +779,6 @@ const WindowManager = new class {
 			Utilities.events.WINDOW_MOVE_START,	// Focus a window after a movement
 			Utilities.events.WINDOW_OPEN	// Focus a window after a window is opened
 		)
-
-		document.addEventListener("mouseup", this.resize.reset)	// Stop resizing a window when a click is released
-		document.addEventListener("mousemove", this.resize.resizeWindow)	// Resize a window when the mouse is moving
 	}
 }
 
