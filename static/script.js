@@ -581,15 +581,11 @@ const WindowManager = new class {
 		}
 	}
 	move = {
-		x: 0,
-		y: 0,
 		position: { x: null, y: null },
+		// Save the offsets and stuff
 		init(details) {
-			WindowManager.move.x = details.x
-			WindowManager.move.y = details.y
-
 			const box = details.target.getBoundingClientRect()
-			WindowManager.move.position = { x: box.left, y: box.top }
+			WindowManager.move.position = { x: details.x - box.left, y: details.y - box.top }
 		},
 		// Used to center a newly opened window
 		centerWindow(details) {
@@ -604,20 +600,8 @@ const WindowManager = new class {
 			const targetWindow = WindowManager.space.querySelector(".moving")
 			if (!targetWindow) { return }
 
-			// Calculate the space covered by the movement
-			const deltaX = details.x - WindowManager.move.x
-			const deltaY = details.y - WindowManager.move.y
-
-			// Add the change to the current position
-			WindowManager.move.position.x += deltaX
-			WindowManager.move.position.y += deltaY
-
 			// Update the position
-			details.target.style.transform = `translate(${WindowManager.move.position.x}px,${WindowManager.move.position.y}px)`
-
-			// Update the relatives
-			WindowManager.move.x = details.x
-			WindowManager.move.y = details.y
+			details.target.style.transform = `translate(${details.x - WindowManager.move.position.x}px,${details.y - WindowManager.move.position.y}px)`
 		},
 		// Ensures that a window is not clipped by the viewport
 		updatePositionIfCollision(details) {
@@ -650,48 +634,46 @@ const WindowManager = new class {
 		// Margin on the edges of a window for triggering the resizing
 		resizeMargin: 12,
 		// Saves on which edge/s the user clicked
-		grabPosition: [ ],
-		x: 0,
-		y: 0,
+		edges: {},
+		offsets: {},
+		position: {},
 		box: null,
 		// Saves the interaction start
 		init(details) {
-			WindowManager.resize.x = details.x
-			WindowManager.resize.y = details.y
+			const box = details.target.getBoundingClientRect()
 
-			WindowManager.resize.box = details.target.getBoundingClientRect()
-
-			// Calculate where inside the window the click happened
-			const relClickX = WindowManager.resize.x - WindowManager.resize.box.x
-			const relClickY = WindowManager.resize.y - WindowManager.resize.box.y
+			// Calculate the offsets of the window
+			WindowManager.resize.offsets = {
+				top: details.y - box.top,
+				right: box.right - details.x,
+				bottom: box.bottom - details.y,
+				left: details.x - box.left,
+			}
 
 			// Update the window grab position
-			WindowManager.resize.grabPosition = [
-				(relClickY <= WindowManager.resize.resizeMargin), // Top
-				(WindowManager.resize.box.width - relClickX <= WindowManager.resize.resizeMargin), // Left
-				(WindowManager.resize.box.height - relClickY <= WindowManager.resize.resizeMargin), // Bottom
-				(relClickX <= WindowManager.resize.resizeMargin) // Right
-			]
+			WindowManager.resize.edges = {
+				top: WindowManager.resize.offsets.top <= WindowManager.resize.resizeMargin,
+				right: WindowManager.resize.offsets.right <= WindowManager.resize.resizeMargin,
+				bottom: WindowManager.resize.offsets.bottom <= WindowManager.resize.resizeMargin,
+				left: WindowManager.resize.offsets.left <= WindowManager.resize.resizeMargin,
+			}
 
-			// If the user clicked on the left or right edge
-			if (WindowManager.resize.grabPosition[1] || WindowManager.resize.grabPosition[3]) {
-				details.target.classList.add("resizeX", "resizing")
+			// Calculate the window position
+			WindowManager.resize.position = {
+				top: box.top,
+				right: box.right,
+				bottom: box.bottom,
+				left: box.left,
 			}
-			// If the user clicked on the top or bottom edge
-			else if (WindowManager.resize.grabPosition[0] || WindowManager.resize.grabPosition[2]) {
-				details.target.classList.add("resizeY", "resizing")
-			}
+
 			// If the user clicked on the top-right or the bottom-left corners
-			if (WindowManager.resize.grabPosition[0] && WindowManager.resize.grabPosition[3] || WindowManager.resize.grabPosition[1] && WindowManager.resize.grabPosition[2]) {
-				details.target.classList.add("resizeXY1", "resizing")
-			}
+			if (edges.top && edges.right || edges.bottom && edges.left) { details.target.classList.add("resizeXY1", "resizing") }
 			// If the user clicked on the top-left or the bottom-right corners
-			else if (WindowManager.resize.grabPosition[0] && WindowManager.resize.grabPosition[1] || WindowManager.resize.grabPosition[2] && WindowManager.resize.grabPosition[3]) {
-				details.target.classList.add("resizeXY2", "resizing")
-			}
-
-			// Emit the event
-			Utilities.events.WINDOW_RESIZE.emit(details)
+			else if (edges.top && edges.left || edges.bottom && edges.right) { details.target.classList.add("resizeXY2", "resizing") }
+			// If the user clicked on the left or right edge
+			else if (edges.left || edges.right) { details.target.classList.add("resizeX", "resizing") }
+			// If the user clicked on the top or bottom edge
+			else if (edges.top || edges.bottom) { details.target.classList.add("resizeY", "resizing") }
 		},
 		// Interprets where a user clicked and runs the appropriate rescaling of a window
 		followCursor(event) {
@@ -699,6 +681,11 @@ const WindowManager = new class {
 			const resizingWindow = WindowManager.space.querySelector(".resizing")
 			// If none, ignore the movement
 			if (!resizingWindow) { return }
+
+			let newX = WindowManager.resize.position.left
+			let newY = WindowManager.resize.position.top
+			let newW = WindowManager.resize.position.right - WindowManager.resize.position.left
+			let newH = WindowManager.resize.position.bottom - WindowManager.resize.position.top
 		
 			// If the user clicked on the top left corner
 			if (WindowManager.resize.grabPosition[0] && WindowManager.resize.grabPosition[3]) {
