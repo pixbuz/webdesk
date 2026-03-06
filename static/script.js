@@ -58,7 +58,6 @@ var Utilities = new class {
 		},
 		INTERACTION: {
 			target: null,
-			pID: null,
 			x: null,
 			y: null,
 		}
@@ -396,7 +395,14 @@ const WindowManager = new class {
 			else { titlebar.src = `/api/_/titlebar` }
 
 			// Setup the titlebar
-			titlebar.addEventListener("load", WindowManager.create.setupTitlebar, { once: true })
+			
+			// Add a call back for the dynamic titlebar
+			// needs finishing
+			if (manifest.titlebar.dynamic) {
+				let title
+				content.addEventListener("load", () => { title = content.contentDocument.title }, { once: true })
+				titlebar.addEventListener("load", (event) => WindowManager.create.setupTitlebar(event, title), { once: true })
+			} else { titlebar.addEventListener("load", WindowManager.create.setupTitlebar, { once: true }) }
 
 			// Wrap the iframes
 			contentWrapper.append(content)
@@ -441,19 +447,22 @@ const WindowManager = new class {
 		},
 		// Setup the titlebar
 		// TODO: Perhaps make it so the favicon is the titlebar icon like the <title> is the title
-		async setupTitlebar(event) {
+		async setupTitlebar(event, title) {
 			const titlebar = event.target
 			const targetWindow = event.target.closest("[app]")
 			const content = targetWindow.querySelector(".content")
 			const appName = targetWindow.getAttribute("app")
 			const manifest = Utilities.manifests[appName]
 			const iframeDocument = titlebar.contentDocument
+			const titleElement = iframeDocument.querySelector(".title")
 
 			// If the titlebar is the default one, add the icon
 			if (manifest.titlebar.path == "") {
 				if (iframeDocument.querySelector(".icon")) { iframeDocument.querySelector(".icon").src = `/apps/${appName}/${manifest.icon}` }
 			}
-			
+
+			content.addEventListener("load", (event) => { titleElement.innerText = event.target.contentDocument.title })
+
 			// Send an event when the user clicks in the titlebar
 			iframeDocument.body.addEventListener("pointerdown", (event) => {
 				// If the element clicked is a button, ignore the mousedown
@@ -463,11 +472,11 @@ const WindowManager = new class {
 				iframeDocument.body.setPointerCapture(event.pointerId)
 
 				// Emit the event
-				Utilities.events.WINDOW_MOVE_START.emit({ x: event.screenX, y: event.screenY, target: targetWindow, pID: event.pointerId })
+				Utilities.events.WINDOW_MOVE_START.emit({ x: event.screenX, y: event.screenY, target: targetWindow })
 			})
 			
 			// Send an event when the user moves
-			iframeDocument.body.addEventListener("pointermove", (event) => { Utilities.events.WINDOW_MOVE.emit({ x: event.screenX, y: event.screenY, target: targetWindow, pID: event.pointerId }) })
+			iframeDocument.body.addEventListener("pointermove", (event) => { Utilities.events.WINDOW_MOVE.emit({ x: event.screenX, y: event.screenY, target: targetWindow }) })
 			
 			// Send an event when releases the click in the titlebar
 			iframeDocument.body.addEventListener("pointerup", (event) => {
@@ -475,12 +484,8 @@ const WindowManager = new class {
 				iframeDocument.body.releasePointerCapture(event.pointerId)
 
 				// Emit the event
-				Utilities.events.WINDOW_MOVE_END.emit({ x: event.screenX, y: event.screenY, target: targetWindow, pID: event.pointerId })
+				Utilities.events.WINDOW_MOVE_END.emit({ x: event.screenX, y: event.screenY, target: targetWindow })
 			})
-			// If the titlebar has a title, add the app name
-			if (iframeDocument.querySelector(".title")) {
-				iframeDocument.querySelector(".title").innerText = content.contentDocument.title
-			}
 			// If there is a close button, make it close the window
 			if (iframeDocument.querySelector(".close")) {
 				iframeDocument.querySelector(".close").addEventListener("click", () => { WindowManager.basic.closeWindow(targetWindow) })
@@ -492,9 +497,6 @@ const WindowManager = new class {
 			// If there is a minimise button, make it minimise the window
 			if (iframeDocument.querySelector(".minimise")) {
 				iframeDocument.querySelector(".minimise").addEventListener("click", () => { WindowManager.basic.minimiseWindow(targetWindow) })
-			}
-			if (manifest.titlebar.dynamic) {
-				titlebar.addEventListener("load", () => { iframeDocument.querySelector(".title").innerText = content.contentDocument.title })
 			}
 		}
 	}
@@ -631,19 +633,18 @@ const WindowManager = new class {
 		}
 	}
 	resize = {
-		// Margin on the edges of a window for triggering the resizing
-		resizeMargin: 12,
 		// Saves on which edge/s the user clicked
-		edges: {},
-		offsets: {},
-		position: {},
+		edges: { },
+		anchor: {},
 		box: null,
 		// Saves the interaction start
 		init(details) {
-			const box = details.target.getBoundingClientRect()
+			const box = WindowManager.resize.box = details.target.getBoundingClientRect()
+			// Margin on the edges of a window for triggering the resizing
+			const resizeMargin = 12
 
 			// Calculate the offsets of the window
-			WindowManager.resize.offsets = {
+			const offsets = {
 				top: details.y - box.top,
 				right: box.right - details.x,
 				bottom: box.bottom - details.y,
@@ -651,78 +652,55 @@ const WindowManager = new class {
 			}
 
 			// Update the window grab position
-			WindowManager.resize.edges = {
-				top: WindowManager.resize.offsets.top <= WindowManager.resize.resizeMargin,
-				right: WindowManager.resize.offsets.right <= WindowManager.resize.resizeMargin,
-				bottom: WindowManager.resize.offsets.bottom <= WindowManager.resize.resizeMargin,
-				left: WindowManager.resize.offsets.left <= WindowManager.resize.resizeMargin,
+			const edges = WindowManager.resize.edges = {
+				top: offsets.top <= resizeMargin,
+				right: offsets.right <= resizeMargin,
+				bottom: offsets.bottom <= resizeMargin,
+				left: offsets.left <= resizeMargin,
 			}
 
-			// Calculate the window position
-			WindowManager.resize.position = {
-				top: box.top,
-				right: box.right,
-				bottom: box.bottom,
-				left: box.left,
-			}
+			WindowManager.resize.anchor.x = details.x
+			WindowManager.resize.anchor.y = details.y
 
 			// If the user clicked on the top-right or the bottom-left corners
-			if (edges.top && edges.right || edges.bottom && edges.left) { details.target.classList.add("resizeXY1", "resizing") }
+			if (edges.top && edges.right || edges.bottom && edges.left) { details.target.classList.add("resizeXY2", "resizing") }
 			// If the user clicked on the top-left or the bottom-right corners
-			else if (edges.top && edges.left || edges.bottom && edges.right) { details.target.classList.add("resizeXY2", "resizing") }
+			else if (edges.top && edges.left || edges.bottom && edges.right) { details.target.classList.add("resizeXY1", "resizing") }
 			// If the user clicked on the left or right edge
 			else if (edges.left || edges.right) { details.target.classList.add("resizeX", "resizing") }
 			// If the user clicked on the top or bottom edge
 			else if (edges.top || edges.bottom) { details.target.classList.add("resizeY", "resizing") }
 		},
 		// Interprets where a user clicked and runs the appropriate rescaling of a window
-		followCursor(event) {
+		followCursor(details) {
 			// Target the current resizing window
 			const resizingWindow = WindowManager.space.querySelector(".resizing")
 			// If none, ignore the movement
 			if (!resizingWindow) { return }
 
-			let newX = WindowManager.resize.position.left
-			let newY = WindowManager.resize.position.top
-			let newW = WindowManager.resize.position.right - WindowManager.resize.position.left
-			let newH = WindowManager.resize.position.bottom - WindowManager.resize.position.top
-		
-			// If the user clicked on the top left corner
-			if (WindowManager.resize.grabPosition[0] && WindowManager.resize.grabPosition[3]) {
-				// Move the window to the bottom right
-				resizingWindow.style.transform = `translate(${ WindowManager.resize.box.x + event.x - WindowManager.resize.x }px,${ WindowManager.resize.box.y + event.y - WindowManager.resize.y }px)`
-				// Resize the window according to the user movement
-				resizingWindow.style.height = `${WindowManager.resize.box.height - event.y + WindowManager.resize.y}px`
-				resizingWindow.style.width = `${WindowManager.resize.box.width - event.x + WindowManager.resize.x}px`
-				// Ignore the next checks
-				return
-			}
-			
-			// If the user clicked on the top edge
-			if (WindowManager.resize.grabPosition[0]) {
-				// Move the window to the bottom
-				resizingWindow.style.transform = `translate(${ WindowManager.resize.box.x }px,${ WindowManager.resize.box.y + event.y - WindowManager.resize.y }px)`
-				// Resize the window height
-				resizingWindow.style.height = `${ WindowManager.resize.box.height - event.y + WindowManager.resize.y }px`
-			}
-			// If the user clicked on the bottom edge
-			else if (WindowManager.resize.grabPosition[2]) {
-				// Resize the window
-				resizingWindow.style.height = `${ WindowManager.resize.box.height + event.y - WindowManager.resize.y }px`
+			const { box, edges, anchor } = WindowManager.resize
+			let { top, left, width, height } = box
+
+			const deltaX = anchor.x - details.x
+			const deltaY = anchor.y - details.y
+
+			if (WindowManager.resize.edges.left) {
+				width += deltaX
+				left -= deltaX
+			} else if (WindowManager.resize.edges.right) {
+				width -= deltaX
 			}
 
-			// If the user clicked on the left edge
-			if (WindowManager.resize.grabPosition[3]) {
-				// Move the window to the left
-				resizingWindow.style.transform = `translate(${ WindowManager.resize.box.x + event.x - WindowManager.resize.x }px,${ WindowManager.resize.box.y }px)`
-				// Resize the window height
-				resizingWindow.style.width = `${ WindowManager.resize.box.width - event.x + WindowManager.resize.x }px`
+			if (WindowManager.resize.edges.top) {
+				height += deltaY
+				top -= deltaY
+			} else if (WindowManager.resize.edges.bottom) {
+				height -= deltaY
 			}
-			// If the user clicked on the right edge
-			else if (WindowManager.resize.grabPosition[1]) {
-				// Resize the window width
-				resizingWindow.style.width = `${ WindowManager.resize.box.width + event.x - WindowManager.resize.x }px`
-			}
+
+			resizingWindow.style.transform = `translate(${left}px,${top}px)`
+			resizingWindow.style.width = `${width}px`
+			resizingWindow.style.height = `${height}px`
 		},
 		// Handles the end of a window resizing
 		reset(event) {
