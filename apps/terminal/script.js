@@ -1,4 +1,4 @@
-const webdeskDB = window.parent.Utilities.webdeskDB
+const webdeskDB = window.parent.webdeskDB
 const cli = document.querySelector(`[name="cli"]`)
 const output = document.querySelector(".output")
 let commHistory, pos

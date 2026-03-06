@@ -125,7 +125,7 @@ async function fetchCallback(event) {
 }
 
 // Fetches a request from the server, caching it in parallel
-// TODO: Use multiple caches for different things IF ovelap problem emerges
+// IDEA: Use multiple caches for different things IF overlap problem emerges
 async function askServer(request) {
 	// Fall trought with the request to the server
 	const serverResponse = await fetch(request)

@@ -8,12 +8,114 @@
 
 let newUser = false
 
+// Simplifies IndexDB interactions
+var webdeskDB = new class {
+	version = 1
+	updateLock = null
+	// Helper for the main functions for interacting with the database
+	async _run(tableName, mode, callback) {
+		// Get the newest connection for the Database
+		const database = await webdeskDB.ready
+	
+		// Return undefined if trying to access a table that doesn't exist
+		if (!database.objectStoreNames.contains(tableName)) { return undefined }
+	
+		return new Promise((resolve, reject) => {
+			try {
+				const tx = database.transaction(tableName, mode == 0 ? "readonly" : "readwrite")
+				const store = tx.objectStore(tableName)
+				const request = callback(store)
+	
+				request.onsuccess = () => resolve(request.result)
+				request.onerror = () => reject(request.error)
+			} catch (err) { reject(err) }
+		})
+	}
+	// Get a key's value from a table
+	get(table, key) {
+		return webdeskDB._run(table, 0, (store) => store.get(key))
+	}
+	// Get all the values from all the keys of a table
+	getAll(table) {
+		return webdeskDB._run(table, 0, (store) => store.getAll())
+	}
+	// Set the value of a key inside a table
+	set(table, key, value) {
+		return webdeskDB._run(table, 1, (store) => store.put(value, key))
+	}
+	// Delete a key inside a table
+	delete(table, key) {
+		return webdeskDB._run(table, 1, (store) => store.delete(key))
+	}
+	// Adds new tables into the database
+	async createTable(tableName) {
+		// Wait for the database
+		const database = await webdeskDB.ready
+		
+		// If table exists do nothing
+		if (database.objectStoreNames.contains(tableName)) { return }
+	
+		// Close the Database
+		database.close()
+		console.log(`Closing Database to create table "${tableName}"`)
+	
+		return new Promise((resolve, reject) => {
+			// Up the Database version
+			const req = indexedDB.open("webdesk", ++webdeskDB.version)
+	
+			// Before the Database Opens, add the new table
+			req.onupgradeneeded = (event) => {
+				const db = event.target.result
+				if (!db.objectStoreNames.contains(tableName)) { db.createObjectStore(tableName) }
+			}
+	
+			// When the Database Opens, resolve all Promises
+			req.onsuccess = (event) => {
+				const db = event.target.result
+				db.onversionchange = () => { db.close() }
+				
+				localStorage.setItem("db-version", webdeskDB.version)
+				
+				// Update the global ready reference instantly without queueing
+				webdeskDB.ready = Promise.resolve(db)
+				resolve()
+			}
+	
+			req.onblocked = req.onerror = (event) => reject(event)
+		})
+	}
+	constructor() {
+		// Get the last version of the database
+		const dbVersion = localStorage.getItem("db-version")
+		// If there is no item in local storage called "db-version", initialize
+		if (dbVersion == undefined) {
+			localStorage.setItem("db-version", 1)
+			newUser = true
+		} else { this.version = parseInt(dbVersion) }
+
+		// Stops any db interaction in case of db updating
+		this.ready = new Promise((resolve, reject) => {
+			// Send the db open request
+			const req = indexedDB.open("webdesk", this.version)
+			// If successfull, update the status of the database connection
+			req.onsuccess = () => {
+				// When adding new tables, automatically close the database
+				req.result.onversionchange = () => { req.result.close() }
+				resolve(req.result)
+			}
+			// On error, report it
+			req.onblocked = req.onerror = (event) => reject(event)
+		})
+
+		// Used to not overlap operations to the Database
+		this.updateLock = Promise.resolve()
+	}
+}
+
 // Custom webdesk event constructor
 const WebdeskEvent = class {
 	constructor(eventTemplate = {}) {
-		this.name = Math.random()
-				.toString(36)
-				.substring(2)
+		this.name = Math.random().toString(36)
 		this.template = eventTemplate
 	}
 	// Used to trigger an event
@@ -39,7 +141,7 @@ const WebdeskEvent = class {
 	}
 }
 
-var Utilities = new class {
+const Utilities = new class {
 	// App manifests
 	manifests
 	// Contains all the template objects for the events
@@ -98,227 +200,90 @@ var Utilities = new class {
 
 		CLOCK_UPDATE: new WebdeskEvent(this.templates.CLOCK),
 	}
-	// Time
-	time = {
-		// Get the client start time
-		init: null,
-		// Clock
-		seconds: 0,
-		minutes: 0,
-		hours: 0,
-		// Date
-		day: 0,
-		month: 0,
-		year: 0,
-		// Adds 1 second to the clock every second
-		progress() {
-			// Track what changed to smartly update the elements
-			const changed = [ "seconds" ]
-			// Add a second
-			Utilities.time.seconds++
 
-			// If the seconds hit 60
-			if (Utilities.time.seconds >= 60) {
-				// Set them to 0 and add a minute
-				Utilities.time.seconds = 0
-				Utilities.time.minutes++
-
-				// Track the change for the event
-				changed.push("minutes")
-			}
-
-			// If the minutes hit 60
-			if (Utilities.time.minutes >= 60) {
-				// Set them to 0 and add an hour
-				Utilities.time.minutes = 0
-				Utilities.time.hours++
-
-				// Track the change for the event
-				changed.push("hours")
-			}
-
-			// If the hours hit 24
-			if (Utilities.time.hours >= 24) {
-				// Set them to 0 and add a day
-				Utilities.time.hours = 0
-				Utilities.time.day++
-
-				// Track the change for the event
-				changed.push("day")
-			}
-
-			// Send the event
-			Utilities.events.CLOCK_UPDATE.emit({ target: changed })
-		}
-	}
-	// Simplifies IndexDB interactions
-	// TODO: Remove blocking logic
-	webdeskDB = {
-		// Helper for the main functions for interacting with the database
-		async _run(tableName, mode, callback) {
-			// Wait for no operations on the Database
-			await Utilities.webdeskDB.updateLock
-		
-			// Get the newest connection for the Database
-			const database = await Utilities.webdeskDB.ready
-		
-			// Return undefined if trying to access a table that doesn't exist
-			if (!database.objectStoreNames.contains(tableName)) { return undefined }
-		
-			return new Promise((resolve, reject) => {
-				try {
-					const tx = database.transaction(tableName, mode == 0 ? "readonly" : "readwrite")
-					const store = tx.objectStore(tableName)
-					const request = callback(store)
-				
-					request.onsuccess = () => resolve(request.result)
-					request.onerror = () => reject(request.error)
-				} catch (err) { reject(err) }
-			})
-		},
-		// Get a key's value from a table
-		get(table, key) {
-			return Utilities.webdeskDB._run(table, 0, (store) => { return store.get(key) })
-		},
-		// Get all the values from all the keys of a table
-		getAll(table) {
-			return Utilities.webdeskDB._run(table, 0, (store) => { return store.getAll() })
-		},
-		// Set the value of a key inside a table
-		set(table, key, value) {
-			return Utilities.webdeskDB._run(table, 1, (store) => { return store.put(value, key) })
-		},
-		// Delete a key inside a table
-		delete(table, key) {
-			return Utilities.webdeskDB._run(table, 1, (store) => { return store.delete(key) })
-		},
-		async createTable(tableName) {
-			// Adds new Tables into the Database
-			// Wait for the old operation lock and set the new operation lock to:
-			Utilities.webdeskDB.updateLock = Utilities.webdeskDB.updateLock.then(async () => {
-				// Wait for the database
-				const database = await Utilities.webdeskDB.ready
-				
-				// If table exists do nothing
-				if (database.objectStoreNames.contains(tableName)) { return }
-			
-				// Close the Database
-				database.close()
-				console.log(`Closing Database to create table "${tableName}"`)
-			
-				// Block any Database operations now that it is closed
-				let resolveNewDb
-				Utilities.webdeskDB.ready = new Promise((resolve) => { resolveNewDb = resolve })
-			
-				return new Promise((resolve, reject) => {
-					// Up the Database version
-					const req = indexedDB.open("webdesk", ++Utilities.webdeskDB.version)
-				
-					// Before the Database Opens, add the new table
-					req.onupgradeneeded = (event) => {
-						const database = event.target.result
-					
-						if (!database.objectStoreNames.contains(tableName)) { database.createObjectStore(tableName) }
-					}
-				
-					// When the Database Opens, resolve all Promises
-					req.onsuccess = (event) => {
-						const database = event.target.result
-						database.onversionchange = () => { database.close() }
-						
-						localStorage.setItem("db-version", Utilities.webdeskDB.version)
-					
-						resolveNewDb(database)
-						resolve()
-					}
-				
-					req.onblocked = req.onerror = (event) => reject(event)
-				})
-			})
-		
-			return Utilities.webdeskDB.updateLock
-		}
-	}
-	inits = {
+	constructor() {
 		// Allows registering functions to multiple events
-		monkeyPatch() {
-			// Binds a function to multiple webdesk events
-			Function.prototype.onEvent = function(...eventsList) {
-				// For every event passed, register the function to it
-				eventsList.map((event) => { event.on([this]) })
+		Function.prototype.onEvent = function(...eventsList) {
+			// For every event passed, register the function to it
+			eventsList.map((event) => { event.on([this]) })
 
-				return this
-			}
-		},
-		// Initializes the time
-		time() {
-			// Save the start date object
-			this.time.init = new Date()
-
-			// Set the initial values for the clock
-			this.time.seconds = this.time.init.getSeconds()
-			this.time.minutes = this.time.init.getMinutes()
-			this.time.hours = this.time.init.getHours()
-
-			// Set the initial values for the date
-			this.time.day = this.time.init.getDate()
-			this.time.month = this.time.init.getMonth() + 1
-			this.time.year = this.time.init.getFullYear()
-
-			// "Nullify" the start time offset by updating the clock every 1.000s
-			setTimeout(() => {
-				// Progress the time by 1 second
-				Utilities.time.progress()
-				// Set an interval to progress the clock every second
-				setInterval(Utilities.time.progress, 1000)
-			}, 1000 - this.time.init.getMilliseconds())
-		},
-		// Initialize the IndexDB database
-		webdeskDB() {
-			// Get the last version of the database
-			const dbVersion = localStorage.getItem("db-version")
-			// If there is no item in local storage called "db-version", initialize
-			if (dbVersion == undefined) {
-				this.webdeskDB.version = 1
-				localStorage.setItem("db-version", 1)
-				newUser = true
-			} else { this.webdeskDB.version = parseInt(dbVersion) }
-
-			// Stops any db interaction in case of db updating
-			this.webdeskDB.ready = new Promise((resolve, reject) => {
-				// Send the db open request
-				const req = indexedDB.open("webdesk", this.webdeskDB.version)
-				// If successfull, update the status of the database connection
-				req.onsuccess = () => {
-					// When adding new tables, automatically close the database
-					req.result.onversionchange = () => { req.result.close() }
-					resolve(req.result)
-				}
-				// On error, report it
-				req.onblocked = req.onerror = (event) => reject(event)
-			})
-
-			// Used to not overlap operations to the Database
-			this.webdeskDB.updateLock = Promise.resolve()
-		},
-		// Fetches all the application manifests
-		// TODO: Auto cache manifests to service woerker level(?)
-		apps() {
-			fetch("/api/_/manifest").then(async (response) => {
-				this.manifests = await response.json()
-				Utilities.events.MANIFESTS_READY.emit(this.manifests)
-			})
+			return this
 		}
+		
+		// Fetches all the application manifests
+		fetch("/api/_/manifest").then(async (response) => {
+			this.manifests = await response.json()
+			Utilities.events.MANIFESTS_READY.emit(this.manifests)
+		})
 	}
-	// Utility method to get the information of a window
-	getWindowInfo(webdeskWindow) {
-		return { target: webdeskWindow, app: webdeskWindow.getAttribute("app") }
+}
+
+// Time tracking
+const time = new class {
+	// Get the client start time
+	init = new Date()
+	// Clock
+	clock = {
+		seconds: this.init.getSeconds(),
+		minutes: this.init.getMinutes(),
+		hours: this.init.getHours(),
+	}
+	// Date
+	date = {
+		day: this.init.getDate(),
+		month: this.init.getMonth() + 1,
+		year: this.init.getFullYear(),
+	}
+	
+	// Adds 1 second to the clock every second
+	progress() {
+		// Track what changed to smartly update the elements
+		const changed = [ "seconds" ]
+		// Add a second
+		time.clock.seconds++
+
+		// If the seconds hit 60
+		if (time.clock.seconds >= 60) {
+			// Set them to 0 and add a minute
+			time.clock.seconds = 0
+			time.clock.minutes++
+
+			// Track the change for the event
+			changed.push("minutes")
+		}
+
+		// If the minutes hit 60
+		if (time.clock.minutes >= 60) {
+			// Set them to 0 and add an hour
+			time.clock.minutes = 0
+			time.clock.hours++
+
+			// Track the change for the event
+			changed.push("hours")
+		}
+
+		// If the hours hit 24
+		if (time.clock.hours >= 24) {
+			// Set them to 0 and add a day
+			time.clock.hours = 0
+			time.date.day++
+
+			// Track the change for the event
+			changed.push("day")
+		}
+
+		// Send the event
+		Utilities.events.CLOCK_UPDATE.emit({ target: changed })
 	}
 
 	constructor() {
-		for (const initFunction of Object.values(this.inits)) {
-			initFunction.bind(this)()
-		}
+		// "Nullify" the start time offset by updating the clock every 1.000s
+		setTimeout(() => {
+			// Progress the time by 1 second
+			this.progress()
+			// Set an interval to progress the clock every second
+			setInterval(this.progress, 1000)
+		}, 1000 - this.init.getMilliseconds())
 	}
 }
 
@@ -468,9 +433,11 @@ const WindowManager = new class {
 			}
 
 			// Send an event when the user clicks in the titlebar
+			// IDEA: using right mouse click doesn't update the window focus
 			titlebarDocument.body.addEventListener("pointerdown", (event) => {
-				// If the element clicked is a button, ignore the mousedown
+				// If the element clicked is a button, ignore the event
 				if (event.target.tagName === "BUTTON") { return }
+				else if (targetWindow.classList.contains("maximised")) { return }
 
 				targetWindow.classList.add("moving")
 				titlebarDocument.body.setPointerCapture(event.pointerId)
@@ -484,6 +451,10 @@ const WindowManager = new class {
 			
 			// Send an event when releases the click in the titlebar
 			titlebarDocument.body.addEventListener("pointerup", (event) => {
+				// If the element clicked is a button, ignore the event
+				if (event.target.tagName === "BUTTON") { return }
+				else if (targetWindow.classList.contains("maximised")) { return }
+
 				targetWindow.classList.remove("moving")
 				titlebarDocument.body.releasePointerCapture(event.pointerId)
 
@@ -493,62 +464,41 @@ const WindowManager = new class {
 
 			// If there is a close button, make it close the window
 			if (titlebarDocument.querySelector(".close")) {
-				titlebarDocument.querySelector(".close").addEventListener("click", () => { WindowManager.basic.closeWindow(targetWindow) })
+				titlebarDocument.querySelector(".close").addEventListener("click", () => {
+					targetWindow.remove()
+					Utilities.events.WINDOW_CLOSE.emit({ target: targetWindow, app: appName })
+				})
 			}
 			// If there is a maximise button, make it maximise the window
 			if (titlebarDocument.querySelector(".maximise")) {
-				titlebarDocument.querySelector(".maximise").addEventListener("click", () => { WindowManager.basic.maximiseWindow(targetWindow) })
+				titlebarDocument.querySelector(".maximise").addEventListener("click", () => {
+					if (targetWindow.classList.contains("maximised")) {
+						targetWindow.classList.remove("maximised")
+						Utilities.events.WINDOW_MAXIMISE_END.emit({ target: targetWindow, app: appName })
+					} else {
+						targetWindow.classList.add("maximised")
+						Utilities.events.WINDOW_MAXIMISE.emit({ target: targetWindow, app: appName })
+					}
+				})
 			}
 			// If there is a minimise button, make it minimise the window
 			if (titlebarDocument.querySelector(".minimise")) {
-				titlebarDocument.querySelector(".minimise").addEventListener("click", () => { WindowManager.basic.minimiseWindow(targetWindow) })
+				titlebarDocument.querySelector(".minimise").addEventListener("click", () => {
+					// Remove the maximised class
+					targetWindow.classList.remove("maximised")
+
+					if (targetWindow.classList.contains("minimized")) {
+						targetWindow.classList.remove("minimized")
+						Utilities.events.WINDOW_MINIMISE_END.emit({ target: targetWindow, app: appName })
+					} else {
+						targetWindow.classList.add("minimized")
+						Utilities.events.WINDOW_MINIMISE.emit({ target: targetWindow, app: appName })
+					}
+				})
 			}
 		}
 	}
 	basic = {
-		maximisedPos: { x: null, y: null },
-		// Closes a window
-		closeWindow(targetWindow) {
-			// Removes the window
-			// setTimeout(() => { targetWindow.remove() }, 100)
-			targetWindow.remove()
-			// Send the close a event
-			Utilities.events.WINDOW_CLOSE.emit(Utilities.getWindowInfo(targetWindow))
-		},
-		// Handles the maximising of windows
-		// TODO: Understand why the translate goes to 0px when un maximising and fix
-		maximiseWindow(targetWindow) {
-			// If the window is maximised
-			if (targetWindow.classList.contains("maximised")) {
-				// Remove the maximised class and send the end maximised event
-				targetWindow.classList.remove("maximised")
-				targetWindow.style.transform = `translate(${WindowManager.basic.maximisedPos.x}px,${WindowManager.basic.maximisedPos.y}px)`
-				Utilities.events.WINDOW_MAXIMISE_END.emit(Utilities.getWindowInfo(targetWindow))
-			} else {
-				// Add the maximised class and send the start maximised event
-				targetWindow.classList.add("maximised")
-				const pos = targetWindow.style.transform.slice(10, -3).replace("px", "").split(",")
-				WindowManager.basic.maximisedPos = { x: pos[0], y: pos[1] }
-				targetWindow.style.transform = ""
-
-				Utilities.events.WINDOW_MAXIMISE.emit(Utilities.getWindowInfo(targetWindow))
-			}
-		},
-		// Handles the minimising of windows
-		minimiseWindow(targetWindow) {
-			// Remove the maximised class
-			targetWindow.classList.remove("maximised")
-			// If the window is minimised
-			if (targetWindow.classList.contains("minimized")) {
-				// Remove the minimised class and send the end minimised event
-				targetWindow.classList.remove("minimized")
-				Utilities.events.WINDOW_MINIMISE_END.emit(Utilities.getWindowInfo(targetWindow))
-			} else {
-				// Add the minimised class and send the start minimised event
-				targetWindow.classList.add("minimized")
-				Utilities.events.WINDOW_MINIMISE.emit(Utilities.getWindowInfo(targetWindow))
-			}
-		},
 		// Makes a window the "active" window
 		focusWindow(details) {
 			// Get the focused window
@@ -597,10 +547,10 @@ const WindowManager = new class {
 		// Used to center a newly opened window
 		centerWindow(details) {
 			// Get the window bounding box
-			const boundingBox = details.target.getBoundingClientRect()
+			const box = details.target.getBoundingClientRect()
 
 			// Calculate and apply the offsets to center the window in the viewport
-			details.target.style.transform = `translate(${(window.innerWidth - boundingBox.width) / 2}px,${(window.innerHeight - boundingBox.height) / 2}px)`
+			details.target.style.transform = `translate(${(window.innerWidth - box.width) / 2}px,${(window.innerHeight - box.height) / 2}px)`
 		},
 		// Moves a window to the cursor
 		followCursor(details) {
@@ -613,22 +563,22 @@ const WindowManager = new class {
 		// Ensures that a window is not clipped by the viewport
 		updatePositionIfCollision(details) {
 			// Get the target position
-			const boundingBox = details.target.getBoundingClientRect()
+			const box = details.target.getBoundingClientRect()
 
 			// If the window is beyond the right of the screen, move the window back to the edge
-			if (boundingBox.right > window.innerWidth) { boundingBox.x = (window.innerWidth - boundingBox.width) }
+			if (box.right > window.innerWidth) { box.x = (window.innerWidth - box.width) }
 			// If the window is beyond the left of the screen, move the window back to the edge
-			else if (boundingBox.left < 0) { boundingBox.x = 0 }
+			else if (box.left < 0) { box.x = 0 }
 			// If the window is beyond the bottom of the screen, move the window back to the edge
-			if (boundingBox.bottom > window.innerHeight) { boundingBox.y = (window.innerHeight - boundingBox.height) }
+			if (box.bottom > window.innerHeight) { box.y = (window.innerHeight - box.height) }
 			// If the window is beyond the top of the screen, move the window back to the edge
-			else if (boundingBox.top < 0) { boundingBox.y = 0 }
+			else if (box.top < 0) { box.y = 0 }
 
 			// Translate the window to a safe spot
-			details.target.style.transform = `translate(${boundingBox.x}px,${boundingBox.y}px)`
+			details.target.style.transform = `translate(${box.x}px,${box.y}px)`
 		},
 		// When the viewport gets resized, update all the collisions and window sizes
-		checkAllViewportCollisions() {
+		checkAllViewportCollisions(event) {
 			// For all open windows, update the position if clipping the resized viewport
 			for (const openWindow of document.querySelectorAll("[app]")) { updatePositionIfCollision(openWindow) }
 		},
@@ -692,16 +642,12 @@ const WindowManager = new class {
 			if (WindowManager.resize.edges.left) {
 				width += deltaX
 				left -= deltaX
-			} else if (WindowManager.resize.edges.right) {
-				width -= deltaX
-			}
+			} else if (WindowManager.resize.edges.right) { width -= deltaX }
 
 			if (WindowManager.resize.edges.top) {
 				height += deltaY
 				top -= deltaY
-			} else if (WindowManager.resize.edges.bottom) {
-				height -= deltaY
-			}
+			} else if (WindowManager.resize.edges.bottom) { height -= deltaY }
 
 			resizingWindow.style.transform = `translate(${left}px,${top}px)`
 			resizingWindow.style.width = `${width}px`
@@ -749,6 +695,8 @@ const WindowManager = new class {
 			Utilities.events.WINDOW_MOVE_START,	// Focus a window after a movement
 			Utilities.events.WINDOW_OPEN	// Focus a window after a window is opened
 		)
+
+		window.addEventListener("resize", this.move.checkAllViewportCollisions)
 	}
 }
 
@@ -764,19 +712,26 @@ const AppDockManager = new class {
 	updateClockElement(details) {
 		// When the clock is updated
 		for (const piece of details.target) {
-			// Update only the time elements that need updating
-			AppDockManager.clock.querySelector(`.${piece}`).innerText = `${Utilities.time[piece]}`.padStart(2, 0)
+			switch(piece) {
+				case "seconds":
+				case "minutes":
+				case "hours": AppDockManager.clock.querySelector(`.${piece}`).innerText = `${time.clock[piece]}`.padStart(2, 0); break
+
+				case "day":
+				case "month":
+				case "year": AppDockManager.clock.querySelector(`.${piece}`).innerText = `${time.date[piece]}`.padStart(2, 0); break
+			}
 		}
 	}
 	// Initialize the clock element
 	initClockElement() {
-		this.clock.querySelector(".seconds").innerText = `${Utilities.time.seconds}`.padStart(2, 0)
-		this.clock.querySelector(".minutes").innerText = `${Utilities.time.minutes}`.padStart(2, 0)
-		this.clock.querySelector(".hours").innerText = `${Utilities.time.hours}`.padStart(2, 0)
+		this.clock.querySelector(".seconds").innerText = `${time.clock.seconds}`.padStart(2, 0)
+		this.clock.querySelector(".minutes").innerText = `${time.clock.minutes}`.padStart(2, 0)
+		this.clock.querySelector(".hours").innerText = `${time.clock.hours}`.padStart(2, 0)
 
-		this.clock.querySelector(".day").innerText = `${Utilities.time.day}`.padStart(2, 0)
-		this.clock.querySelector(".month").innerText = `${Utilities.time.month}`.padStart(2, 0)
-		this.clock.querySelector(".year").innerText = `${Utilities.time.year}`
+		this.clock.querySelector(".day").innerText = `${time.date.day}`.padStart(2, 0)
+		this.clock.querySelector(".month").innerText = `${time.date.month}`.padStart(2, 0)
+		this.clock.querySelector(".year").innerText = `${time.date.year}`
 	}
 	// Contains all methods for icon managment
 	icons = {
@@ -983,11 +938,11 @@ const UIManager = new class {
 		localStorage.setItem("customization-id", 0)
 		localStorage.setItem("backgrounds-id", 0)
 
-		await Utilities.webdeskDB.createTable("_backgrounds")
-		await Utilities.webdeskDB.set("_backgrounds", 0, `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><filter id="cool"><feTurbulence baseFrequency='0.01' numOctaves="1" result='noise' filterRes="1000"/><feDiffuseLighting in='noise' lighting-color='var(#D8DEE9)' surfaceScale='6'><feDistantLight azimuth='45' elevation='60' /></feDiffuseLighting></filter><rect width="100%" height="100%" filter="url(#cool)" /></svg>`)
+		await webdeskDB.createTable("_backgrounds")
+		await webdeskDB.set("_backgrounds", 0, `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><filter id="cool"><feTurbulence baseFrequency='0.01' numOctaves="1" result='noise' filterRes="1000"/><feDiffuseLighting in='noise' lighting-color='var(#D8DEE9)' surfaceScale='6'><feDistantLight azimuth='45' elevation='60' /></feDiffuseLighting></filter><rect width="100%" height="100%" filter="url(#cool)" /></svg>`)
 
-		await Utilities.webdeskDB.createTable("_customizations")
-		await Utilities.webdeskDB.set("_customizations", 0, theme)
+		await webdeskDB.createTable("_customizations")
+		await webdeskDB.set("_customizations", 0, theme)
 	}
 	// Converts the color proprieties of a theme into css variables
 	loadCssVars(root, prefix = "") {
@@ -999,7 +954,7 @@ const UIManager = new class {
 
 	constructor() { (async () => {
 		this.customID = parseInt(localStorage.getItem("customization-id")) || 0
-		let customization = await Utilities.webdeskDB.get("_customizations", this.customID)
+		let customization = await webdeskDB.get("_customizations", this.customID)
 
 		if (customization) {
 			this.appdock = customization.appdock
@@ -1013,7 +968,7 @@ const UIManager = new class {
 		this.loadCssVars(this.launchers, "launchers")
 
 		this.backgroundID = parseInt(localStorage.getItem("background-id")) || 0
-		const backgroundContents = await Utilities.webdeskDB.get("_backgrounds", this.backgroundID || 0)
+		const backgroundContents = await webdeskDB.get("_backgrounds", this.backgroundID || 0)
 		this.backgroundWrapper.innerHTML = backgroundContents
 	})() }
 }
@@ -1042,9 +997,7 @@ const ServiceWorkerManager = new class {
 	}
 }
 
-newUser = true
-
 // Intros the user to webdesk
 if (newUser) {
-	Utilities.events.MANIFESTS_READY.on([(_details) => { WindowManager.create.skeletonizeWindow({ app: "intro" }) }])
+	Utilities.events.MANIFESTS_READY.on([(details) => { WindowManager.create.skeletonizeWindow({ app: "intro" }) }])
 }
