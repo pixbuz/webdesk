@@ -76,7 +76,7 @@ function apiReplier(browserRequest: Request): Response {
 			// Send an server error response
 			return new ErrorResponse((error as Error).stack, 500)
 		}
-	
+
 	} else if (resources.commands[requestURL.pathname]) {
 		return new Response(resources.commands[requestURL.pathname] as BodyInit, { status: 200 })
 	} else {

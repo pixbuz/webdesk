@@ -16,16 +16,16 @@ var webdeskDB = new class {
 	async _run(tableName, mode, callback) {
 		// Get the newest connection for the Database
 		const database = await webdeskDB.ready
-	
+
 		// Return undefined if trying to access a table that doesn't exist
 		if (!database.objectStoreNames.contains(tableName)) { return undefined }
-	
+
 		return new Promise((resolve, reject) => {
 			try {
 				const tx = database.transaction(tableName, mode == 0 ? "readonly" : "readwrite")
 				const store = tx.objectStore(tableName)
 				const request = callback(store)
-	
+
 				request.onsuccess = () => resolve(request.result)
 				request.onerror = () => reject(request.error)
 			} catch (err) { reject(err) }
@@ -51,36 +51,36 @@ var webdeskDB = new class {
 	async createTable(tableName) {
 		// Wait for the database
 		const database = await webdeskDB.ready
-		
+
 		// If table exists do nothing
 		if (database.objectStoreNames.contains(tableName)) { return }
-	
+
 		// Close the Database
 		database.close()
 		console.log(`Closing Database to create table "${tableName}"`)
-	
+
 		return new Promise((resolve, reject) => {
 			// Up the Database version
 			const req = indexedDB.open("webdesk", ++webdeskDB.version)
-	
+
 			// Before the Database Opens, add the new table
 			req.onupgradeneeded = (event) => {
 				const db = event.target.result
 				if (!db.objectStoreNames.contains(tableName)) { db.createObjectStore(tableName) }
 			}
-	
+
 			// When the Database Opens, resolve all Promises
 			req.onsuccess = (event) => {
 				const db = event.target.result
 				db.onversionchange = () => { db.close() }
-				
+
 				localStorage.setItem("db-version", webdeskDB.version)
-				
+
 				// Update the global ready reference instantly without queueing
 				webdeskDB.ready = Promise.resolve(db)
 				resolve()
 			}
-	
+
 			req.onblocked = req.onerror = (event) => reject(event)
 		})
 	}
@@ -132,11 +132,11 @@ const WebdeskEvent = class {
 		window.dispatchEvent(event)
 	}
 	// Binds multiple functions to a webdesk event
-	on(callBackFunctions = [], oneTime = false) {
+	on(...callBackFunctions) {
 		// For every function passed
 		callBackFunctions.map((callBackFunction) => {
 			// Add an event listener for the event
-			window.addEventListener(this.name, (event) => { callBackFunction(event.detail) }, { once: oneTime })
+			window.addEventListener(this.name, (event) => { callBackFunction(event.detail) })
 		})
 	}
 }
@@ -167,6 +167,7 @@ const Utilities = new class {
 			y: null,
 		}
 	}
+	// Contains all webdesk custom events
 	events = {
 		MANIFESTS_READY: new WebdeskEvent(this.templates.MANIFEST),
 
@@ -191,7 +192,7 @@ const Utilities = new class {
 		WINDOW_CLOSE: new WebdeskEvent(this.templates.WINDOW),
 
 		WINDOW_UPDATED_FOCUS: new WebdeskEvent(this.templates.WINDOW),
-		
+
 		WINDOW_MAXIMISE: new WebdeskEvent(this.templates.WINDOW),
 		WINDOW_MAXIMISE_END: new WebdeskEvent(this.templates.WINDOW),
 
@@ -205,11 +206,11 @@ const Utilities = new class {
 		// Allows registering functions to multiple events
 		Function.prototype.onEvent = function(...eventsList) {
 			// For every event passed, register the function to it
-			eventsList.map((event) => { event.on([this]) })
+			eventsList.map((event) => { event.on(this) })
 
 			return this
 		}
-		
+
 		// Fetches all the application manifests
 		fetch("/api/_/manifest").then(async (response) => {
 			this.manifests = await response.json()
@@ -234,7 +235,7 @@ const time = new class {
 		month: this.init.getMonth() + 1,
 		year: this.init.getFullYear(),
 	}
-	
+
 	// Adds 1 second to the clock every second
 	progress() {
 		// Track what changed to smartly update the elements
@@ -333,13 +334,14 @@ const LauncherManager = new class {
 	}
 
 	constructor() {
-		Utilities.events.MANIFESTS_READY.on([this.initLaunchers])
+		Utilities.events.MANIFESTS_READY.on(this.initLaunchers)
 	}
 }
 
 const WindowManager = new class {
 	// Space for new windows
 	space = document.querySelector(".Window.Space")
+	// Contains the methods called when opening a window
 	create = {
 		// Assembles a webdesk window
 		async skeletonizeWindow(details) {
@@ -378,7 +380,7 @@ const WindowManager = new class {
 			windowSkeleton.append(titlebarWrapper, contentWrapper)
 
 			// When the focus is shifted, update own z index
-			Utilities.events.WINDOW_UPDATED_FOCUS.on([() => { WindowManager.basic.updateZIndex(windowSkeleton) }])
+			Utilities.events.WINDOW_UPDATED_FOCUS.on(() => { WindowManager.basic.updateZIndex(windowSkeleton) })
 
 			// When a click happens inside a window, start resizing
 			windowSkeleton.addEventListener("pointerdown", (event) => {
@@ -386,10 +388,10 @@ const WindowManager = new class {
 
 				Utilities.events.WINDOW_RESIZE_START.emit({ target: windowSkeleton, x: event.x, y: event.y })
 			})
-			
+
 			// Resize the window when the user moves the pointer
 			windowSkeleton.addEventListener("pointermove", (event) => { Utilities.events.WINDOW_RESIZE.emit({ target: windowSkeleton, x: event.x, y: event.y }) })
-			
+
 			// Stop the resizing when the user releases the pointer
 			windowSkeleton.addEventListener("pointerup", (event) => {
 				windowSkeleton.releasePointerCapture(event.pointerId)
@@ -445,10 +447,10 @@ const WindowManager = new class {
 				// Emit the event
 				Utilities.events.WINDOW_MOVE_START.emit({ x: event.screenX, y: event.screenY, target: targetWindow })
 			})
-			
+
 			// Send an event when the user moves
 			titlebarDocument.body.addEventListener("pointermove", (event) => { Utilities.events.WINDOW_MOVE.emit({ x: event.screenX, y: event.screenY, target: targetWindow }) })
-			
+
 			// Send an event when releases the click in the titlebar
 			titlebarDocument.body.addEventListener("pointerup", (event) => {
 				// If the element clicked is a button, ignore the event
@@ -487,17 +489,18 @@ const WindowManager = new class {
 					// Remove the maximised class
 					targetWindow.classList.remove("maximised")
 
-					if (targetWindow.classList.contains("minimized")) {
-						targetWindow.classList.remove("minimized")
+					if (targetWindow.classList.contains("minimised")) {
+						targetWindow.classList.remove("minimised")
 						Utilities.events.WINDOW_MINIMISE_END.emit({ target: targetWindow, app: appName })
 					} else {
-						targetWindow.classList.add("minimized")
+						targetWindow.classList.add("minimised")
 						Utilities.events.WINDOW_MINIMISE.emit({ target: targetWindow, app: appName })
 					}
 				})
 			}
 		}
 	}
+	// Contains methods called for a window interaction
 	basic = {
 		// Makes a window the "active" window
 		focusWindow(details) {
@@ -537,6 +540,7 @@ const WindowManager = new class {
 			}
 		}
 	}
+	// Contains the methods needed for the window moving logic
 	move = {
 		position: { x: null, y: null },
 		// Save the offsets and stuff
@@ -580,17 +584,18 @@ const WindowManager = new class {
 		// When the viewport gets resized, update all the collisions and window sizes
 		checkAllViewportCollisions(event) {
 			// For all open windows, update the position if clipping the resized viewport
-			for (const openWindow of document.querySelectorAll("[app]")) { updatePositionIfCollision(openWindow) }
+			for (const openWindow of document.querySelectorAll("[app]")) { WindowManager.move.updatePositionIfCollision({ target: openWindow, app: openWindow.getAttribute("app") }) }
 		},
 		// Handles the end of a window movement
 		reset(details) {
 			details.target.classList.remove("moving")
 		}
 	}
+	// Contains the methods needed for the window resizing logic
 	resize = {
 		// Saves on which edge/s the user clicked
 		edges: { },
-		anchor: {},
+		anchor: { },
 		box: null,
 		// Saves the interaction start
 		init(details) {
@@ -666,23 +671,23 @@ const WindowManager = new class {
 	}
 
 	constructor() {
-		Utilities.events.LAUNCHER_CLICK.on([this.create.skeletonizeWindow])	// Open a window when a launcher is clicked
+		Utilities.events.LAUNCHER_CLICK.on(this.create.skeletonizeWindow)	// Open a window when a launcher is clicked
 
 		// TODO: Make it toggle-able from settings
-		Utilities.events.WINDOW_OPEN.on([this.move.centerWindow.bind(this)])	// Center a window when a window is opened
-		Utilities.events.WINDOW_CLOSE.on([this.basic.shiftFocus.bind(this)])	// Move the focus when a window is closed
+		Utilities.events.WINDOW_OPEN.on(this.move.centerWindow.bind(this))	// Center a window when a window is opened
+		Utilities.events.WINDOW_CLOSE.on(this.basic.shiftFocus.bind(this))	// Move the focus when a window is closed
 
-		Utilities.events.WINDOW_MOVE_START.on([this.move.init])	// Save the offsets when the user clicks on a titlebar
-		Utilities.events.WINDOW_MOVE.on([this.move.followCursor])	// Move a window when the user moves the pointer
-		Utilities.events.WINDOW_MOVE_END.on([this.move.reset])	// Stop the movement when the user releases the pointer
+		Utilities.events.WINDOW_MOVE_START.on(this.move.init)	// Save the offsets when the user clicks on a titlebar
+		Utilities.events.WINDOW_MOVE.on(this.move.followCursor)	// Move a window when the user moves the pointer
+		Utilities.events.WINDOW_MOVE_END.on(this.move.reset)	// Stop the movement when the user releases the pointer
 
-		Utilities.events.WINDOW_RESIZE_START.on([this.resize.init])	// Save the offsets when the user clicks on a window
-		Utilities.events.WINDOW_RESIZE.on([this.resize.followCursor])	// Resize a window when the user moves the pointer
-		Utilities.events.WINDOW_RESIZE_END.on([this.resize.reset])	// Stop the resizing when the user releases the pointer
+		Utilities.events.WINDOW_RESIZE_START.on(this.resize.init)	// Save the offsets when the user clicks on a window
+		Utilities.events.WINDOW_RESIZE.on(this.resize.followCursor)	// Resize a window when the user moves the pointer
+		Utilities.events.WINDOW_RESIZE_END.on(this.resize.reset)	// Stop the resizing when the user releases the pointer
 
-		Utilities.events.WINDOW_RESIZE_START.on([this.resize.init])	// Save the offsets when the user clicks on a window
+		Utilities.events.WINDOW_RESIZE_START.on(this.resize.init)	// Save the offsets when the user clicks on a window
 
-		Utilities.events.WINDOW_CLICK.on([this.resize.init])	// Check how to resize the window
+		Utilities.events.WINDOW_CLICK.on(this.resize.init)	// Check how to resize the window
 
 		this.move.updatePositionIfCollision.bind(this).onEvent(
 			Utilities.events.WINDOW_RESIZE_END,	// Make sure a window isn't clipping the viewport after a resize
@@ -707,32 +712,8 @@ const AppDockManager = new class {
 	clock = this.element.querySelector(".Clock")
 	// Get the Open Windows element inside App Dock
 	open = this.element.querySelector(".Open")
-
-	// Updates the clock (in the frontend)
-	updateClockElement(details) {
-		// When the clock is updated
-		for (const piece of details.target) {
-			switch(piece) {
-				case "seconds":
-				case "minutes":
-				case "hours": AppDockManager.clock.querySelector(`.${piece}`).innerText = `${time.clock[piece]}`.padStart(2, 0); break
-
-				case "day":
-				case "month":
-				case "year": AppDockManager.clock.querySelector(`.${piece}`).innerText = `${time.date[piece]}`.padStart(2, 0); break
-			}
-		}
-	}
-	// Initialize the clock element
-	initClockElement() {
-		this.clock.querySelector(".seconds").innerText = `${time.clock.seconds}`.padStart(2, 0)
-		this.clock.querySelector(".minutes").innerText = `${time.clock.minutes}`.padStart(2, 0)
-		this.clock.querySelector(".hours").innerText = `${time.clock.hours}`.padStart(2, 0)
-
-		this.clock.querySelector(".day").innerText = `${time.date.day}`.padStart(2, 0)
-		this.clock.querySelector(".month").innerText = `${time.date.month}`.padStart(2, 0)
-		this.clock.querySelector(".year").innerText = `${time.date.year}`
-	}
+	// Maps a window to it's icon in the app dock
+	windowToIcon = new WeakMap()
 	// Contains all methods for icon managment
 	icons = {
 		// Add the maximised propriety to an icon
@@ -759,16 +740,20 @@ const AppDockManager = new class {
 		},
 		// Create the icon for a newly opened window
 		async add(details) {
+			const manifest = Utilities.manifests[details.app]
+			if (manifest.dni) { return }
+
 			// Create the new icon for the window
 			const icon = document.createElement("button")
 			const image = document.createElement("img")
 			const name = document.createElement("p")
-			const manifest = Utilities.manifests[details.app]
 
-			if (manifest.dni) { return }
+			AppDockManager.windowToIcon.set(details.target, icon)
 
 			// Assemble the dock icon element
 			icon.append(name, image)
+			// Set the focus to this new icon
+			icon.classList.add("focus")
 
 			// Add it to the app dock
 			AppDockManager.open.append(icon)
@@ -782,9 +767,10 @@ const AppDockManager = new class {
 		},
 		// Removes an icon when the connected window is closed
 		updateClosedWindow(details) {
-			// Delete the dock icon and remove it from the map
 			const icon = AppDockManager.open.querySelector(`[icon=${details.app}]`)
 			if (icon) { icon.remove() }
+
+			AppDockManager.windowToIcon.delete(details.target)
 		},
 		// Focuses the window connected to a dock icon
 		focusLinkedWindow(event) {
@@ -792,157 +778,189 @@ const AppDockManager = new class {
 			const appName = event.target.closest(`[icon]`).getAttribute("icon")
 			const window = WindowManager.space.querySelector(`[app="${appName}"]`)
 
-			// Removes classes for some reason
-			window.classList.remove("minimized")
-			window.classList.remove("maximised")
+			// Removes the minimised class
+			window.classList.remove("minimised")
+		},
+		// Updates the icon of the focused window
+		focus(details) {
+			const oldFocus = AppDockManager.open.querySelector(".focus")
+			const newFocus = AppDockManager.windowToIcon.get(details.target)
+
+			if (oldFocus) { oldFocus.classList.remove("focus") }
+			if (newFocus) { newFocus.classList.add("focus") }
 		}
 	}
+
+	// Updates the clock (in the frontend)
+	updateClockElement(details) {
+		// When the clock is updated
+		for (const piece of details.target) {
+			switch(piece) {
+				case "seconds":
+				case "minutes":
+				case "hours": AppDockManager.clock.querySelector(`.${piece}`).innerText = `${time.clock[piece]}`.padStart(2, 0); break
+
+				case "day":
+				case "month":
+				case "year": AppDockManager.clock.querySelector(`.${piece}`).innerText = `${time.date[piece]}`.padStart(2, 0); break
+			}
+		}
+	}
+	// Initialize the clock element
+	initClockElement() {
+		this.clock.querySelector(".seconds").innerText = `${time.clock.seconds}`.padStart(2, 0)
+		this.clock.querySelector(".minutes").innerText = `${time.clock.minutes}`.padStart(2, 0)
+		this.clock.querySelector(".hours").innerText = `${time.clock.hours}`.padStart(2, 0)
+
+		this.clock.querySelector(".day").innerText = `${time.date.day}`.padStart(2, 0)
+		this.clock.querySelector(".month").innerText = `${time.date.month}`.padStart(2, 0)
+		this.clock.querySelector(".year").innerText = `${time.date.year}`
+	}
+
 	constructor() {
 		this.initClockElement()
-		Utilities.events.CLOCK_UPDATE.on([this.updateClockElement])
+		Utilities.events.CLOCK_UPDATE.on(this.updateClockElement)
 
-		Utilities.events.WINDOW_OPEN.on([this.icons.add])
-		Utilities.events.WINDOW_CLOSE.on([this.icons.updateClosedWindow])
+		Utilities.events.WINDOW_OPEN.on(this.icons.add)
+		Utilities.events.WINDOW_CLOSE.on(this.icons.updateClosedWindow)
 
-		// Utilities.events.WINDOW_MINIMISE.on([this.icons.minimised.add])
-		// Utilities.events.WINDOW_MINIMISE_END.on([this.icons.maximised.remove])
+		Utilities.events.WINDOW_MINIMISE.on(this.icons.minimised.add)
+		Utilities.events.WINDOW_MINIMISE_END.on(this.icons.maximised.remove)
 
-		// Utilities.events.WINDOW_MAXIMISE.on([this.icons.maximised.add])
-		// Utilities.events.WINDOW_MAXIMISE_END.on([this.icons.maximised.remove])
+		Utilities.events.WINDOW_MAXIMISE.on(this.icons.maximised.add)
+		Utilities.events.WINDOW_MAXIMISE_END.on(this.icons.maximised.remove)
+
+		Utilities.events.WINDOW_UPDATED_FOCUS.on(this.icons.focus)
+	}
+}
+
+const defaultWindowsCustomization = new class {
+	color = {
+		background: "#D8DEE9",
+		border: "#4C566A",
+		title: "#2E3440",
+		dots: "#2E3440",
+		buttons: {
+			close: "#D08770",
+			maxi: "#EBCB8B",
+			mini: "#A3BE8C",
+		},
+		focus: {
+			background: "#ECEFF4",
+			border: "#2E3440",
+			title: "#2E3440",
+			dots: "#3B4252",
+			buttons: {
+				close: "#D08770",
+				maxi: "#EBCB8B",
+				mini: "#A3BE8C",
+			},
+		},
+	}
+	appearance = {
+		background: {
+			width: null,
+			height: null
+		},
+		titlebar: null,
+		border: null,
+		title: null,
+		icon: null,
+		dots: null,
+		buttons: {
+			close: null,
+			maxi: null,
+			mini: null,
+		},
+	}
+	behavior = {
+		moveSmoothing: false,
+		resizeSmoothing: true,
+		maximizeSmoothing: true,
+		minimizeSmoothing: true,
+		closeSmoothing: false,
+	}
+}
+
+const defaultLaunchersCustomization = new class {
+	color = {
+		text: "#2E3440",
+	}
+	appearance = {
+		text: true
+	}
+	behavior = {
+
+	}
+}
+
+const defaultAppDockCustomization = new class {
+	color = {
+		background: "#4C566A",
+		border: "#434C5E",
+		text: "#D8DEE9",
+		icons: {
+			background: "transparent",
+
+			focus: {
+				background: "transparent",
+			},
+
+			mini: {
+				background: "transparent",
+			},
+
+			maxi: {
+				background: "transparent",
+			},
+		},
+	}
+	appearance = {
+		border: {
+			width: "none",
+			style: "solid",
+		}
+	}
+	behavior = {
+		autoHide: {
+			enabled: false,
+			upTime: 5000,
+			upDelay: 0,
+			downDelay: 2000,
+		},
+		hideOnMaximisedWindow: {
+			enabled: true,
+			upTime: 5000,
+			upDelay: 0,
+			downDelay: 2000,
+		}
 	}
 }
 
 const UIManager = new class {
-	customID = 0
-	backgroundID = 0
 	backgroundWrapper = document.querySelector(".Background")
+	backgroundID = 0
+	customID = 0
 
-	behaviors = {
-		windows: {
-			moveSmoothing: null,
-			resizeSmoothing: null,
-			maximizeSmoothing: null,
-			minimizeSmoothing: null,
-			closeSmoothing: null,
-		},
-		launchers: { },
-		appdock: {
-			autoHide: {
-				enabled: null,
-				upTime: null,
-				upDelay: null,
-				downDelay: null,
-			},
-
-			hideOnMaximisedWindow: {
-				enabled: null,
-				upTime: null,
-				upDelay: null,
-				downDelay: null,
-			}
-		}
-	}
-
-	windows = {
-		color: {
-			background: "#D8DEE9",
-			border: "#4C566A",
-			title: "#2E3440",
-			dots: "#2E3440",
-
-			buttons: {
-				"close": "#D08770",
-				"maxi": "#EBCB8B",
-				"mini": "#A3BE8C",
-			},
-
-			focus: {
-				background: "#ECEFF4",
-				border: "#2E3440",
-				title: "#2E3440",
-				dots: "#3B4252",
-
-				buttons: {
-					"close": "#D08770",
-					"maxi": "#EBCB8B",
-					"mini": "#A3BE8C",
-				},
-			},
-		},
-		appearance: {
-			background: {
-				width: null,
-				height: null
-			},
-			titlebar: null,
-			border: null,
-			title: null,
-			icon: null,
-			dots: null,
-
-			buttons: {
-				close: null,
-				maxi: null,
-				mini: null,
-			},
-		}
-	}
-
-	launchers = {
-		color: {
-			text: "#2E3440",
-		},
-		appearance: {
-			text: null
-		}
-	}
-
-	appdock = {
-		color: {
-			background: "#4C566A",
-			border: "#434C5E",
-			text: "#D8DEE9",
-
-			icons: {
-				background: "transparent",
-			
-				focus: {
-					background: "transparent",
-				},
-			
-				mini: {
-					background: "transparent",
-				},
-			
-				maxi: {
-					background: "transparent",
-				},
-			},
-		},
-		appearance: {
-			border: {
-				width: "none",
-				style: "solid",
-			}
-		}
-	}
 	// Sets up themes in the database
-	async firstTimeInit() {
+	newUserInit() {
 		const theme = {
-			windows: this.windows,
-			appdock: this.appdock,
-			launchers: this.launchers,
-			behaviors: this.behaviors
+			windows: defaultWindowsCustomization,
+			appdock: defaultAppDockCustomization,
+			launchers: defaultLaunchersCustomization,
 		}
+
+		localStorage.setItem("backgrounds-id", 0)
+		webdeskDB.createTable("_backgrounds").then(() => {
+			webdeskDB.set("_backgrounds", 0, `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><filter id="cool"><feTurbulence baseFrequency='0.01' numOctaves="1" result='noise' filterRes="1000"/><feDiffuseLighting in='noise' lighting-color='var(#D8DEE9)' surfaceScale='6'><feDistantLight azimuth='45' elevation='60' /></feDiffuseLighting></filter><rect width="100%" height="100%" filter="url(#cool)" /></svg>`)
+			this.loadBackground()
+		})
 
 		localStorage.setItem("customization-id", 0)
-		localStorage.setItem("backgrounds-id", 0)
-
-		await webdeskDB.createTable("_backgrounds")
-		await webdeskDB.set("_backgrounds", 0, `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><filter id="cool"><feTurbulence baseFrequency='0.01' numOctaves="1" result='noise' filterRes="1000"/><feDiffuseLighting in='noise' lighting-color='var(#D8DEE9)' surfaceScale='6'><feDistantLight azimuth='45' elevation='60' /></feDiffuseLighting></filter><rect width="100%" height="100%" filter="url(#cool)" /></svg>`)
-
-		await webdeskDB.createTable("_customizations")
-		await webdeskDB.set("_customizations", 0, theme)
+		webdeskDB.createTable("_customizations").then(() => {
+			webdeskDB.set("_customizations", 0, theme)
+			this.loadCustomization()
+		})
 	}
 	// Converts the color proprieties of a theme into css variables
 	loadCssVars(root, prefix = "") {
@@ -951,26 +969,29 @@ const UIManager = new class {
 			else { document.documentElement.style.setProperty(`--${prefix}-${key}`, root[key]) }
 		}
 	}
-
-	constructor() { (async () => {
+	// Load the user's customization
+	async loadCustomization() {
 		this.customID = parseInt(localStorage.getItem("customization-id")) || 0
-		let customization = await webdeskDB.get("_customizations", this.customID)
+		const customization = await webdeskDB.get("_customizations", this.customID)
 
 		if (customization) {
-			this.appdock = customization.appdock
-			this.windows = customization.windows
-			this.launchers = customization.launchers
-			this.behaviors = customization.behaviors
-		} else { await this.firstTimeInit() }
-
-		this.loadCssVars(this.windows, "windows")
-		this.loadCssVars(this.appdock, "appdock")
-		this.loadCssVars(this.launchers, "launchers")
-
+			this.loadCssVars(customization.windows, "windows")
+			this.loadCssVars(customization.appdock, "appdock")
+			this.loadCssVars(customization.launchers, "launchers")
+		} else { this.newUserInit() }
+	}
+	// Load the user's background
+	async loadBackground() {
 		this.backgroundID = parseInt(localStorage.getItem("background-id")) || 0
 		const backgroundContents = await webdeskDB.get("_backgrounds", this.backgroundID || 0)
+
 		this.backgroundWrapper.innerHTML = backgroundContents
-	})() }
+	}
+
+	constructor() {
+		this.loadCustomization()
+		this.loadBackground()
+	}
 }
 
 // Manages the service worker
@@ -999,5 +1020,5 @@ const ServiceWorkerManager = new class {
 
 // Intros the user to webdesk
 if (newUser) {
-	Utilities.events.MANIFESTS_READY.on([(details) => { WindowManager.create.skeletonizeWindow({ app: "intro" }) }])
+	Utilities.events.MANIFESTS_READY.on((details) => { WindowManager.create.skeletonizeWindow({ app: "intro" }) })
 }

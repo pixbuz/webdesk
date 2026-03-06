@@ -36,7 +36,6 @@ body {
 .Space.Background{ z-index: 00; }
 .Space.Launcher  { z-index: 10; }
 .Space.Window 	 { z-index: 20; }
-.Space.AppDock	 { z-index: 30; }
 .Space.Error	 { z-index: 40; }
 
 .Background {
@@ -74,6 +73,7 @@ body {
 	display: flex;
 	bottom: 16px;
 	height: 32px;
+	z-index: 30;
 }
 
 .AppDock .Open {
@@ -209,7 +209,7 @@ body {
 	max-width: 100%;
 }
 
-[app].minimized {
+[app].minimised {
 	display: none;
 }
 

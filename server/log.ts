@@ -56,14 +56,14 @@ export const log = new class {
 
 	async warn(message: string) {
 		const absTime = this.getAbsTime(), relTime = this.getRelTime()
-	
+
 		console.warn(`%c◼    %c${absTime.join("    ")}    ${relTime}    %c${message}`, LogColors.WARN, LogColors.TIME, `${LogColors.WARN};${LogDecorations.WARN}`)
 		await new Promise<void>(res => res())
 	}
 
 	async error(message: string) {
 		const absTime = this.getAbsTime(), relTime = this.getRelTime()
-	
+
 		console.error(`%c⬟    ${absTime.join("    ")}    ${relTime}    %c${message}`, LogColors.ERROR, `${LogColors.ERROR};${LogDecorations.ERROR}`)
 		await new Promise<void>(res => res())
 	}
