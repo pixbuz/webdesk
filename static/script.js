@@ -1,7 +1,10 @@
 /// <reference lib="dom" />
 
-// Window proprieties inside utilities replacing window boundry boxes and window dock icon map
-// Customization for the Titlebar compiler's event listeners and callback functions
+// TODO: Sounds crazy, but splitting the monolithic classes
+//	into more managable clusters will make for cleaner, more maintainable and understandable code
+//	unlike before tho, keep everything in the same script file
+
+// TODO: Animations
 
 let newUser = false
 
@@ -359,6 +362,7 @@ const LauncherManager = new class {
 	initLaunchers(details) {
 		// Sort the keys to have the same app order every visit
 		for (const appName of Object.keys(details).sort()) {
+			if (details[appName].dni) { continue }
 			LauncherManager.addLauncher(appName, details[appName])
 		}
 	}
@@ -373,7 +377,7 @@ const WindowManager = new class {
 	space = document.querySelector(".Window.Space")
 	create = {
 		// Assembles a webdesk window
-		async skeletonizeWindow(details, emit = true) {
+		async skeletonizeWindow(details) {
 			// Contains the application manifest
 			const manifest = Utilities.manifests[details.app]
 
@@ -395,14 +399,7 @@ const WindowManager = new class {
 			else { titlebar.src = `/api/_/titlebar` }
 
 			// Setup the titlebar
-			
-			// Add a call back for the dynamic titlebar
-			// needs finishing
-			if (manifest.titlebar.dynamic) {
-				let title
-				content.addEventListener("load", () => { title = content.contentDocument.title }, { once: true })
-				titlebar.addEventListener("load", (event) => WindowManager.create.setupTitlebar(event, title), { once: true })
-			} else { titlebar.addEventListener("load", WindowManager.create.setupTitlebar, { once: true }) }
+			titlebar.addEventListener("load", WindowManager.create.setupTitlebar, { once: true })
 
 			// Wrap the iframes
 			contentWrapper.append(content)
@@ -441,62 +438,70 @@ const WindowManager = new class {
 			WindowManager.space.appendChild(windowSkeleton)
 
 			// Dispatch the event
-			// TODO: make sure it works for the intro window
-			if (emit) { Utilities.events.WINDOW_OPEN.emit({ app: details.app, target: windowSkeleton }) }
-			else { return windowSkeleton }
+			Utilities.events.WINDOW_OPEN.emit({ app: details.app, target: windowSkeleton })
 		},
 		// Setup the titlebar
-		// TODO: Perhaps make it so the favicon is the titlebar icon like the <title> is the title
-		async setupTitlebar(event, title) {
+		async setupTitlebar(event) {
 			const titlebar = event.target
 			const targetWindow = event.target.closest("[app]")
 			const content = targetWindow.querySelector(".content")
 			const appName = targetWindow.getAttribute("app")
 			const manifest = Utilities.manifests[appName]
-			const iframeDocument = titlebar.contentDocument
-			const titleElement = iframeDocument.querySelector(".title")
+			const titlebarDocument = titlebar.contentDocument
+			const contentDocument = content.contentDocument
+			const titleElement = titlebarDocument.querySelector(".title")
 
 			// If the titlebar is the default one, add the icon
-			if (manifest.titlebar.path == "") {
-				if (iframeDocument.querySelector(".icon")) { iframeDocument.querySelector(".icon").src = `/apps/${appName}/${manifest.icon}` }
+			if (manifest.dni) { titlebarDocument.querySelector(".icon").remove() }
+			else if (manifest.titlebar.path == "") { titlebarDocument.querySelector(".icon").src = `/apps/${appName}/${manifest.icon}` }
+
+			// Listen for page changes
+			content.addEventListener("load", () => {
+				if (contentDocument.title) { titleElement.innerText = contentDocument.title }
+				else if (manifest.name) { titleElement.innerText = appName }
+			})
+
+			// Check if the content already loaded
+			if (contentDocument.readyState === "complete") {
+				if (contentDocument && contentDocument.title) { titleElement.innerText = contentDocument.title }
+				else if (manifest.name) { titleElement.innerText = appName }
 			}
 
-			content.addEventListener("load", (event) => { titleElement.innerText = event.target.contentDocument.title })
-
 			// Send an event when the user clicks in the titlebar
-			iframeDocument.body.addEventListener("pointerdown", (event) => {
+			titlebarDocument.body.addEventListener("pointerdown", (event) => {
 				// If the element clicked is a button, ignore the mousedown
 				if (event.target.tagName === "BUTTON") { return }
 
 				targetWindow.classList.add("moving")
-				iframeDocument.body.setPointerCapture(event.pointerId)
+				titlebarDocument.body.setPointerCapture(event.pointerId)
 
 				// Emit the event
 				Utilities.events.WINDOW_MOVE_START.emit({ x: event.screenX, y: event.screenY, target: targetWindow })
 			})
 			
 			// Send an event when the user moves
-			iframeDocument.body.addEventListener("pointermove", (event) => { Utilities.events.WINDOW_MOVE.emit({ x: event.screenX, y: event.screenY, target: targetWindow }) })
+			titlebarDocument.body.addEventListener("pointermove", (event) => { Utilities.events.WINDOW_MOVE.emit({ x: event.screenX, y: event.screenY, target: targetWindow }) })
 			
 			// Send an event when releases the click in the titlebar
-			iframeDocument.body.addEventListener("pointerup", (event) => {
+			titlebarDocument.body.addEventListener("pointerup", (event) => {
 				targetWindow.classList.remove("moving")
-				iframeDocument.body.releasePointerCapture(event.pointerId)
+				titlebarDocument.body.releasePointerCapture(event.pointerId)
 
 				// Emit the event
 				Utilities.events.WINDOW_MOVE_END.emit({ x: event.screenX, y: event.screenY, target: targetWindow })
 			})
+
 			// If there is a close button, make it close the window
-			if (iframeDocument.querySelector(".close")) {
-				iframeDocument.querySelector(".close").addEventListener("click", () => { WindowManager.basic.closeWindow(targetWindow) })
+			if (titlebarDocument.querySelector(".close")) {
+				titlebarDocument.querySelector(".close").addEventListener("click", () => { WindowManager.basic.closeWindow(targetWindow) })
 			}
 			// If there is a maximise button, make it maximise the window
-			if (iframeDocument.querySelector(".maximise")) {
-				iframeDocument.querySelector(".maximise").addEventListener("click", () => { WindowManager.basic.maximiseWindow(targetWindow) })
+			if (titlebarDocument.querySelector(".maximise")) {
+				titlebarDocument.querySelector(".maximise").addEventListener("click", () => { WindowManager.basic.maximiseWindow(targetWindow) })
 			}
 			// If there is a minimise button, make it minimise the window
-			if (iframeDocument.querySelector(".minimise")) {
-				iframeDocument.querySelector(".minimise").addEventListener("click", () => { WindowManager.basic.minimiseWindow(targetWindow) })
+			if (titlebarDocument.querySelector(".minimise")) {
+				titlebarDocument.querySelector(".minimise").addEventListener("click", () => { WindowManager.basic.minimiseWindow(targetWindow) })
 			}
 		}
 	}
@@ -777,13 +782,25 @@ const AppDockManager = new class {
 	icons = {
 		// Add the maximised propriety to an icon
 		maximised: {
-			add(details) { AppDockManager.open.querySelector(`[icon=${details.app}]`).classList.add("maximised") },
-			remove(details) { AppDockManager.open.querySelector(`[icon=${details.app}]`).classList.remove("maximised") }
+			add(details) {
+				const icon = AppDockManager.open.querySelector(`[icon=${details.app}]`)
+				if (icon) { icon.classList.add("maximised") }
+			},
+			remove(details) {
+				const icon = AppDockManager.open.querySelector(`[icon=${details.app}]`)
+				if (icon) { icon.classList.remove("maximised") }
+			}
 		},
 		// Add the minimised propriety to an icon
 		minimised: {
-			add(details) { AppDockManager.open.querySelector(`[icon=${details.app}]`).classList.add("minimised") },
-			remove(details) { AppDockManager.open.querySelector(`[icon=${details.app}]`).classList.remove("minimised") }
+			add(details) {
+				const icon = AppDockManager.open.querySelector(`[icon=${details.app}]`)
+				if (icon) { icon.classList.add("minimised") }
+			},
+			remove(details) {
+				const icon = AppDockManager.open.querySelector(`[icon=${details.app}]`)
+				if (icon) { icon.classList.remove("minimised") }
+			}
 		},
 		// Create the icon for a newly opened window
 		async add(details) {
@@ -791,6 +808,9 @@ const AppDockManager = new class {
 			const icon = document.createElement("button")
 			const image = document.createElement("img")
 			const name = document.createElement("p")
+			const manifest = Utilities.manifests[details.app]
+
+			if (manifest.dni) { return }
 
 			// Assemble the dock icon element
 			icon.append(name, image)
@@ -808,12 +828,8 @@ const AppDockManager = new class {
 		// Removes an icon when the connected window is closed
 		updateClosedWindow(details) {
 			// Delete the dock icon and remove it from the map
-			AppDockManager.open.querySelector(`[icon=${details.app}]`).remove()
-		},
-		// Updates an icon when the connected window is maximised
-		updateMinimisedWindow(details) {
-			// Add the class
-			AppDockManager.open.querySelector(`[icon=${details.app}]`).classList.add("mini")
+			const icon = AppDockManager.open.querySelector(`[icon=${details.app}]`)
+			if (icon) { icon.remove() }
 		},
 		// Focuses the window connected to a dock icon
 		focusLinkedWindow(event) {
@@ -1026,24 +1042,9 @@ const ServiceWorkerManager = new class {
 	}
 }
 
+newUser = true
+
 // Intros the user to webdesk
-// TODO: move to titlebar fetching, just make it so the index is the api endpoint and delete the titlebar buttons
 if (newUser) {
-	const introWindow = WindowManager.basic.skeletonizeWindow({app: "intro"}, false)
-	const closeButton = document.createElement("button")
-	const buttonsContainer = document.createElement("div")
-	const title = document.createElement("h5")
-
-	title.innerText = "Welcome!"
-
-	buttonsContainer.classList.add("buttons")
-	buttonsContainer.append(closeButton)
-	introWindow.querySelector(".titlebar").append(title, buttonsContainer)
-
-	closeButton.classList.add("close")
-	closeButton.addEventListener("click", WindowManager.basic.closeWindow)
-
-	WindowManager.move.centerWindow({target: introWindow})
-	WindowManager.basic.focusWindow({target: introWindow})
-	introWindow.querySelector("iframe").src = "/api/_/intro"
+	Utilities.events.MANIFESTS_READY.on([(_details) => { WindowManager.create.skeletonizeWindow({ app: "intro" }) }])
 }

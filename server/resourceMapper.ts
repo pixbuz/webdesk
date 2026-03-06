@@ -49,6 +49,7 @@ class WebdeskApplicationManifest {
 	description: string = "No description"
 	modules: string[] = []
 	ignore: string[] = []
+	dni: boolean = false
 	index: string = ""
 	icon: string = ""
 
@@ -68,8 +69,8 @@ class WebdeskApplicationManifest {
 	}
 }
 
+// Returns the manifests of the installed applications
 function returnManifests(request: Request) {
-	
 	return new Response(JSON.stringify(applications.manifests), { status: 200, headers: { "content-type": MIMES.json } })
 }
 
@@ -86,7 +87,6 @@ const webdesk = new class {
 		// Contains the endpoints mapped to the functions
 		const commands: Record<string, unknown> = {}
 		commands["/api/_/manifest"] = returnManifests
-		commands["/api/_/intro"] = Deno.readFileSync(`${config.staticFolder}/intropage.htm`)
 		commands["/api/_/titlebar"] = Deno.readFileSync(`${config.staticFolder}/titlebar.htm`)
 
 		return commands
