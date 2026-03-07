@@ -1,4 +1,4 @@
 {
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=827846
-  "recommendations": ["denoland.vscode-deno"]
+  "recommendations": ["denoland.vscode-deno", "firefox-devtools.vscode-firefox-debug"]
 }

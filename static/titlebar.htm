@@ -8,6 +8,7 @@
 			* {
 				margin: 0;
 				padding: 0;
+				user-select: none;
 				box-sizing: border-box;
 				font-family: system-ui, -apple-system;
 			}
@@ -15,7 +16,7 @@
 				justify-content: space-between;
 				flex-flow: row nowrap;
 				padding: 0 1% 4px 1%;
-				user-select: none;
+				overflow: hidden;
 				display: flex;
 				width: 100%;
 			}
@@ -64,9 +65,5 @@
 			<button class="maximise"></button>
 			<button class="close"></button>
 		</div>
-		<script>
-			// Copy the CSS variables for styling
-			document.documentElement.setAttribute("style", window.parent.document.documentElement.getAttribute("style"))
-		</script>
 	</body>
 </html>

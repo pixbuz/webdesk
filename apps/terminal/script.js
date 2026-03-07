@@ -1,4 +1,5 @@
-const webdeskDB = window.parent.webdeskDB
+// TODO: Message bridge to access IndexDB and Localstorage from windows
+// const webdeskDB = window.parent.webdeskDB
 const cli = document.querySelector(`[name="cli"]`)
 const output = document.querySelector(".output")
 let commHistory, pos

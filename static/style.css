@@ -67,7 +67,6 @@ body {
 	position: absolute;
 	overflow-y: hidden;
 	border-radius: 6px;
-	overflow-x: auto;
 	min-width: 20%;
 	max-width: 90%;
 	display: flex;
@@ -76,9 +75,10 @@ body {
 	z-index: 30;
 }
 
+/* TODO: Make this scroll and not squish the icons */
 .AppDock .Open {
 	flex-flow: row nowrap;
-	overflow-x: scroll;
+	overflow-x: auto;
 	padding: 4px 4px;
 	display: flex;
 	height: 100%;
@@ -227,6 +227,7 @@ body {
 [app] header .titlebar {
 	width: 100%;
 	height: 100%;
+	border: none;
 }
 
 [app] section {
@@ -240,17 +241,10 @@ body {
 
 [app].focus section { pointer-events: all; }
 
-[app] section iframe {
+[app] section .content {
 	width: 100%;
 	height: 100%;
-}
-
-.Window:has([app].moving) .wrapper,
-.Window:has([app].resizeX) .wrapper,
-.Window:has([app].resizeY) .wrapper,
-.Window:has([app].resizeXY1) .wrapper,
-.Window:has([app].resizeXY2) .wrapper {
-	pointer-events: none !important;
+	border: none;
 }
 
 .Window:has([app].moving) { cursor: grabbing; }
@@ -263,16 +257,16 @@ body {
 
 /* App Dock */
 .AppDock {
-	background: var(--appdock-color-background);
 	border: var(--appdock-appearance-border-style) var(--appdock-color-border) var(--appdock-appearance-border-width);
+	background: var(--appdock-color-background);
 	color: var(--appdock-color-text);
 }
 
 /* App Dock Clock */
 .AppDock .Clock p {
-	color: transparent;
 	background: var(--appdock-color-text);
 	background-clip: text;
+	color: transparent;
 }
 
 /* Launcher */
@@ -318,13 +312,13 @@ body {
 /* ----- Animations ----- */
 
 .Window.Space:has(.maximised) ~ .AppDock:hover {
-	opacity: 1;
 	animation: AppDock-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
+	opacity: 1;
 }
 
 .Window.Space:has(.maximised) ~ .AppDock {
-	opacity: 0;
 	animation: AppDock-maximised-down 250ms cubic-bezier(.25, -0.25, .5, 0) normal none;
+	opacity: 0;
 }
 
 .AppDock {

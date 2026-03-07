@@ -3,6 +3,7 @@
 
 const TRIM = self.location.origin.length
 const DONTINTERCEPT = true
+const VERBOSE = false
 
 const log = new class {
 	colors = Object.freeze({
@@ -45,6 +46,8 @@ const log = new class {
 	}
 
 	async debug(message, url = stdcaller) {
+		if (!VERBOSE) { return }
+
 		const absTime = this.getAbsTime(), relTime = this.getRelTime()
 		const path = url.substring(TRIM)
 
@@ -53,6 +56,8 @@ const log = new class {
 	}
 
 	async info(message, url = stdcaller) {
+		if (!VERBOSE) { return }
+
 		const absTime = this.getAbsTime(), relTime = this.getRelTime()
 		const path = url.substring(TRIM)
 
@@ -61,6 +66,8 @@ const log = new class {
 	}
 
 	async warn(message, url = stdcaller) {
+		if (!VERBOSE) { return }
+
 		const absTime = this.getAbsTime(), relTime = this.getRelTime()
 		const path = url.substring(TRIM)
 	
