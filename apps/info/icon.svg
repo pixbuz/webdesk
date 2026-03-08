@@ -1,6 +1,6 @@
 <svg version="1.1" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-	<g stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2">
-		<circle cx="16" cy="16" r="14.4" fill="#00a1ff" stroke="#fff" style="paint-order:markers stroke fill"/>
-		<path d="m14.5 8.61q0-0.575 0.4-1 0.412-0.425 1.04-0.425 0.587 0 1.01 0.412 0.425 0.412 0.425 1.01 0 0.6-0.425 1.02-0.425 0.412-1.01 0.412-0.6 0-1.02-0.425-0.412-0.425-0.412-1.01zm0.337 14.1v-7.87h-1.89v-2.11h4.26v9.99h1.86v2.11h-6.12v-2.11z" fill="#fff" style="paint-order:markers stroke fill" aria-label="i"/>
+	<g stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+		<circle cx="16" cy="16" r="14" fill="#00a1ff" stroke="#fff" style="paint-order:markers stroke fill"/>
+		<text x="12.759766" y="23.350237" fill="#ffffff" font-family="Rockwell" font-size="21.3px" style="paint-order:stroke fill markers" xml:space="preserve"><tspan x="12.759766" y="23.350237" font-size="21.3px">i</tspan></text>
 	</g>
 </svg>

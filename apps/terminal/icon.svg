@@ -1,7 +1,7 @@
 <svg version="1.1" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
 	<g stroke-linecap="round" stroke-linejoin="round">
 		<rect x="2" y="6" width="28" height="20" rx="4" ry="4" stroke="#fa0" stroke-width="2" style="paint-order:stroke fill markers"/>
-		<text transform="scale(.977 1.02)" x="5.0993228" y="20.73914" fill="#ffaa00" font-family="'Ubuntu Mono'" font-size="18px" stroke-width="1.13" style="paint-order:stroke fill markers" xml:space="preserve"><tspan x="5.0993228" y="20.73914" fill="#ffaa00" stroke-width="1.13">&gt;</tspan></text>
-		<text transform="scale(.977 1.02)" x="16.702158" y="16.202419" fill="#ffaa00" font-family="'Ubuntu Mono'" font-size="18px" stroke-width="1.13" style="paint-order:stroke fill markers" xml:space="preserve"><tspan x="16.702158" y="16.202419" fill="#ffaa00" stroke-width="1.13">_</tspan></text>
+		<text transform="scale(.977 1.02)" x="6.3167353" y="20.515617" fill="#ffaa00" font-family="'Ubuntu Mono'" font-size="14.7px" stroke-width="1.13" style="paint-order:stroke fill markers" xml:space="preserve"><tspan x="6.3167353" y="20.515617" fill="#ffaa00" font-size="14.7px" stroke-width="1.13">&gt;</tspan></text>
+		<text transform="scale(.977 1.02)" x="17.516439" y="16.819595" fill="#ffaa00" font-family="'Ubuntu Mono'" font-size="14.7px" stroke-width="1.13" style="paint-order:stroke fill markers" xml:space="preserve"><tspan x="17.516439" y="16.819595" fill="#ffaa00" font-size="14.7px" stroke-width="1.13">_</tspan></text>
 	</g>
 </svg>

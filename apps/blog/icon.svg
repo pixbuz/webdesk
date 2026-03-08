@@ -1,3 +1,97 @@
-<svg width="32" height="32" version="1.1" viewBox="0 0 8.47 8.47" xmlns="http://www.w3.org/2000/svg">
-	<rect width="100%" height="100%" fill="red" />
+<svg version="1.1" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+	<g stroke-linecap="round" stroke-linejoin="round">
+		<g fill="#d9d9d9">
+			<rect x="1.96" y="1.96" width="28.1" height="12.1" rx="2.01" ry="1.86" stroke="#bfbfbf" stroke-width="1.93" style="paint-order:stroke fill markers"/>
+			<rect x="1.96" y="18" width="28.1" height="12.1" rx="2.01" ry="1.86" stroke="#bfbfbf" stroke-width="1.93" style="paint-order:stroke fill markers"/>
+			<path d="m4.5 3.5h2" stroke="#ff0195" style="paint-order:stroke fill markers"/>
+		</g>
+		<g fill="none" stroke="#a6a6a6">
+			<path d="m3.5 5.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m5.5 5.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m9.5 5.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m13.5 5.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m17.5 5.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m11.5 5.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m21.5 5.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m23.5 5.5h2" style="paint-order:stroke fill markers"/>
+		</g>
+		<g fill="#d9d9d9">
+			<g stroke="#000">
+				<path d="m8.5 3.5h2" style="paint-order:stroke fill markers"/>
+				<path d="m10.5 3.5h2" style="paint-order:stroke fill markers"/>
+				<path d="m14.5 3.5h2" style="paint-order:stroke fill markers"/>
+				<path d="m18.5 3.5h2" style="paint-order:stroke fill markers"/>
+				<path d="m20.5 3.5h2" style="paint-order:stroke fill markers"/>
+				<path d="m21.5 3.5h2" style="paint-order:stroke fill markers"/>
+				<path d="m25.5 3.5h2" style="paint-order:stroke fill markers"/>
+				<path d="m16.5 3.5h2" style="paint-order:stroke fill markers"/>
+				<path d="m27.5 19.5h-2" style="paint-order:stroke fill markers"/>
+				<path d="m23.5 19.5h-2" style="paint-order:stroke fill markers"/>
+				<path d="m21.5 19.5h-2" style="paint-order:stroke fill markers"/>
+				<path d="m17.5 19.5h-2" style="paint-order:stroke fill markers"/>
+				<path d="m13.5 19.5h-2" style="paint-order:stroke fill markers"/>
+				<path d="m11.5 19.5h-2" style="paint-order:stroke fill markers"/>
+			</g>
+			<path d="m6.5 19.5h-2" stroke="#00ffbe" style="paint-order:stroke fill markers"/>
+			<path d="m15.5 19.5h-2" stroke="#000" style="paint-order:stroke fill markers"/>
+		</g>
+		<g fill="none" stroke="#a6a6a6">
+			<path d="m3.5 7.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m9.5 7.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m13.5 7.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m17.5 7.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m19.5 7.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m21.5 7.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m25.5 7.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m7.5 7.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m27.5 11.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m25.5 11.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m21.5 11.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m17.5 11.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m13.5 11.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m19.5 11.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m9.5 11.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m7.5 11.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m27.5 9.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m21.5 9.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m17.5 9.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m13.5 9.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m11.5 9.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m9.5 9.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m5.5 9.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m23.5 9.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m3.5 21.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m5.5 21.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m9.5 21.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m13.5 21.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m17.5 21.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m11.5 21.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m21.5 21.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m23.5 21.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m3.5 23.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m9.5 23.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m13.5 23.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m17.5 23.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m19.5 23.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m21.5 23.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m25.5 23.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m7.5 23.5h2" style="paint-order:stroke fill markers"/>
+			<path d="m27.5 27.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m25.5 27.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m21.5 27.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m17.5 27.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m13.5 27.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m19.5 27.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m9.5 27.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m7.5 27.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m27.5 25.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m21.5 25.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m17.5 25.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m13.5 25.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m11.5 25.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m9.5 25.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m5.5 25.5h-2" style="paint-order:stroke fill markers"/>
+			<path d="m23.5 25.5h-2" style="paint-order:stroke fill markers"/>
+		</g>
+	</g>
 </svg>

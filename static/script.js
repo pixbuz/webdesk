@@ -433,6 +433,7 @@ const WMFactory = new class {
 		// }
 
 		// Send an event when the user clicks in the titlebar
+		// TODO: Improve the event wrapping by removing methods and stuff and putting into real methods
 		// IDEA: using right mouse click moves but doesn't update the window focus
 		titlebarDocument.body.addEventListener("pointerdown", (event) => {
 			// If the element clicked is a button, ignore the event
@@ -465,15 +466,17 @@ const WMFactory = new class {
 		})
 
 		// If there is a close button, make it close the window
-		if (titlebarDocument.querySelector(".close")) {
-			titlebarDocument.querySelector(".close").addEventListener("click", () => {
+		const closeButton = titlebarDocument.querySelector(".close")
+		if (closeButton) {
+			closeButton.addEventListener("click", () => {
 				targetWindow.remove()
 				WebdeskEvent.WINDOW_CLOSE.emit({ closed: targetWindow, open: WMFactory.open })
 			})
 		}
 		// If there is a maximise button, make it maximise the window
-		if (titlebarDocument.querySelector(".maximise")) {
-			titlebarDocument.querySelector(".maximise").addEventListener("click", () => {
+		const maximiseButton = titlebarDocument.querySelector(".maximise")
+		if (maximiseButton) {
+			maximiseButton.addEventListener("click", () => {
 				if (targetWindow.classList.contains("maximised")) {
 					targetWindow.classList.remove("maximised")
 					WebdeskEvent.WINDOW_MAXIMISE_END.emit({ target: targetWindow, app: appName })
@@ -484,8 +487,9 @@ const WMFactory = new class {
 			})
 		}
 		// If there is a minimise button, make it minimise the window
-		if (titlebarDocument.querySelector(".minimise")) {
-			titlebarDocument.querySelector(".minimise").addEventListener("click", () => {
+		const minimiseButton = titlebarDocument.querySelector(".minimise")
+		if (minimiseButton) {
+			minimiseButton.addEventListener("click", () => {
 				// Remove the maximised class
 				targetWindow.classList.remove("maximised")
 				if (targetWindow.classList.contains("minimised")) {
