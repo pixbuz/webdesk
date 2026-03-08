@@ -45,7 +45,7 @@ const log = new class {
 		]
 	}
 
-	async debug(message, url = stdcaller) {
+	async debug(message, url = log.stdcaller) {
 		if (!VERBOSE) { return }
 
 		const absTime = this.getAbsTime(), relTime = this.getRelTime()
@@ -55,7 +55,7 @@ const log = new class {
 		await new Promise(res => res())
 	}
 
-	async info(message, url = stdcaller) {
+	async info(message, url = log.stdcaller) {
 		if (!VERBOSE) { return }
 
 		const absTime = this.getAbsTime(), relTime = this.getRelTime()
@@ -65,7 +65,7 @@ const log = new class {
 		await new Promise(res => res())
 	}
 
-	async warn(message, url = stdcaller) {
+	async warn(message, url = log.stdcaller) {
 		if (!VERBOSE) { return }
 
 		const absTime = this.getAbsTime(), relTime = this.getRelTime()
@@ -75,7 +75,7 @@ const log = new class {
 		await new Promise(res => res())
 	}
 
-	async error(message, url = stdcaller) {
+	async error(message, url = log.stdcaller) {
 		const absTime = this.getAbsTime(), relTime = this.getRelTime()
 		const path = url.substring(TRIM)
 	

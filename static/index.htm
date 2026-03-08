@@ -8,11 +8,11 @@
 		<link rel="manifest" href="/manifest">
 	</head>
 	<body>
-		<div class="Background"></div>
-		<section class="Launcher Space"></section>
-		<section class="Window Space"></section>
-		<section class="Error Space"></section>
-		<section class="AppDock">
+		<div class="Background" aria-hidden="true"></div>
+		<section class="Launcher Space" aria-label="App Launcher"></section>
+		<main class="Window Space" aria-label="Desktop Workspace"></main>
+		<section class="Error Space" aria-live="polite" aria-label="Notifications"></section>
+		<nav class="AppDock" aria-label="Taskbar">
 			<div class="Open"></div>
 			<div class="Clock">
 				<div class="Time">
@@ -30,7 +30,7 @@
 					<p class="year"></p>
 				</div>
 			</div>
-		</section>
+		</nav>
 		<script async src="/script"></script>
 	</body>
 </html>

@@ -64,14 +64,14 @@ function apiReplier(browserRequest: Request): Response {
 			// Run the function and save the result
 			const result = (resources.commands[requestURL.pathname] as (request: Request) => unknown)(browserRequest)
 			// Log the successful execution
-			log.debug(`${apiAppName}'s command "${(resources.commands[requestURL.pathname] as Function).name}" executed without errors`)
+			log.debug(`${apiAppName === "_" ? "webdesk" : apiAppName}'s command "${(resources.commands[requestURL.pathname] as Function).name}" executed without errors`)
 			// If a response is produced, return the result
 			if (result instanceof Response) { return result }
 			else { return new Response(result as BodyInit, { status: 200 }) }
 		}
 		catch(error) {
 			const errorStack = (error as Error).stack!.split("\n")
-			log.warn(`${apiAppName}'s command "${requestURL.pathname}" failed: ${errorStack[0]}`)
+			log.warn(`${apiAppName === "_" ? "webdesk" : apiAppName}'s command "${requestURL.pathname}" failed: ${errorStack[0]}`)
 			errorStack.slice(1).forEach((line) => { log.warn(line.trim()) })
 			// Send an server error response
 			return new ErrorResponse((error as Error).stack, 500)

@@ -268,6 +268,9 @@ const LauncherManager = new class {
 			title = document.createElement("span"),	// Create the name element
 			icon = document.createElement("img")	// Create the icon element
 
+		icon.setAttribute("fetchpriority", "high")
+		icon.setAttribute("alt", `Application "${appName}"'s icon`)
+
 		// Set the app the launcher opens
 		launcher.setAttribute("launcher", appName)
 		// Set the hover description of the launcher
@@ -322,12 +325,15 @@ const WMFactory = new class {
 			content = document.createElement("iframe"),	// Make the app content iframe
 			titlebar = document.createElement("iframe")	// 创建标题栏 iframe
 
-		// Fix the aesthetic of the iframes
+		// Add the attributes to the iframes
 		content.setAttribute("allowfullscreen", false)
 		content.setAttribute("sandbox", "allow-scripts")
+		content.setAttribute("title", `Application "${details.app}"'s content`)
 
 		titlebar.setAttribute("allowfullscreen", false)
+		// TODO: Make a solid titlebar system
 		titlebar.setAttribute("sandbox", "allow-same-origin")
+		titlebar.setAttribute("title", `Application "${details.app}"'s titlebar`)
 
 		// Show the index page of the app
 		content.src = `/apps/${details.app}/${manifest.index}`
@@ -382,6 +388,9 @@ const WMFactory = new class {
 			WebdeskEvent.WINDOW_RESIZE_END.emit({ target: windowSkeleton, x: event.x, y: event.y })
 		})
 
+		// When the viewport is resized, check if the window is clipping the viewport and move
+		window.addEventListener("resize", () => { WMMover.updatePositionIfCollision({ target: windowSkeleton }) })
+
 		// Add the window to the open windows
 		WMFactory.open.push(windowSkeleton)
 
@@ -430,7 +439,6 @@ const WMFactory = new class {
 			if (event.target.tagName === "BUTTON") { return }
 			else if (targetWindow.classList.contains("maximised")) { return }
 
-			targetWindow.classList.add("moving")
 			titlebarDocument.body.setPointerCapture(event.pointerId)
 
 			// Emit the event
@@ -450,7 +458,6 @@ const WMFactory = new class {
 			if (event.target.tagName === "BUTTON") { return }
 			else if (targetWindow.classList.contains("maximised")) { return }
 
-			targetWindow.classList.remove("moving")
 			titlebarDocument.body.releasePointerCapture(event.pointerId)
 
 			// Emit the event
@@ -564,6 +571,7 @@ const WMMover = new class {
 
 	// Save the offsets and stuff
 	init(details) {
+		details.target.classList.add("moving")
 		const box = details.target.getBoundingClientRect()
 
 		WMMover.anchor = { x: details.x - box.left, y: details.y - box.top }
@@ -601,11 +609,6 @@ const WMMover = new class {
 		// Translate the window to a safe spot
 		details.target.style.transform = `translate(${box.x}px,${box.y}px)`
 	}
-	// When the viewport gets resized, update all the collisions and window sizes
-	checkAllViewportCollisions(event) {
-		// For all open windows, update the position if clipping the resized viewport
-		for (const openWindow of document.querySelectorAll("[app]")) { WMMover.updatePositionIfCollision({ target: openWindow, app: openWindow.getAttribute("app") }) }
-	}
 	// Handles the end of a window movement
 	reset(details) {
 		details.target.classList.remove("moving")
@@ -622,9 +625,6 @@ const WMMover = new class {
 
 		WebdeskEvent.WINDOW_RESIZE_END.on(this.updatePositionIfCollision)	// Make sure a window isn't clipping the viewport after a resize
 		WebdeskEvent.WINDOW_MOVE_END.on(this.updatePositionIfCollision)	// Make sure a window isn't clipping the viewport after a movement
-
-		// TODO: Wrap this event into a webdesk event
-		window.addEventListener("resize", this.checkAllViewportCollisions)
 	}
 }
 
@@ -960,7 +960,7 @@ const UIManager = new class {
 	customID = 0
 
 	// Sets up themes in the database
-	newUserInit() {
+	async newUserInit() {
 		const theme = {
 			windows: defaultWindowsCustomization,
 			appdock: defaultAppDockCustomization,
@@ -968,16 +968,14 @@ const UIManager = new class {
 		}
 
 		localStorage.setItem("backgrounds-id", 0)
-		webdeskDB.createTable("_backgrounds").then(async () => {
-			await webdeskDB.set("_backgrounds", 0, `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><filter id="cool"><feTurbulence baseFrequency='0.01' numOctaves="1" result='noise' filterRes="1000"/><feDiffuseLighting in='noise' lighting-color='var(#D8DEE9)' surfaceScale='6'><feDistantLight azimuth='45' elevation='60' /></feDiffuseLighting></filter><rect width="100%" height="100%" filter="url(#cool)" /></svg>`)
-			this.loadBackground()
-		})
+		await webdeskDB.createTable("_backgrounds")
+		await webdeskDB.set("_backgrounds", 0, `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><filter id="cool"><feTurbulence baseFrequency='0.01' numOctaves="1" result='noise' filterRes="1000"/><feDiffuseLighting in='noise' lighting-color='var(#D8DEE9)' surfaceScale='6'><feDistantLight azimuth='45' elevation='60' /></feDiffuseLighting></filter><rect width="100%" height="100%" filter="url(#cool)" /></svg>`)
+		await this.loadBackground()
 
 		localStorage.setItem("customization-id", 0)
-		webdeskDB.createTable("_customizations").then(async () => {
-			await webdeskDB.set("_customizations", 0, theme)
-			this.loadCustomization()
-		})
+		await webdeskDB.createTable("_customizations")
+		await webdeskDB.set("_customizations", 0, theme)
+		await this.loadCustomization()
 	}
 	// Converts the color proprieties of a theme into css variables
 	loadCssVars(root, prefix = "") {
@@ -1036,6 +1034,7 @@ const ServiceWorkerManager = new class {
 }
 
 // Intros the user to webdesk
+// TODO: Fix the titlebar styling not working
 if (newUser) {
-	WebdeskEvent.MANIFESTS_READY.on((details) => { WindowManager.create.skeletonizeWindow({ app: "intro" }) })
+	WebdeskEvent.MANIFESTS_READY.on((details) => { WMFactory.skeletonizeWindow({ app: "intro" }) })
 }

@@ -1,2 +1,3 @@
 # Ignore the deno on/off switching
 .vscode/settings.json
+.chrome-profile/
