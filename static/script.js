@@ -327,7 +327,8 @@ const WMFactory = new class {
 
 		// Add the attributes to the iframes
 		content.setAttribute("allowfullscreen", false)
-		content.setAttribute("sandbox", "allow-scripts")
+		// TODO: Improve this special treatment
+		content.setAttribute("sandbox", `allow-scripts ${ details.app === "settings" ? "allow-same-origin" : "" }`)
 		content.setAttribute("title", `Application "${details.app}"'s content`)
 
 		titlebar.setAttribute("allowfullscreen", false)
@@ -958,28 +959,30 @@ const defaultAppDockCustomization = new class {
 	}
 }
 
-const UIManager = new class {
-	backgroundWrapper = document.querySelector(".Background")
-	backgroundID = 0
-	customID = 0
+var UIManager = new class {
+	backgroundElement = document.querySelector(".Background")
+	currentCustomizationID = 0
+	currentBackgroundID = 0
 
 	// Sets up themes in the database
-	async newUserInit() {
+	async newUserCustomizationInit() {
 		const theme = {
 			windows: defaultWindowsCustomization,
 			appdock: defaultAppDockCustomization,
 			launchers: defaultLaunchersCustomization,
 		}
 
-		localStorage.setItem("backgrounds-id", 0)
-		await webdeskDB.createTable("_backgrounds")
-		await webdeskDB.set("_backgrounds", 0, `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><filter id="cool"><feTurbulence baseFrequency='0.01' numOctaves="1" result='noise' filterRes="1000"/><feDiffuseLighting in='noise' lighting-color='var(#D8DEE9)' surfaceScale='6'><feDistantLight azimuth='45' elevation='60' /></feDiffuseLighting></filter><rect width="100%" height="100%" filter="url(#cool)" /></svg>`)
-		await this.loadBackground()
-
 		localStorage.setItem("customization-id", 0)
 		await webdeskDB.createTable("_customizations")
 		await webdeskDB.set("_customizations", 0, theme)
-		await this.loadCustomization()
+		await webdeskDB.set("_customizations", "last-ID", 0)
+	}
+	// Sets up backgrounds in the database
+	async newUserBackgroundInit() {
+		localStorage.setItem("backgrounds-id", 0)
+		await webdeskDB.createTable("_backgrounds")
+		await webdeskDB.set("_backgrounds", 0, `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><filter id="cool"><feTurbulence baseFrequency='0.01' numOctaves="1" result='noise' filterRes="1000"/><feDiffuseLighting in='noise' lighting-color='var(#D8DEE9)' surfaceScale='6'><feDistantLight azimuth='45' elevation='60' /></feDiffuseLighting></filter><rect width="100%" height="100%" filter="url(#cool)" /></svg>`)
+		await webdeskDB.set("_backgrounds", "last-ID", 0)
 	}
 	// Converts the color proprieties of a theme into css variables
 	loadCssVars(root, prefix = "") {
@@ -989,28 +992,30 @@ const UIManager = new class {
 		}
 	}
 	// Load the user's customization
-	async loadCustomization() {
-		this.customID = parseInt(localStorage.getItem("customization-id")) || 0
-		const customization = await webdeskDB.get("_customizations", this.customID)
+	async loadCustomization(customizationID) {
+		const customization = await webdeskDB.get("_customizations", UIManager.currentCustomizationID = customizationID)
 
-		if (customization) {
-			this.loadCssVars(customization.windows, "windows")
-			this.loadCssVars(customization.appdock, "appdock")
-			this.loadCssVars(customization.launchers, "launchers")
-		} else { this.newUserInit() }
+		this.loadCssVars(customization.windows, "windows")
+		this.loadCssVars(customization.appdock, "appdock")
+		this.loadCssVars(customization.launchers, "launchers")
 	}
 	// Load the user's background
-	async loadBackground() {
-		this.backgroundID = parseInt(localStorage.getItem("background-id")) || 0
-		const backgroundContents = await webdeskDB.get("_backgrounds", this.backgroundID || 0)
+	async loadBackground(backgroundID) {
+		const backgroundContents = await webdeskDB.get("_backgrounds", UIManager.currentBackgroundID = backgroundID)
 
-		this.backgroundWrapper.innerHTML = backgroundContents
+		this.backgroundElement.innerHTML = backgroundContents
 	}
 
-	constructor() {
-		this.loadCustomization()
-		this.loadBackground()
-	}
+	constructor() {(async () => {
+		const customizationID = localStorage.getItem("customization-id")
+		const backgroundID = localStorage.getItem("background-id")
+
+		if (!customizationID) { await this.newUserCustomizationInit() }
+		if (!backgroundID) { await this.newUserBackgroundInit() }
+
+		this.loadCustomization(parseInt(customizationID) || 0)
+		this.loadBackground(parseInt(backgroundID) || 0)
+	})()}
 }
 
 // Manages the service worker

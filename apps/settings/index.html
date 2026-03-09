@@ -7,10 +7,10 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	</head>
 	<body>
-		<aside>
-			<section>
+		<nav>
+			<section class="general">
 				<h6>General</h6>
-				<button onclick="show('Launchers')">
+				<button launchers onclick="show(this)">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-square-stack">
 						<path d="M4 10c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2"/>
 						<path d="M10 16c-1.1 0-2-.9-2-2v-4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2"/>
@@ -18,7 +18,7 @@
 					</svg>
 					<p>Launchers</p>
 				</button>
-				<button onclick="show('Windows')">
+				<button windows onclick="show(this)">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-app-window-mac">
 						<rect width="20" height="16" x="2" y="4" rx="2"/>
 						<path d="M6 8h.01"/>
@@ -27,7 +27,7 @@
 					</svg>
 					<p>Windows</p>
 				</button>
-				<button onclick="show('AppDock')">
+				<button appdock onclick="show(this)">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 12" class="lucide-computer">
 						<rect width="20" height="8" x="2" y="2" rx="2" id="rect2" />
 						<path d="M 6,6 H 8" id="path2" />
@@ -35,7 +35,7 @@
 					</svg>
 					<p>App Dock</p>
 				</button>
-				<button onclick="show('InstalledApps')">
+				<button apps onclick="show(this)">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-blocks">
 						<path d="M10 22V7a1 1 0 0 0-1-1H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5a1 1 0 0 0-1-1H2"/>
 						<rect x="14" y="2" width="8" height="8" rx="1"/>
@@ -43,9 +43,9 @@
 					<p>Installed Apps</p>
 				</button>
 			</section>
-			<section>
+			<section class="customization">
 				<h6>Customization</h6>
-				<button onclick="show('Colors')">
+				<button colors onclick="show(this)">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-swatch-book">
 						<path d="M11 17a4 4 0 0 1-8 0V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2Z"/>
 						<path d="M16.7 13H19a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7"/>
@@ -54,7 +54,7 @@
 					</svg>
 					<p>Colors</p>
 				</button>
-				<button onclick="show('Background')">
+				<button backgrounds onclick="show(this)">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20" class="lucide-wallpaper">
 						<path d="m9 17 6.1-6.1a2 2 0 0 1 2.81.01L22 15"/>
 						<circle cx="8" cy="9" r="2"/>
@@ -62,7 +62,7 @@
 					</svg>
 					<p>Background</p>
 				</button>
-				<button onclick="show('Animations')">
+				<button animations onclick="show(this)">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-circle-play">
 						<path d="M9 9.003a1 1 0 0 1 1.517-.859l4.997 2.997a1 1 0 0 1 0 1.718l-4.997 2.997A1 1 0 0 1 9 14.996z"/>
 						<circle cx="12" cy="12" r="10"/>
@@ -70,9 +70,17 @@
 					<p>Animations</p>
 				</button>
 			</section>
-		</aside>
+		</nav>
 		<main>
-			<div name="Colors">
+			<div launchers>
+			</div>
+			<div windows>
+			</div>
+			<div appdock>
+			</div>
+			<div apps>
+			</div>
+			<div colors>
 				<h5>Windows</h5>
 				<div class="Windows">
 					<section>
@@ -177,25 +185,17 @@
 					</div>
 				</div>
 			</div>
-			<div name="Animations">
+			<div backgrounds>
+				<div class="Propriety">
+					<input type="file" bgUpload accept="image/*">
+					<p class="">Upload Background</p>
+				</div>
+			</div>
+			<div animations>
 				<p>Animations Enable</p>
 				<input type="checkbox" name="" id="">
 				<p>Animations Speed</p>
 				<input type="text" name="" id="">
-			</div>
-			<div name="AppDock">
-			</div>
-			<div name="Background">
-				<div class="Propriety">
-					<input type="file" id="backgroundUpload" accept="image/*">
-					<p class="">Upload Background</p>
-				</div>
-			</div>
-			<div name="Windows">
-			</div>
-			<div name="Launchers">
-			</div>
-			<div name="InstalledApps">
 			</div>
 		</main>
 		<script src="settings.js"></script>

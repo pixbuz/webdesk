@@ -18,26 +18,25 @@ body {
 	display: flex;
 }
 
-aside {
+nav {
 	border-right: solid 2px rgba(0, 0, 0, 10%);
 	scroll-behavior: smooth;
-	overflow-x: scroll;
 	padding: 0 8px;
 	width: 192px;
 	height: 100%;
 }
 
-aside section {
+nav section {
 	margin-bottom: 8px;
 }
 
-aside section h6 {
+nav section h6 {
 	color: rgba(0, 0, 0, 37.5%);
 	font-size: 1rem;
 	display: block;
 }
 
-aside section button {
+nav section button {
 	flex-flow: row nowrap;
 	border-radius: 8px;
 	user-select: none;
@@ -51,11 +50,11 @@ aside section button {
 	gap: 4px;
 }
 
-aside section button:hover {
+nav section button:hover {
 	background: rgba(0, 0, 0, 10%);
 }
 
-aside button svg {
+nav button svg {
 	stroke-linejoin: round;
 	stroke-linecap: round;
 	stroke: currentColor;
@@ -84,56 +83,56 @@ main > div:first-child {
 	display: block;
 }
 
-div[name="Colors"] hr {
+[colors] hr {
 	border: solid 1px black;
 	margin: 8px auto;
 	width: 95%;
 }
 
-div[name="Colors"] h5 {
+[colors] h5 {
 	margin-bottom: 4px;
 	font-size: 1rem;
 }
 
-div[name="Colors"] > div {
+[colors] > div {
 	padding: 0 8px;
 	display: flex;
 	gap: 4px;
 }
 
-div[name="Colors"] .Windows {
+[colors] .Windows {
 	flex-flow: row nowrap;
 	height: max-content;
 	display: flex;
 	width: 100%;
 }
 
-div[name="Colors"] .Windows section {
+[colors] .Windows section {
 	flex-flow: column nowrap;
 	display: flex;
 	width: 50%;
 	gap: 4px;
 }
 
-div[name="Colors"] .AppDock,
-div[name="Colors"] .Launchers {
+[colors] .AppDock,
+[colors] .Launchers {
 	flex-flow: column nowrap;
 	display: flex;
 	gap: 4px;
 }
 
-div[name="Colors"] .Propriety {
+[colors] .Propriety {
 	flex-flow: row nowrap;
 	display: flex;
 	gap: 4px;
 }
 
-div[name="Colors"] .Propriety input {
+[colors] .Propriety input {
 	border-radius: 4px;
 	background: none;
 	border: none;
 }
 
-div[name="Colors"] .Propriety p {
+[colors] .Propriety p {
 	margin: auto 0;
 }

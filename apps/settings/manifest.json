@@ -2,9 +2,6 @@
 	"icon": "icon.svg",
 	"index": "index.html",
 	"description": "Customize Webdesk",
-	"modules": [
-		"test.ts"
-	],
 	"titlebar": {
 		"path": "",
 		"dynamic": "true",

@@ -219,8 +219,10 @@ export const resources = new class {
 				case "modify": log.debug(`Noticed that "${fileEvent.paths.join(`" and "`)}" was/were modified`); break
 			}
 
-			fileEvent.paths.forEach((path) => {
-				const file = path.substring(resources.cwd.length + 3)
+			fileEvent.paths.forEach((path: string) => {
+				let file
+				if (config.platform == 0) { file = path.substring(resources.cwd.length + 1).replaceAll("\\", "/") }
+				else { file = path.substring(resources.cwd.length + 3) }
 				const endpoint = resources.origins[file]
 
 				if (endpoint) {
