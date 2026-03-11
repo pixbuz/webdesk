@@ -1043,7 +1043,6 @@ const ServiceWorkerManager = new class {
 }
 
 // Intros the user to webdesk
-// TODO: Fix the titlebar styling not working
 if (newUser) {
 	WebdeskEvent.MANIFESTS_READY.on((details) => { WMFactory.skeletonizeWindow({ app: "intro" }) })
 }
