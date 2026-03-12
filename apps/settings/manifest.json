@@ -12,6 +12,7 @@
 			"search": "search"
 		}
 	},
+	"service": true,
 
 	"routes": {
 		"style.css": "style"
