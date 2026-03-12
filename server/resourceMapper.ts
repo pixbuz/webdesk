@@ -70,24 +70,19 @@ class WebdeskApplicationManifest {
 }
 
 // Returns the manifests of the installed applications
-function returnManifests(request: Request) {
+function returnManifests(_request: Request) {
 	return new Response(JSON.stringify(applications.manifests), { status: 200, headers: { "content-type": MIMES.json } })
 }
 
 // Webdesk logic class
 const webdesk = new class {
-	css: string = "" // CSS
-	html: string = "" // HTML
-	manifest: string = "" // PWA manifest
-	script: string = "" // Frontend script
-	sw: string = "" // Service worker script
-
 	// Indexes webdesk's API commands
 	command() {
 		// Contains the endpoints mapped to the functions
-		const commands: Record<string, unknown> = {}
-		commands["/api/_/manifest"] = returnManifests
-		commands["/api/_/titlebar"] = Deno.readFileSync(`${config.staticFolder}/titlebar.htm`)
+		const commands: Record<string, unknown> = {
+			"/api/_/getManifests": returnManifests,
+			"/api/_/defaultTitlebar": Deno.readFileSync(`${config.staticFolder}/titlebar.htm`)
+		}
 
 		return commands
 	}

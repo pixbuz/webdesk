@@ -2,6 +2,7 @@
 
 // TODO: Animations
 // TODO: Make code more readable with less comments (and better var names)
+// TODO: Generator functions tho?
 
 // Tracks if a user visits webdesk for the first time
 let newUser = false
@@ -122,14 +123,14 @@ class WebdeskEvent {
 		OPEN: { target: null, app: null },
 		CLOSE: { closed: null, open: [ ] },
 		INTERACTION: { target: null, x: null, y: null, },
+		TITLEBAR: { titlebar: null, proprieties: null, app: null },
 	}
 
 	static MANIFESTS_READY = new WebdeskEvent(this.templates.MANIFEST)
 
 	static LAUNCHER_CLICK = new WebdeskEvent(this.templates.LAUNCHER)
 
-	static TITLEBAR_LOADED = new WebdeskEvent(this.templates.TARGET)
-	static TITLEBAR_READY = new WebdeskEvent(this.templates.TARGET)
+	static TITLEBAR_SETUP = new WebdeskEvent(this.templates.TITLEBAR)
 
 	static WINDOW_READY = new WebdeskEvent(this.templates.TARGET)
 
@@ -185,7 +186,7 @@ class WebdeskEvent {
 }
 
 // Fetches all the application manifests
-fetch("/api/_/manifest").then(async (response) => {
+fetch("/api/_/getManifests").then(async (response) => {
 	ApplicationManifests = await response.json()
 	WebdeskEvent.MANIFESTS_READY.emit(ApplicationManifests)
 })
@@ -296,14 +297,152 @@ const LauncherManager = new class {
 	addLaunchers(details) {
 		// Sort the keys to have the same app order every visit
 		for (const appName of Object.keys(details).sort()) {
-			if (details[appName].dni) { continue }	// If an app is "Do Not Index", don't add it to the desktop
-			// IDEA: Make DNI app "services", makes more sense they be existing in the background
+			if (details[appName].service) { continue }	// If an app is service, don't add it to the desktop
 			LauncherManager.addLauncher(appName, details[appName])
 		}
 	}
 
 	constructor() {
 		WebdeskEvent.MANIFESTS_READY.on(this.addLaunchers)
+	}
+}
+
+// TODO : MESSAGIN SYSTEM FOR CUSTOM CALL BACKS
+const WMTitlebarFactory = new class {
+	// Setups the titlebar for a window
+	async setup(details) {
+		const { titlebar, proprieties, app } = details
+		const channel = new MessageChannel()
+
+		titlebar.setAttribute("allowfullscreen", false)
+		titlebar.setAttribute("sandbox", "allow-scripts")
+		titlebar.setAttribute("title", `Application "${app}"'s titlebar`)
+
+		if (proprieties.path == "") { titlebar.src = "/api/_/defaultTitlebar" }
+		else { titlebar.src = `/apps/${app}/${proprieties.path}` }
+
+		channel.port1.addEventListener("message", (messageEvent) => {
+			WMTitlebarFactory.commandInterpreter(titlebar, channel.port1, messageEvent)
+		})
+		channel.port1.start()
+
+		titlebar.addEventListener("load", () => {
+			titlebar.contentWindow.postMessage({ command: "init" }, "*", [channel.port2])
+		})
+
+		// const titlebar = event.target
+		// const targetWindow = event.target.closest("[app]")
+		// const content = targetWindow.querySelector(".content")
+		// const appName = targetWindow.getAttribute("app")
+		// const manifest = ApplicationManifests[appName]
+		// const titlebarDocument = titlebar.contentDocument
+		// const contentDocument = content.contentDocument
+		// const titleElement = titlebarDocument.querySelector(".title")
+
+		// // If the app is DNI, remove the icon
+		// if (manifest.service) { titlebarDocument.querySelector(".icon").remove() }
+		// // If the titlebar is the default one, add the icon
+		// else if (manifest.titlebar.path == "") { titlebarDocument.querySelector(".icon").src = `/apps/${appName}/${manifest.icon}` }
+
+		// // TODO: Improve this with the messaging system
+		// titleElement.innerText = appName
+
+		// // Copy the CSS variables for styling
+		// titlebarDocument.documentElement.setAttribute("style", document.documentElement.getAttribute("style"))
+
+		// // // Listen for page changes
+		// // content.addEventListener("load", () => {
+		// // 	if (contentDocument.title) { titleElement.innerText = contentDocument.title }
+		// // 	else if (manifest.name) { titleElement.innerText = appName }
+		// // })
+
+		// // // Check if the content already loaded
+		// // if (contentDocument.readyState === "complete") {
+		// // 	if (contentDocument && contentDocument.title) { titleElement.innerText = contentDocument.title }
+		// // 	else if (manifest.name) { titleElement.innerText = appName }
+		// // }
+
+		// // Send an event when the user clicks in the titlebar
+		// // TODO: Improve the event wrapping by removing methods and stuff and putting into real methods
+
+		// // If there is a close button, make it close the window
+		// const closeButton = titlebarDocument.querySelector(".close")
+		// if (closeButton) {
+		// 	closeButton.addEventListener("click", () => {
+		// 		targetWindow.remove()
+		// 		WebdeskEvent.WINDOW_CLOSE.emit({ closed: targetWindow, open: WMFactory.open })
+		// 	})
+		// }
+		// // If there is a maximise button, make it maximise the window
+		// const maximiseButton = titlebarDocument.querySelector(".maximise")
+		// if (maximiseButton) {
+		// 	maximiseButton.addEventListener("click", () => {
+		// 		if (targetWindow.classList.contains("maximised")) {
+		// 			targetWindow.classList.remove("maximised")
+		// 			WebdeskEvent.WINDOW_MAXIMISE_END.emit({ target: targetWindow, app: appName })
+		// 		} else {
+		// 			targetWindow.classList.add("maximised")
+		// 			WebdeskEvent.WINDOW_MAXIMISE.emit({ target: targetWindow, app: appName })
+		// 		}
+		// 	})
+		// }
+		// // If there is a minimise button, make it minimise the window
+		// const minimiseButton = titlebarDocument.querySelector(".minimise")
+		// if (minimiseButton) {
+		// 	minimiseButton.addEventListener("click", () => {
+		// 		// Remove the maximised class
+		// 		targetWindow.classList.remove("maximised")
+		// 		if (targetWindow.classList.contains("minimised")) {
+		// 			targetWindow.classList.remove("minimised")
+		// 			WebdeskEvent.WINDOW_MINIMISE_END.emit({ target: targetWindow, app: appName })
+		// 		} else {
+		// 			targetWindow.classList.add("minimised")
+		// 			WebdeskEvent.WINDOW_MINIMISE.emit({ target: targetWindow, app: appName })
+		// 		}
+		// 	})
+		// }
+	}
+	commandInterpreter(titlebar, port, messageEvent) {
+		const window = titlebar.closest("[app]")
+		const app = window.getAttribute("app")
+		const mainifest = ApplicationManifests[app]
+		const message = messageEvent.data
+
+		switch(message.command) {
+			case "title": { return port.postMessage({ command: "title", result: app }) }
+			case "style": {
+				const style = document.documentElement.getAttribute("style").split("; ")
+				const titlebar = style.filter((cssVar) => { return cssVar.startsWith("--windows-color") })
+
+				return port.postMessage({ command: "css", result: titlebar })
+			}
+			case "icon": {
+				const iconPath = mainifest.icon
+
+				return port.postMessage({ command: "icon", result: `/apps/${app}/${iconPath}` })
+			}
+			case "move-start": {
+				const details = { ...message.result, target: window }
+
+				return WebdeskEvent.WINDOW_MOVE_START.emit(details)
+			}
+			case "move": {
+				const details = { ...message.result, target: window }
+
+				if (WMMover.inMove) { return WebdeskEvent.WINDOW_MOVE.emit(details) }
+				else { return }
+			}
+			case "move-end": {
+				const details = { ...message.result, target: window }
+
+				WebdeskEvent.WINDOW_MOVE_END.emit(details)
+				break
+			}
+		}
+	}
+
+	constructor() {
+		WebdeskEvent.TITLEBAR_SETUP.on(this.setup)
 	}
 }
 
@@ -325,26 +464,16 @@ const WMFactory = new class {
 			content = document.createElement("iframe"),	// Make the app content iframe
 			titlebar = document.createElement("iframe")	// 创建标题栏 iframe
 
+		WebdeskEvent.TITLEBAR_SETUP.emit({ titlebar: titlebar, proprieties: manifest.titlebar, app: details.app })
+
 		// Add the attributes to the iframes
 		content.setAttribute("allowfullscreen", false)
 		// TODO: Improve this special treatment
 		content.setAttribute("sandbox", `allow-scripts ${ details.app === "settings" ? "allow-same-origin" : "" }`)
 		content.setAttribute("title", `Application "${details.app}"'s content`)
 
-		titlebar.setAttribute("allowfullscreen", false)
-		// TODO: Make a solid titlebar system
-		titlebar.setAttribute("sandbox", "allow-same-origin")
-		titlebar.setAttribute("title", `Application "${details.app}"'s titlebar`)
-
 		// Show the index page of the app
 		content.src = `/apps/${details.app}/${manifest.index}`
-
-		// If the app has no custom titlebar, set the default one
-		if (manifest.titlebar.path != "") { titlebar.src = `/apps/${appName}/${manifest.titlebar.path}` }
-		else { titlebar.src = `/api/_/titlebar` }
-
-		// Setup the titlebar
-		titlebar.addEventListener("load", WMFactory.setupTitlebar, { once: true })
 
 		// Wrap the iframes
 		contentWrapper.append(content)
@@ -397,111 +526,6 @@ const WMFactory = new class {
 
 		// Dispatch the event
 		WebdeskEvent.WINDOW_OPEN.emit({ target: windowSkeleton, app: details.app, })
-	}
-	// Setup the titlebar
-	// TODO: Messaging system for movement and stuff for perfect security
-	async setupTitlebar(event) {
-		const titlebar = event.target
-		const targetWindow = event.target.closest("[app]")
-		const content = targetWindow.querySelector(".content")
-		const appName = targetWindow.getAttribute("app")
-		const manifest = ApplicationManifests[appName]
-		const titlebarDocument = titlebar.contentDocument
-		const contentDocument = content.contentDocument
-		const titleElement = titlebarDocument.querySelector(".title")
-
-		// If the app is DNI, remove the icon
-		if (manifest.dni) { titlebarDocument.querySelector(".icon").remove() }
-		// If the titlebar is the default one, add the icon
-		else if (manifest.titlebar.path == "") { titlebarDocument.querySelector(".icon").src = `/apps/${appName}/${manifest.icon}` }
-
-		// TODO: Improve this with the messaging system
-		titleElement.innerText = appName
-
-		// Copy the CSS variables for styling
-		titlebarDocument.documentElement.setAttribute("style", document.documentElement.getAttribute("style"))
-
-		// // Listen for page changes
-		// content.addEventListener("load", () => {
-		// 	if (contentDocument.title) { titleElement.innerText = contentDocument.title }
-		// 	else if (manifest.name) { titleElement.innerText = appName }
-		// })
-
-		// // Check if the content already loaded
-		// if (contentDocument.readyState === "complete") {
-		// 	if (contentDocument && contentDocument.title) { titleElement.innerText = contentDocument.title }
-		// 	else if (manifest.name) { titleElement.innerText = appName }
-		// }
-
-		// Send an event when the user clicks in the titlebar
-		// TODO: Improve the event wrapping by removing methods and stuff and putting into real methods
-		// IDEA: using right mouse click moves but doesn't update the window focus
-		titlebarDocument.body.addEventListener("pointerdown", (event) => {
-			// If the element clicked is a button, ignore the event
-			if (event.target.tagName === "BUTTON") { return }
-			else if (targetWindow.classList.contains("maximised")) { return }
-
-			titlebarDocument.body.setPointerCapture(event.pointerId)
-
-			// Emit the event
-			WebdeskEvent.WINDOW_MOVE_START.emit({ x: event.screenX, y: event.screenY, target: targetWindow })
-		})
-
-		// Send an event when the user moves
-		titlebarDocument.body.addEventListener("pointermove", (event) => {
-			if (WMMover.inMove) {
-				WebdeskEvent.WINDOW_MOVE.emit({ x: event.screenX, y: event.screenY, target: targetWindow })
-			}
-		})
-
-		// Send an event when releases the click in the titlebar
-		titlebarDocument.body.addEventListener("pointerup", (event) => {
-			// If the element clicked is a button, ignore the event
-			if (event.target.tagName === "BUTTON") { return }
-			else if (targetWindow.classList.contains("maximised")) { return }
-
-			titlebarDocument.body.releasePointerCapture(event.pointerId)
-
-			// Emit the event
-			WebdeskEvent.WINDOW_MOVE_END.emit({ x: event.screenX, y: event.screenY, target: targetWindow })
-		})
-
-		// If there is a close button, make it close the window
-		const closeButton = titlebarDocument.querySelector(".close")
-		if (closeButton) {
-			closeButton.addEventListener("click", () => {
-				targetWindow.remove()
-				WebdeskEvent.WINDOW_CLOSE.emit({ closed: targetWindow, open: WMFactory.open })
-			})
-		}
-		// If there is a maximise button, make it maximise the window
-		const maximiseButton = titlebarDocument.querySelector(".maximise")
-		if (maximiseButton) {
-			maximiseButton.addEventListener("click", () => {
-				if (targetWindow.classList.contains("maximised")) {
-					targetWindow.classList.remove("maximised")
-					WebdeskEvent.WINDOW_MAXIMISE_END.emit({ target: targetWindow, app: appName })
-				} else {
-					targetWindow.classList.add("maximised")
-					WebdeskEvent.WINDOW_MAXIMISE.emit({ target: targetWindow, app: appName })
-				}
-			})
-		}
-		// If there is a minimise button, make it minimise the window
-		const minimiseButton = titlebarDocument.querySelector(".minimise")
-		if (minimiseButton) {
-			minimiseButton.addEventListener("click", () => {
-				// Remove the maximised class
-				targetWindow.classList.remove("maximised")
-				if (targetWindow.classList.contains("minimised")) {
-					targetWindow.classList.remove("minimised")
-					WebdeskEvent.WINDOW_MINIMISE_END.emit({ target: targetWindow, app: appName })
-				} else {
-					targetWindow.classList.add("minimised")
-					WebdeskEvent.WINDOW_MINIMISE.emit({ target: targetWindow, app: appName })
-				}
-			})
-		}
 	}
 
 	constructor() {
@@ -756,7 +780,7 @@ const AppDockManager = new class {
 	// Create the icon for a newly opened window
 	add(details) {
 		const manifest = ApplicationManifests[details.app]
-		if (manifest.dni) { return }
+		if (manifest.service) { return }
 
 		// Create the new icon for the window
 		const icon = document.createElement("button")
@@ -854,6 +878,7 @@ const AppDockManager = new class {
 	}
 }
 
+// TODO: Titlebar category for titlebar messaging system
 const defaultWindowsCustomization = new class {
 	color = {
 		background: "#D8DEE9",
@@ -1016,6 +1041,24 @@ var UIManager = new class {
 		this.loadCustomization(parseInt(customizationID) || 0)
 		this.loadBackground(parseInt(backgroundID) || 0)
 	})()}
+}
+
+const SettingsManager = new class {
+	launcher = LauncherManager.space.querySelector(`[launcher="settings"]`)
+	window = WMFactory.space.querySelector(`[app="settings"]`)
+	icon = AppDockManager.open.querySelector(`[icon="settings"]`)
+
+	openWindow() {
+		SettingsManager.window.style.display = "block"
+
+	}
+
+	constructor() {
+		this.launcher.addEventListener("click", this.openWindow)
+
+		this.window.style.display = "none"
+		this.icon.style.display = "none"
+	}
 }
 
 // Manages the service worker
