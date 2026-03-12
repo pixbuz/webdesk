@@ -8,31 +8,12 @@
 		<link rel="manifest" href="/manifest">
 	</head>
 	<body>
-		<div class="Background" aria-hidden="true"></div>
-		<section class="Launcher Space" aria-label="App Launcher">
-			<button launcher="settings" title="Customize Webdesk!">
-				<img src="apps/settings/icon.svg" alt="Application Settings's icon">
-				<span>Settings</span>
-			</button>
-		</section>
-		<main class="Window Space" aria-label="Desktop Workspace">
-			<article app="settings">
-				<header>
-					<iframe allowfullscreen="false" sandbox="allow-scripts" title="Application &quot;settings&quot;'s titlebar" src="/api/_/defaultTitlebar" class="titlebar"></iframe>
-				</header>
-				<section>
-					<iframe allowfullscreen="false" sandbox="allow-scripts allow-same-origin" title="Application &quot;settings&quot;'s content" src="/apps/settings/index.html" class="content"></iframe>
-				</section>
-			</article>
-		</main>
-		<section class="Error Space" aria-live="polite" aria-label="Notifications"></section>
-		<nav class="AppDock" aria-label="Taskbar">
-			<div class="Open">
-				<button icon="settings">
-					<p>settings</p>
-					<img src="apps/settings/icon.svg">
-				</button>
-			</div>
+		<div class="Background"></div>
+		<section class="Launcher Space"></section>
+		<section class="Window Space"></section>
+		<section class="Error Space"></section>
+		<section class="AppDock">
+			<div class="Open"></div>
 			<div class="Clock">
 				<div class="Time">
 					<p class="hours"></p>

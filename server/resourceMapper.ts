@@ -69,20 +69,43 @@ class WebdeskApplicationManifest {
 	}
 }
 
-// Returns the manifests of the installed applications
-function returnManifests(_request: Request) {
-	return new Response(JSON.stringify(applications.manifests), { status: 200, headers: { "content-type": MIMES.json } })
+// Returns the intro page
+function intro(_queries: string[]) {
+	return [ Deno.readFileSync(`${config.staticFolder}/intropage.htm`), "text/html; charset=UTF-8" ] as [unknown, string]
 }
+// Get command for an app or all app manifests
+function manifests(queries: string[]) {
+	// Return string
+	let manifests: string = ""
 
+	// For all apps the request contains
+	for (const app of queries) {
+		// If no app specified, send the full app list
+		if (!app) {
+			manifests = `,${JSON.stringify(applications.manifests)}`
+			break
+		}
+		// Return the app manifest or an empty object
+		manifests += `,${JSON.stringify(applications.manifests[app] || { })}`
+	}
+
+	return [ manifests.substring(1), "application/json" ] as [unknown, string]
+}
 // Webdesk logic class
 const webdesk = new class {
+	css: string = "" // CSS
+	html: string = "" // HTML
+	manifest: string = "" // PWA manifest
+	script: string = "" // Frontend script
+	sw: string = "" // Service worker script
+
 	// Indexes webdesk's API commands
 	command() {
 		// Contains the endpoints mapped to the functions
-		const commands: Record<string, unknown> = {
-			"/api/_/getManifests": returnManifests,
-			"/api/_/defaultTitlebar": Deno.readFileSync(`${config.staticFolder}/titlebar.htm`)
-		}
+		const commands: Record<string, unknown> = {}
+		commands["/api/_/manifest"] = manifests	// Retuns all the manifests
+		commands["/api/_/intro"] = intro	// Returns the intro page
+		commands["/api/_/titlebar"] = Deno.readFileSync(`${config.staticFolder}/titlebar.htm`)
 
 		return commands
 	}
