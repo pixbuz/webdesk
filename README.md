@@ -1,70 +1,48 @@
 # **Webdesk**
-## **Description**
-Webdesk is a passion project of mine with the aim of making an OS type experience in a web app.
-## **Progress**
-- Make an App Launcher Template
-	- [x] Make it Reflect the App's Information
-	- [x] Make it Open a Window when Clicked
-- Make a Window Template
-	- [x] Make it Closable
-	- [x] Make it Resizable
-	- [x] Make it Maximisable
-	- [x] Make it Minimizable
-	- [x] Add Support for Custom Titlebars
-	- [x] Support Window to Window Comunication with Broadcast Channels (public comunication) or Message Ports (private comunication)
-	- [x] Support Window to Client Comunication with Broadcast Channels (public comunication) or Message Ports (private comunication)
-	- [x] Support Window to Backend Comunication with Web Sockets
-- Make a Window Manager
-	- [x] Make Windows Movable
-	- [x] Manage Window Focus
-	- [x] Manage Window Overlapping
-	- [ ] Add Keybind Window Switching
-- Make a App Dock
-	- [x] Make it Show the Open Apps' Windows
-	- [x] Add a Clock & Date
-- Add the Settings app
-	- [ ] Add Customization for as many aspects of webdesk
-	- [ ] Add a Background Upload
-	- [ ] Add Customization Save/Upload
-- Add the Blog app
-	- [ ] Make it as modular as possible
-- Add the Terminal app
-	- [ ] idk
-- Add the Info app
-	- [ ] Basically a CV
-- Make it into a PWA
-	- [x] Add a service worker
-	- [x] Add a manifest
-	- [ ] Add a favicon
-- Add Security
-	- [ ] Make a Custom Lock Screen
-	- [ ] Make the FS read only up to the app folder
-	- [ ] Generate a private ID for each app at server init to authorize certain actions (read/write and indexedb)
-	- [ ] Try catch every read and write operation
-- Finalized Webdesk
-	- [ ] Improve the service worker caching
-	- [ ] Make an offline experience possible
-	- [ ] Add Widgets
-	- [ ] Icons for the Apps
-	- [ ] Animations for the Opening, Closing, Maximising, Minimizing a Window
-	- [ ] Animations for the Opening, Closing, Maximising, Minimizing a Window App Dock Icon
+Webdesk is a passion project of mine with the aim of making an OS type experience in a web app. Webdesk's objective is to provide maximum customization inside the browser, primarly for fun.
+## **Desctiption**
+Webdesk is a PWA that uses a Deno backend and HTML/JS for the frontend. The main gimmick of Webdesk are the **Applications**, which are static or dynamic web sites viewed inside the main page. These applications are opened from **Launchers** on the desktop. The applications are viewed from inside **Windows** that can be moved, resized and closed. The user can keep track of the open applications by checking the **App Dock** that contains the icons of the open applications, clicking on the icons will bring the corresponding application to the foreground and focus it. The windows use iframes for both the main content and the titlebar, allowing for custom functionalities tailored for the window application. The windows can also specify commands for the backend **API** for processing custom requests, allowing the windows to communicate with the backend using `fetch()` or directly using a `WebSocket`. Webdesk is built using event driven logic for maintainability and modularity in the frontend and static assets tables in the backend for speed, necessitating only a pathname lookup. A **Service Worker** is used to cache pages on the client side, relieving strain on the server and allowing offline use **(WIP)**. Webdesk supports custom color themes and backgrounds with light or dark icons.
 
-### **Notes**
+(Event propagation tree diagram)
 
-~~Change the code to event driven actions~~
+This diagram shows the method called for each event dispatch.
 
-Titlebar button name -> callback function system for custom titlebars
+![A diagram showing the structure of an application window, with the window as an outer container with a titlebar, an iframe element, at the top toghether with a content iframe that occupies the rest of the space](images/window_diagram.svg)
 
-Add settings and customization options with CSS variables
-- ~~Different Color Palettes~~
-- ~~Desktop Image~~
-- Preferences
-- ~~Themes~~
+As stated above the main part of Webdesk are windows. These `<article>` elements use two iframes to make use straightforward for both the user and application developer.
 
-~~Add the first time tutorial~~
 
-Make a file system(?)
-
-Game in the terminal app
-
-System info app as CV
+## **To Do**
+- [ ] Clean Up code
+	- [ ] Improve async-ing
+	- [ ] Server side rendering of the page for lighthouse rules
+	- [ ] Improve code readability
+		- [ ] Variable names
+		- [ ] Event wrapping methods (no anon functions)
+- [ ] Finish Windows
+	- [ ] Titlebar messaging system
+	- [ ] Titlebar message movement system
+	- [ ] Secure settings app priviledge
+	- [ ] Smooth movement with animation frames
+	- [ ] Settable margin size for resizing
+	- [ ] Add animations
+- [ ] Terminal App
+	- [ ] Add more commands
+	- [ ] Improve the style
+- [ ] Settings App
+	- [ ] Add more sections
+		- [ ] App dock
+	- [ ] Finish settings
+		- [ ] Add animations settings
+		- [ ] Add application settings
+		- [ ] Finish customization page
+		- [ ] Finish backgrounds page
+- [ ] Info App
+	- [ ] Begin it
+- [ ] Blog App
+	- [ ] Begin it
+- [ ] Improve styling rules
+- [ ] Finish service worker
+	- [ ] Smart caching
+	- [ ] Frontend element
+- [ ] Event propagation tree diagram

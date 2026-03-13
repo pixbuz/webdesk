@@ -132,8 +132,6 @@ class WebdeskEvent {
 
 	static TITLEBAR_SETUP = new WebdeskEvent(this.templates.TITLEBAR)
 
-	static WINDOW_READY = new WebdeskEvent(this.templates.TARGET)
-
 	static WINDOW_MOVE_START = new WebdeskEvent(this.templates.INTERACTION)
 	static WINDOW_MOVE = new WebdeskEvent(this.templates.INTERACTION)
 	static WINDOW_MOVE_END = new WebdeskEvent(this.templates.INTERACTION)
