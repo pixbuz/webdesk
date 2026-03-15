@@ -135,14 +135,9 @@ body {
 	width: 100%;
 }
 
-.AppDock .Clock .Time :nth-last-child(1),
-.AppDock .Clock .Time :nth-last-child(2) {
+.AppDock .Clock .Time:not(.showSeconds) :nth-last-child(1),
+.AppDock .Clock .Time:not(.showSeconds) :nth-last-child(2) {
 	display: none;
-}
-
-.AppDock .Clock.showSeconds .Time :nth-last-child(1),
-.AppDock .Clock.showSeconds .Time :nth-last-child(2) {
-	display: inline;
 }
 
 [launcher] {

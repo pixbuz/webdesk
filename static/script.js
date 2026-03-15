@@ -183,7 +183,6 @@ class WebdeskEvent {
 	}
 }
 
-// Fetches all the application manifests
 fetch("/api/_/getManifests").then(async (response) => {
 	ApplicationManifests = await response.json()
 	WebdeskEvent.MANIFESTS_READY.emit(ApplicationManifests)
@@ -305,7 +304,6 @@ const LauncherManager = new class {
 	}
 }
 
-// TODO : MESSAGIN SYSTEM FOR CUSTOM CALL BACKS
 const WMTitlebarFactory = new class {
 	// Setups the titlebar for a window
 	async setup(details) {
@@ -359,46 +357,28 @@ const WMTitlebarFactory = new class {
 		// // 	if (contentDocument && contentDocument.title) { titleElement.innerText = contentDocument.title }
 		// // 	else if (manifest.name) { titleElement.innerText = appName }
 		// // }
-
-		// // Send an event when the user clicks in the titlebar
-		// // TODO: Improve the event wrapping by removing methods and stuff and putting into real methods
-
-		// // If there is a close button, make it close the window
-		// const closeButton = titlebarDocument.querySelector(".close")
-		// if (closeButton) {
-		// 	closeButton.addEventListener("click", () => {
-		// 		targetWindow.remove()
-		// 		WebdeskEvent.WINDOW_CLOSE.emit({ closed: targetWindow, open: WMFactory.open })
-		// 	})
-		// }
-		// // If there is a maximise button, make it maximise the window
-		// const maximiseButton = titlebarDocument.querySelector(".maximise")
-		// if (maximiseButton) {
-		// 	maximiseButton.addEventListener("click", () => {
-		// 		if (targetWindow.classList.contains("maximised")) {
-		// 			targetWindow.classList.remove("maximised")
-		// 			WebdeskEvent.WINDOW_MAXIMISE_END.emit({ target: targetWindow, app: appName })
-		// 		} else {
-		// 			targetWindow.classList.add("maximised")
-		// 			WebdeskEvent.WINDOW_MAXIMISE.emit({ target: targetWindow, app: appName })
-		// 		}
-		// 	})
-		// }
-		// // If there is a minimise button, make it minimise the window
-		// const minimiseButton = titlebarDocument.querySelector(".minimise")
-		// if (minimiseButton) {
-		// 	minimiseButton.addEventListener("click", () => {
-		// 		// Remove the maximised class
-		// 		targetWindow.classList.remove("maximised")
-		// 		if (targetWindow.classList.contains("minimised")) {
-		// 			targetWindow.classList.remove("minimised")
-		// 			WebdeskEvent.WINDOW_MINIMISE_END.emit({ target: targetWindow, app: appName })
-		// 		} else {
-		// 			targetWindow.classList.add("minimised")
-		// 			WebdeskEvent.WINDOW_MINIMISE.emit({ target: targetWindow, app: appName })
-		// 		}
-		// 	})
-		// }
+	}
+	close(details) {
+		details.target.remove()
+		WebdeskEvent.WINDOW_CLOSE.emit({ closed: targetWindow, open: WMFactory.open })
+	}
+	maximise(details) {
+		if (details.target.classList.contains("maximised")) {
+			details.target.classList.remove("maximised")
+			WebdeskEvent.WINDOW_MAXIMISE_END.emit(details)
+		} else {
+			details.target.classList.add("maximised")
+			WebdeskEvent.WINDOW_MAXIMISE.emit(details)
+		}
+	}
+	minimise(details) {
+		if (details.target.classList.contains("minimised")) {
+			details.target.classList.remove("minimised")
+			WebdeskEvent.WINDOW_MINIMISE_END.emit(details)
+		} else {
+			details.target.classList.add("minimised")
+			WebdeskEvent.WINDOW_MINIMISE.emit(details)
+		}
 	}
 	commandInterpreter(titlebar, port, messageEvent) {
 		const window = titlebar.closest("[app]")
@@ -407,7 +387,6 @@ const WMTitlebarFactory = new class {
 		const message = messageEvent.data
 
 		switch(message.command) {
-			case "title": { return port.postMessage({ command: "title", result: app }) }
 			case "style": {
 				const style = document.documentElement.getAttribute("style").split("; ")
 				const titlebar = style.filter((cssVar) => { return cssVar.startsWith("--windows-color") })
@@ -433,9 +412,12 @@ const WMTitlebarFactory = new class {
 			case "move-end": {
 				const details = { ...message.result, target: window }
 
-				WebdeskEvent.WINDOW_MOVE_END.emit(details)
-				break
+				return WebdeskEvent.WINDOW_MOVE_END.emit(details)
 			}
+			case "title": { return port.postMessage({ command: "title", result: app }) }
+			case "close": { return WMTitlebarFactory.close({ target: window }) }
+			case "minimise": { return WMTitlebarFactory.minimise({ target: window }) }
+			case "maximise": { return WMTitlebarFactory.maximise({ target: window }) }
 		}
 	}
 

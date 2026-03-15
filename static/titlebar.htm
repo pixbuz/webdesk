@@ -53,9 +53,9 @@
 				height: 75svh;
 				border: none;
 			}
-			button.minimise { background: var(--windows-color-buttons-mini); }
-			button.maximise { background: var(--windows-color-buttons-maxi); }
-			button.close { background: var(--windows-color-buttons-close); }
+			[minimise] { background: var(--windows-color-buttons-mini); }
+			[maximise] { background: var(--windows-color-buttons-maxi); }
+			[close] { background: var(--windows-color-buttons-close); }
 		</style>
 	</head>
 	<body>
@@ -64,9 +64,9 @@
 		</div>
 		<p class="title"></p>
 		<div class="buttons">
-			<button class="minimise"></button>
-			<button class="maximise"></button>
-			<button class="close"></button>
+			<button minimise onclick="port.postMessage({ command: `minimise` })"></button>
+			<button maximise onclick="port.postMessage({ command: `maximise` })"></button>
+			<button close onclick="port.postMessage({ command: `close` })"></button>
 		</div>
 	</body>
 	<script>
