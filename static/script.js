@@ -123,7 +123,7 @@ class WebdeskEvent {
 		OPEN: { target: null, app: null },
 		CLOSE: { closed: null, open: [ ] },
 		INTERACTION: { target: null, x: null, y: null, },
-		TITLEBAR: { titlebar: null, proprieties: null, app: null },
+		TITLEBAR: { titlebar: null, path: null, app: null },
 	}
 
 	static MANIFESTS_READY = new WebdeskEvent(this.templates.MANIFEST)
@@ -307,15 +307,17 @@ const LauncherManager = new class {
 const WMTitlebarFactory = new class {
 	// Setups the titlebar for a window
 	async setup(details) {
-		const { titlebar, proprieties, app } = details
+		const { titlebar, path, app } = details
 		const channel = new MessageChannel()
 
 		titlebar.setAttribute("allowfullscreen", false)
 		titlebar.setAttribute("sandbox", "allow-scripts")
 		titlebar.setAttribute("title", `Application "${app}"'s titlebar`)
 
-		if (proprieties.path == "") { titlebar.src = "/api/_/defaultTitlebar" }
-		else { titlebar.src = `/apps/${app}/${proprieties.path}` }
+		console.log(path)
+
+		if (path == "") { titlebar.src = "/api/_/defaultTitlebar" }
+		else { titlebar.src = `/apps/${app}/${path}` }
 
 		channel.port1.addEventListener("message", (messageEvent) => {
 			WMTitlebarFactory.commandInterpreter(titlebar, channel.port1, messageEvent)
@@ -326,37 +328,10 @@ const WMTitlebarFactory = new class {
 			titlebar.contentWindow.postMessage({ command: "init" }, "*", [channel.port2])
 		})
 
-		// const titlebar = event.target
-		// const targetWindow = event.target.closest("[app]")
-		// const content = targetWindow.querySelector(".content")
-		// const appName = targetWindow.getAttribute("app")
-		// const manifest = ApplicationManifests[appName]
-		// const titlebarDocument = titlebar.contentDocument
-		// const contentDocument = content.contentDocument
-		// const titleElement = titlebarDocument.querySelector(".title")
-
 		// // If the app is DNI, remove the icon
 		// if (manifest.service) { titlebarDocument.querySelector(".icon").remove() }
 		// // If the titlebar is the default one, add the icon
 		// else if (manifest.titlebar.path == "") { titlebarDocument.querySelector(".icon").src = `/apps/${appName}/${manifest.icon}` }
-
-		// // TODO: Improve this with the messaging system
-		// titleElement.innerText = appName
-
-		// // Copy the CSS variables for styling
-		// titlebarDocument.documentElement.setAttribute("style", document.documentElement.getAttribute("style"))
-
-		// // // Listen for page changes
-		// // content.addEventListener("load", () => {
-		// // 	if (contentDocument.title) { titleElement.innerText = contentDocument.title }
-		// // 	else if (manifest.name) { titleElement.innerText = appName }
-		// // })
-
-		// // // Check if the content already loaded
-		// // if (contentDocument.readyState === "complete") {
-		// // 	if (contentDocument && contentDocument.title) { titleElement.innerText = contentDocument.title }
-		// // 	else if (manifest.name) { titleElement.innerText = appName }
-		// // }
 	}
 	close(details) {
 		details.target.remove()
@@ -444,7 +419,7 @@ const WMFactory = new class {
 			content = document.createElement("iframe"),	// Make the app content iframe
 			titlebar = document.createElement("iframe")	// 创建标题栏 iframe
 
-		WebdeskEvent.TITLEBAR_SETUP.emit({ titlebar: titlebar, proprieties: manifest.titlebar, app: details.app })
+		WebdeskEvent.TITLEBAR_SETUP.emit({ titlebar: titlebar, path: manifest.titlebar, app: details.app })
 
 		// Add the attributes to the iframes
 		content.setAttribute("allowfullscreen", false)

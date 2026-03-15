@@ -312,12 +312,12 @@ body {
 
 /* ----- Animations ----- */
 
-.Window.Space:has(.maximised) ~ .AppDock:hover {
+.Window.Space:has(.maximised:not(.minimised)) ~ .AppDock:hover {
 	animation: AppDock-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
 	opacity: 1;
 }
 
-.Window.Space:has(.maximised) ~ .AppDock {
+.Window.Space:has(.maximised:not(.minimised)) ~ .AppDock {
 	animation: AppDock-maximised-down 250ms cubic-bezier(.25, -0.25, .5, 0) normal none;
 	opacity: 0;
 }

@@ -2,13 +2,7 @@
 	"icon": "icon.svg",
 	"index": "index.html",
 	"description": "Customize Webdesk",
-	"titlebar": {
-		"path": "",
-		"dynamic": "true",
-		"buttons": {
-			"search": "search"
-		}
-	},
+	"titlebar": "",
 	"service": true,
 
 	"routes": {

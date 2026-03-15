@@ -32,22 +32,13 @@ const MIMES: Readonly<Record<string, string>> = Object.freeze({
 	"wav": "audio/wav",
 })
 
-// Describes the titlebar propriety fields
-type TitlebarProprieties = {
-	path: string,
-	dynamic: boolean,
-}
-
 // Provided a manifest object, returns it normalized
 // ^^^^^^^^ with no manifest, returns an empty manifest
 class WebdeskApplicationManifest {
 	routes: Record<string, string> = {}
-	titlebar: TitlebarProprieties = {
-		dynamic: false,
-		path: "",
-	}
 	description: string = "No description"
 	modules: string[] = []
+	titlebar: string = ""
 	ignore: string[] = []
 	dni: boolean = false
 	index: string = ""
@@ -57,7 +48,6 @@ class WebdeskApplicationManifest {
 		if (manifest) {
 			const empty = new WebdeskApplicationManifest()
 			const norm = { ...empty, ...manifest }
-			norm.titlebar = { ...empty.titlebar, ...(manifest.titlebar || {}) }
 			norm.ignore = [
 				...manifest.ignore || [],
 				...this.modules,
