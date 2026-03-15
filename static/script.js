@@ -4,7 +4,6 @@
 // TODO: Make code more readable with less comments (and better var names)
 // TODO: Generator functions tho?
 
-// Tracks if a user visits webdesk for the first time
 let newUser = false
 // TODO: Make this into a object/class
 var ApplicationManifests
@@ -112,7 +111,6 @@ var webdeskDB = new class {
 	}
 }
 
-// Custom webdesk event constructor
 class WebdeskEvent {
 	static templates = {
 		MANIFEST: {},
@@ -155,25 +153,18 @@ class WebdeskEvent {
 
 	static ICON_CLICK = new WebdeskEvent(this.templates.TARGET)
 
-	// Used to trigger an event
 	emit(data = {}) {
-		// Merge the template with the passed data
 		const details = { ...this.template, ...data }
-		// Create the event
 		const event = new CustomEvent(this.name, {
 			detail: details,
 			bubbles: true,
 			composed: true
 		})
-		// Dispatch the event
 		window.dispatchEvent(event)
 	}
-	// Binds multiple functions to a webdesk event
 	on(...callBackFunctions) {
-		// For every function passed
-		callBackFunctions.forEach((callBackFunction) => {
-			// Add an event listener for the event
-			window.addEventListener(this.name, (event) => { callBackFunction(event.detail) })
+		callBackFunctions.forEach((callback) => {
+			window.addEventListener(this.name, (event) => { callback(event.detail) })
 		})
 	}
 
@@ -186,126 +177,96 @@ class WebdeskEvent {
 fetch("/api/_/getManifests").then(async (response) => {
 	ApplicationManifests = await response.json()
 	WebdeskEvent.MANIFESTS_READY.emit(ApplicationManifests)
+	if (newUser) { WMFactory.skeletonizeWindow({ app: "intro" }) }
 })
 
-// Time tracking
 const time = new class {
-	// Get the client start time
 	init = new Date()
-	// Clock
 	clock = {
 		seconds: this.init.getSeconds(),
 		minutes: this.init.getMinutes(),
 		hours: this.init.getHours(),
 	}
-	// Date
 	date = {
 		day: this.init.getDate(),
 		month: this.init.getMonth() + 1,
 		year: this.init.getFullYear(),
 	}
 
-	// Adds 1 second to the clock every second
 	progress() {
-		// Track what changed to smartly update the elements
 		const changed = [ "seconds" ]
-		// Add a second
 		time.clock.seconds++
 
-		// If the seconds hit 60
 		if (time.clock.seconds >= 60) {
-			// Set them to 0 and add a minute
 			time.clock.seconds = 0
 			time.clock.minutes++
 
-			// Track the change for the event
 			changed.push("minutes")
 		}
 
-		// If the minutes hit 60
 		if (time.clock.minutes >= 60) {
-			// Set them to 0 and add an hour
 			time.clock.minutes = 0
 			time.clock.hours++
 
-			// Track the change for the event
 			changed.push("hours")
 		}
 
-		// If the hours hit 24
 		if (time.clock.hours >= 24) {
-			// Set them to 0 and add a day
 			time.clock.hours = 0
 			time.date.day++
 
-			// Track the change for the event
 			changed.push("day")
 		}
 
-		// Send the event
 		WebdeskEvent.CLOCK_UPDATE.emit({ update: changed })
 	}
 
 	constructor() {
-		// "Nullify" the start time offset by updating the clock every 1.000s
 		setTimeout(() => {
 			time.progress()
-			// Set an interval to progress the clock every second
 			setInterval(time.progress, 1000)
 		}, 1000 - this.init.getMilliseconds())
 	}
 }
 
 const LauncherManager = new class {
-	// Launchers space
 	space = document.querySelector(".Launcher.Space")
 
-	// Assembles and adds an app launcher to the desktop
 	addLauncher(appName, manifest) {
-		const launcher = document.createElement("button"),	// Create the new launcher element
-			title = document.createElement("span"),	// Create the name element
-			icon = document.createElement("img")	// Create the icon element
+		const launcherWrapper = document.createElement("button"),
+			title = document.createElement("span"),
+			icon = document.createElement("img")
 
 		icon.setAttribute("fetchpriority", "high")
 		icon.setAttribute("alt", `Application "${appName}"'s icon`)
 
-		// Set the app the launcher opens
-		launcher.setAttribute("launcher", appName)
-		// Set the hover description of the launcher
-		launcher.setAttribute("title", manifest.description == "undefined" ? appName : manifest.description)
-		// Assemble the launcher
-		launcher.append(icon, title)
+		launcherWrapper.setAttribute("launcher", appName)
+		launcherWrapper.setAttribute("title", manifest.description == "undefined" ? appName : manifest.description)
+		launcherWrapper.append(icon, title)
 
-		// Set the launcher name
 		title.classList.add("name")
 		title.innerText = appName
 
-		// Set the launcher icon
 		icon.classList.add("icon")
 		icon.src = `/apps/${appName}/${manifest.icon}`
 
-		// Add the new launcher to the desktop
-		this.space.appendChild(launcher)
+		this.space.appendChild(launcherWrapper)
 
-		// Dispatch the event
-		launcher.addEventListener("click", () => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: appName }) })
+		launcherWrapper.addEventListener("click", () => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: appName }) })
 	}
-	// Adds every installed app launcher once the manifests load
-	addLaunchers(details) {
-		// Sort the keys to have the same app order every visit
+	queueLaunchers(details) {
 		for (const appName of Object.keys(details).sort()) {
-			if (details[appName].service) { continue }	// If an app is service, don't add it to the desktop
-			LauncherManager.addLauncher(appName, details[appName])
+			if (details[appName].service) { continue }
+			else { LauncherManager.addLauncher(appName, details[appName]) }
 		}
 	}
 
 	constructor() {
-		WebdeskEvent.MANIFESTS_READY.on(this.addLaunchers)
+		WebdeskEvent.MANIFESTS_READY.on(this.queueLaunchers)
 	}
 }
 
 const WMTitlebarFactory = new class {
-	// Setups the titlebar for a window
 	async setup(details) {
 		const { titlebar, path, app } = details
 		const channel = new MessageChannel()
@@ -401,144 +362,108 @@ const WMTitlebarFactory = new class {
 	}
 }
 
-// Contains the methods called when opening a window
 const WMFactory = new class {
-	// Space for new windows
 	space = document.querySelector(".Window.Space")
-	// Tracks the open windows
 	open = [ ]
 
-	// Assembles a webdesk window
 	async skeletonizeWindow(details) {
-		// Contains the application manifest
 		const manifest = ApplicationManifests[details.app]
 
-		const windowSkeleton = document.createElement("article"),	// Make the wrapping element for the window
-			contentWrapper = document.createElement("section"),	// Make the iframe wrapper element
-			titlebarWrapper = document.createElement("header"),	// Make the titlebar element
-			content = document.createElement("iframe"),	// Make the app content iframe
-			titlebar = document.createElement("iframe")	// 创建标题栏 iframe
+		const windowWrapper = document.createElement("article"),
+			contentWrapper = document.createElement("section"),
+			titlebarWrapper = document.createElement("header"),
+			content = document.createElement("iframe"),
+			titlebar = document.createElement("iframe")
 
 		WebdeskEvent.TITLEBAR_SETUP.emit({ titlebar: titlebar, path: manifest.titlebar, app: details.app })
 
-		// Add the attributes to the iframes
-		content.setAttribute("allowfullscreen", false)
-		// TODO: Improve this special treatment
-		content.setAttribute("sandbox", `allow-scripts ${ details.app === "settings" ? "allow-same-origin" : "" }`)
-		content.setAttribute("title", `Application "${details.app}"'s content`)
-
-		// Show the index page of the app
-		content.src = `/apps/${details.app}/${manifest.index}`
-
-		// Wrap the iframes
-		contentWrapper.append(content)
-		titlebarWrapper.append(titlebar)
-
-		// Add the iframes classes
-		content.classList.add("content")
 		titlebar.classList.add("titlebar")
 
-		// Set the app name
-		windowSkeleton.setAttribute("app", details.app)
-		windowSkeleton.classList.add("opening")
+		titlebarWrapper.append(titlebar)
 
-		// Nest the titlebar and content wrapper in the window
-		windowSkeleton.append(titlebarWrapper, contentWrapper)
+		content.classList.add("content")
+		content.setAttribute("allowfullscreen", false)
+		content.setAttribute("sandbox", `allow-scripts`)
+		content.setAttribute("title", `Application "${details.app}"'s content`)
+		content.src = `/apps/${details.app}/${manifest.index}`
 
-		// Add the window to the window space
-		// IDEA: Make it so after the iframes loaded the window is added to the window space
-		WMFactory.space.appendChild(windowSkeleton)
+		contentWrapper.append(content)
 
-		// When the focus is shifted, update own z index
-		WebdeskEvent.WINDOW_UPDATED_FOCUS.on((details) => { WMFocuser.updateZIndex(details, windowSkeleton) })
+		windowWrapper.setAttribute("app", details.app)
+		windowWrapper.append(titlebarWrapper, contentWrapper)
 
-		// When a click happens inside a window, start resizing
-		windowSkeleton.addEventListener("pointerdown", (event) => {
-			windowSkeleton.setPointerCapture(event.pointerId)
+		// IDEA: Windows get added to the window space after the iframes loaded
+		WMFactory.space.appendChild(windowWrapper)
+		WMFactory.open.push(windowWrapper)
 
-			WebdeskEvent.WINDOW_RESIZE_START.emit({ target: windowSkeleton, x: event.x, y: event.y })
+		WebdeskEvent.WINDOW_UPDATED_FOCUS.on((details) => { WMFocuser.updateZIndex(details, windowWrapper) })
+
+		windowWrapper.addEventListener("pointerdown", (event) => {
+			windowWrapper.setPointerCapture(event.pointerId)
+
+			WebdeskEvent.WINDOW_RESIZE_START.emit({ target: windowWrapper, x: event.x, y: event.y })
 		})
 
-		// Resize the window when the user moves the pointer
-		windowSkeleton.addEventListener("pointermove", (event) => {
+		windowWrapper.addEventListener("pointermove", (event) => {
 			if (WMResizer.inResize) {
-				WebdeskEvent.WINDOW_RESIZE.emit({ target: windowSkeleton, x: event.x, y: event.y })
+				WebdeskEvent.WINDOW_RESIZE.emit({ target: windowWrapper, x: event.x, y: event.y })
 			}
 		})
 
-		// Stop the resizing when the user releases the pointer
-		windowSkeleton.addEventListener("pointerup", (event) => {
-			windowSkeleton.releasePointerCapture(event.pointerId)
+		windowWrapper.addEventListener("pointerup", (event) => {
+			windowWrapper.releasePointerCapture(event.pointerId)
 
-			WebdeskEvent.WINDOW_RESIZE_END.emit({ target: windowSkeleton, x: event.x, y: event.y })
+			WebdeskEvent.WINDOW_RESIZE_END.emit({ target: windowWrapper, x: event.x, y: event.y })
 		})
 
-		// When the viewport is resized, check if the window is clipping the viewport and move
-		window.addEventListener("resize", () => { WMMover.updatePositionIfCollision({ target: windowSkeleton }) })
+		window.addEventListener("resize", () => { WMMover.updatePositionIfCollision({ target: windowWrapper }) })
 
-		// Add the window to the open windows
-		WMFactory.open.push(windowSkeleton)
-
-		// Dispatch the event
-		WebdeskEvent.WINDOW_OPEN.emit({ target: windowSkeleton, app: details.app, })
+		WebdeskEvent.WINDOW_OPEN.emit({ target: windowWrapper, app: details.app, })
 	}
 
 	constructor() {
-		WebdeskEvent.LAUNCHER_CLICK.on(this.skeletonizeWindow)	// Open a window when a launcher is clicked
+		WebdeskEvent.LAUNCHER_CLICK.on(this.skeletonizeWindow)
 	}
 }
 
 const WMFocuser = new class {
 	focusedWindow = null
 
-	// Makes a window the "active" window
+	// TODO: Improve this logic
 	focusWindow(details) {
-		// If the focused window isn't the target window, update the focus
 		if (details.target != WMFocuser.focusedWindow || !WMFocuser.focusedWindow) {
-			// Remove the focus class from the old focused window
 			if (WMFocuser.focusedWindow) { WMFocuser.focusedWindow.classList.remove("focus") }
 
-			// Dispatch the event
 			WebdeskEvent.WINDOW_UPDATED_FOCUS.emit({ old: WMFocuser.focusedWindow, new: details.target })
 
-			// Set the window as the focused window
 			WMFocuser.focusedWindow = details.target
-			// Add focus class
 			WMFocuser.focusedWindow.classList.add("focus")
 		}
 	}
-	// Updates a window z-index, runs everytime the focus shifts
-	// IDEA: Make a UPDATE Z INDEX event for cleaner event driven logic
+	// IDEA: Make a UPDATE Z INDEX event for cleaner (event driven) logic
 	updateZIndex(details, targetWindow) {
-		// Get the current z-index
 		const zIndex = parseInt(targetWindow.style.zIndex)
 
-		// If the window is in focus, max the z-index
 		if (details.new == targetWindow) { targetWindow.style.zIndex = 29 }
-		// If the z-index is greater that the min z-index, lower it
 		else if (zIndex > 20) { targetWindow.style.zIndex = zIndex - 1 }
 	}
-	// When a window is closed, ensure there is one in focus
-	// IDEA: Conjure a system for passive highest z-index finding
+	// IDEA: Conjure a system for passive highest z-index resolve
 	shiftFocus(details) {
-		// Target the window with the highest z-index
 		const targetWindow = details.open.sort((a, b) => {
 			if (a.style.zIndex > b.style.zIndex) { return a }
 		}).at(0)
 
-		// If there is a window, focus it
 		if (targetWindow) {
 			targetWindow.classList.add("focus")
 			WebdeskEvent.WINDOW_UPDATED_FOCUS.emit({ old: WMFocuser.focusedWindow, new: targetWindow })
 		}
 
-		// Set the highest z-index window as the focused window
 		// NOTE: Could be undefined
 		WMFocuser.focusedWindow = targetWindow
 	}
 
 	constructor() {
-		WebdeskEvent.WINDOW_CLOSE.on(this.shiftFocus)	// Move the focus when a window is closed
+		WebdeskEvent.WINDOW_CLOSE.on(this.shiftFocus)
 
 		WebdeskEvent.WINDOW_RESIZE_START.on(this.focusWindow)
 		// IDEA: Quick window switching with WebdeskEvent.WINDOW_MOVE instead of WebdeskEvent.WINDOW_MOVE_START
@@ -548,12 +473,9 @@ const WMFocuser = new class {
 }
 
 const WMMover = new class {
-	// Saves the pointerdown coordinates
 	anchor = { x: null, y: null }
-	// Flags if a movement is happening
 	inMove = false
 
-	// Save the offsets and stuff
 	init(details) {
 		details.target.classList.add("moving")
 		const box = details.target.getBoundingClientRect()
@@ -561,24 +483,18 @@ const WMMover = new class {
 		WMMover.anchor = { x: details.x - box.left, y: details.y - box.top }
 		WMMover.inMove = true
 	}
-	// Used to center a newly opened window
 	centerWindow(details) {
-		// Get the window bounding box
 		const box = details.target.getBoundingClientRect()
 
-		// Calculate and apply the offsets to center the window in the viewport
 		details.target.style.transform = `translate(${(window.innerWidth - box.width) / 2}px,${(window.innerHeight - box.height) / 2}px)`
 	}
-	// Moves a window to the cursor
 	followCursor(details) {
 		const targetWindow = details.target
 
-		// Update the position
 		details.target.style.transform = `translate(${details.x - WMMover.anchor.x}px,${details.y - WMMover.anchor.y}px)`
 	}
-	// Ensures that a window is not clipped by the viewport
+	// TODO: Improve var naming and logic
 	updatePositionIfCollision(details) {
-		// Get the target position
 		const box = details.target.getBoundingClientRect()
 
 		// If the window is beyond the right of the screen, move the window back to the edge
@@ -590,46 +506,38 @@ const WMMover = new class {
 		// If the window is beyond the top of the screen, move the window back to the edge
 		else if (box.top < 0) { box.y = 0 }
 
-		// Translate the window to a safe spot
 		details.target.style.transform = `translate(${box.x}px,${box.y}px)`
 	}
-	// Handles the end of a window movement
 	reset(details) {
-		details.target.classList.remove("moving")
 		WMMover.inMove = false
+		details.target.classList.remove("moving")
 	}
 
 	constructor() {
 		// TODO: Make it toggle-able from settings
-		WebdeskEvent.WINDOW_OPEN.on(this.centerWindow.bind(this))	// Center a window when a window is opened
+		WebdeskEvent.WINDOW_OPEN.on(this.centerWindow.bind(this))
 
-		WebdeskEvent.WINDOW_MOVE_START.on(this.init)	// Save the offsets when the user clicks on a titlebar
-		WebdeskEvent.WINDOW_MOVE.on(this.followCursor)	// Move a window when the user moves the pointer
-		WebdeskEvent.WINDOW_MOVE_END.on(this.reset)	// Stop the movement when the user releases the pointer
+		WebdeskEvent.WINDOW_MOVE_START.on(this.init)
+		WebdeskEvent.WINDOW_MOVE.on(this.followCursor)
+		WebdeskEvent.WINDOW_MOVE_END.on(this.reset)
 
-		WebdeskEvent.WINDOW_RESIZE_END.on(this.updatePositionIfCollision)	// Make sure a window isn't clipping the viewport after a resize
-		WebdeskEvent.WINDOW_MOVE_END.on(this.updatePositionIfCollision)	// Make sure a window isn't clipping the viewport after a movement
+		WebdeskEvent.WINDOW_RESIZE_END.on(this.updatePositionIfCollision)
+		WebdeskEvent.WINDOW_MOVE_END.on(this.updatePositionIfCollision)
 	}
 }
 
-// Contains methods called for a window interaction
 const WMResizer = new class {
 	box = null
-	// Saves on which edge/s the user clicked
 	edges = { }
 	anchor = { x: null, y: null }
-	// Margin on the edges of a window for triggering the resizing
 	// TODO: Actually make this margin work and settable from settings
 	resizeMargin = 12
-	// Flags if a resize is happening
 	inResize = false
 
-	// Saves the interaction start
 	init(details) {
 		const box = WMResizer.box = details.target.getBoundingClientRect()
 		WMResizer.inResize = true
 
-		// Calculate the offsets of the window
 		const offsets = {
 			top: details.y - box.top,
 			right: box.right - details.x,
@@ -637,7 +545,6 @@ const WMResizer = new class {
 			left: details.x - box.left,
 		}
 
-		// Update the window grab position
 		const edges = WMResizer.edges = {
 			top: offsets.top <= WMResizer.resizeMargin,
 			right: offsets.right <= WMResizer.resizeMargin,
@@ -648,20 +555,14 @@ const WMResizer = new class {
 		WMResizer.anchor.x = details.x
 		WMResizer.anchor.y = details.y
 
-		// If the user clicked on the top-right or the bottom-left corners
+		// TODO: There has to be a better way
 		if (edges.top && edges.right || edges.bottom && edges.left) { details.target.classList.add("resizeXY2", "resizing") }
-		// If the user clicked on the top-left or the bottom-right corners
 		else if (edges.top && edges.left || edges.bottom && edges.right) { details.target.classList.add("resizeXY1", "resizing") }
-		// If the user clicked on the left or right edge
 		else if (edges.left || edges.right) { details.target.classList.add("resizeX", "resizing") }
-		// If the user clicked on the top or bottom edge
 		else if (edges.top || edges.bottom) { details.target.classList.add("resizeY", "resizing") }
 	}
-	// Resizes a window following the pointer
 	followCursor(details) {
-		// Target the current resizing window
 		const resizingWindow = WMFactory.space.querySelector(".resizing")
-		// If none, ignore the movement
 		if (!resizingWindow) { return }
 
 		const { box, edges, anchor } = WMResizer
@@ -684,33 +585,25 @@ const WMResizer = new class {
 		resizingWindow.style.width = `${width}px`
 		resizingWindow.style.height = `${height}px`
 	}
-	// Handles the end of a window resizing
 	reset(details) {
 		WMResizer.inResize = false
-
-		// Remove resize classes
 		details.target.classList.remove("resizeX", "resizeY", "resizeXY1", "resizeXY2", "resizing")
 	}
 
 	constructor() {
-		WebdeskEvent.WINDOW_RESIZE_START.on(this.init)	// Save the offsets when the user clicks on a window
-		WebdeskEvent.WINDOW_RESIZE.on(this.followCursor)	// Resize a window when the user moves the pointer
-		WebdeskEvent.WINDOW_RESIZE_END.on(this.reset)	// Stop the resizing when the user releases the pointer
+		WebdeskEvent.WINDOW_RESIZE_START.on(this.init)
+		WebdeskEvent.WINDOW_RESIZE.on(this.followCursor)
+		WebdeskEvent.WINDOW_RESIZE_END.on(this.reset)
 	}
 }
 
 const AppDockManager = new class {
-	// Get the App Dock Element
 	element = document.querySelector(".AppDock")
-	// Get the Clock of inside App Dock
 	clock = this.element.querySelector(".Clock")
-	// Get the Open Windows element inside App Dock
 	open = this.element.querySelector(".Open")
-	// Maps a window to it's icon in the app dock
+	// TODO: There has to be a better way
 	windowToIcon = new WeakMap()
-	// Maps a icon to it's window in the window space
 	iconToWindow = new WeakMap()
-	// Add the maximised propriety to an icon
 	maximised = {
 		add(details) {
 			const icon = AppDockManager.open.querySelector(`[icon=${details.app}]`)
@@ -721,7 +614,6 @@ const AppDockManager = new class {
 			if (icon) { icon.classList.remove("maximised") }
 		}
 	}
-	// Add the minimised propriety to an icon
 	minimised = {
 		add(details) {
 			const icon = AppDockManager.open.querySelector(`[icon=${details.app}]`)
@@ -732,12 +624,11 @@ const AppDockManager = new class {
 			if (icon) { icon.classList.remove("minimised") }
 		}
 	}
-	// Create the icon for a newly opened window
+
 	add(details) {
 		const manifest = ApplicationManifests[details.app]
 		if (manifest.service) { return }
 
-		// Create the new icon for the window
 		const icon = document.createElement("button")
 		const image = document.createElement("img")
 		const name = document.createElement("p")
@@ -745,22 +636,16 @@ const AppDockManager = new class {
 		AppDockManager.windowToIcon.set(details.target, icon)
 		AppDockManager.iconToWindow.set(icon, details.target)
 
-		// Assemble the dock icon element
 		icon.append(name, image)
-		// Set the focus to this new icon
 		icon.classList.add("focus")
 
-		// Add it to the app dock
 		AppDockManager.open.append(icon)
 
-		// Add the necessary event listeners
 		icon.addEventListener("click", (event) => { WebdeskEvent.ICON_CLICK.emit({ target: event.target.closest("[icon]") }) })
-		// Set the values of the dock icon
-		icon.setAttribute("icon", details.app)	// App name
-		image.src = `apps/${details.app}/${manifest.icon}`	// App icon
+		icon.setAttribute("icon", details.app)
+		image.src = `apps/${details.app}/${manifest.icon}`
 		name.innerText = details.app
 	}
-	// Removes an icon when the connected window is closed
 	updateClosedWindow(details) {
 		const icon = AppDockManager.windowToIcon.get(details.closed)
 
@@ -769,16 +654,12 @@ const AppDockManager = new class {
 			icon.remove()
 		}
 	}
-	// Focuses the window connected to a dock icon
 	// NOTE: iconToWindow is only used for this... Kinda wasteful but loops are sad
 	focusLinkedWindow(details) {
-		// Shifts the Focus on the Linked Window of a Dock Icon
 		const window = AppDockManager.iconToWindow.get(details.target)
 
-		// Removes the minimised class
 		window.classList.remove("minimised")
 	}
-	// Updates the icon of the focused window
 	focus(details) {
 		const oldFocus = AppDockManager.windowToIcon.get(details.old)
 		const newFocus = AppDockManager.windowToIcon.get(details.new)
@@ -786,23 +667,19 @@ const AppDockManager = new class {
 		if (oldFocus) { oldFocus.classList.remove("focus") }
 		if (newFocus) { newFocus.classList.add("focus") }
 	}
-
-	// Updates the clock (in the frontend)
 	updateClockElement(details) {
-		// When the clock is updated
 		for (const piece of details.update) {
 			switch(piece) {
 				case "seconds":
 				case "minutes":
-				case "hours": AppDockManager.clock.querySelector(`.${piece}`).innerText = `${time.clock[piece]}`.padStart(2, 0); break
+				case "hours": AppDockManager.clock.querySelector(`.${piece}`).innerText = `${time.clock[piece]}`.padStart(2, 0); continue
 
 				case "day":
 				case "month":
-				case "year": AppDockManager.clock.querySelector(`.${piece}`).innerText = `${time.date[piece]}`.padStart(2, 0); break
+				case "year": AppDockManager.clock.querySelector(`.${piece}`).innerText = `${time.date[piece]}`.padStart(2, 0); continue
 			}
 		}
 	}
-	// Initialize the clock element
 	initClockElement() {
 		this.clock.querySelector(".seconds").innerText = `${time.clock.seconds}`.padStart(2, 0)
 		this.clock.querySelector(".minutes").innerText = `${time.clock.minutes}`.padStart(2, 0)
@@ -944,7 +821,6 @@ var UIManager = new class {
 	currentCustomizationID = 0
 	currentBackgroundID = 0
 
-	// Sets up themes in the database
 	async newUserCustomizationInit() {
 		const theme = {
 			windows: defaultWindowsCustomization,
@@ -957,21 +833,18 @@ var UIManager = new class {
 		await webdeskDB.set("_customizations", 0, theme)
 		await webdeskDB.set("_customizations", "last-ID", 0)
 	}
-	// Sets up backgrounds in the database
 	async newUserBackgroundInit() {
 		localStorage.setItem("backgrounds-id", 0)
 		await webdeskDB.createTable("_backgrounds")
 		await webdeskDB.set("_backgrounds", 0, `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><filter id="cool"><feTurbulence baseFrequency='0.01' numOctaves="1" result='noise' filterRes="1000"/><feDiffuseLighting in='noise' lighting-color='var(#D8DEE9)' surfaceScale='6'><feDistantLight azimuth='45' elevation='60' /></feDiffuseLighting></filter><rect width="100%" height="100%" filter="url(#cool)" /></svg>`)
 		await webdeskDB.set("_backgrounds", "last-ID", 0)
 	}
-	// Converts the color proprieties of a theme into css variables
 	loadCssVars(root, prefix = "") {
 		for (const key of Object.keys(root)) {
 			if (root[key] instanceof Object) { this.loadCssVars(root[key], `${prefix ? prefix + "-" : ""}${key}`) }
 			else { document.documentElement.style.setProperty(`--${prefix}-${key}`, root[key]) }
 		}
 	}
-	// Load the user's customization
 	async loadCustomization(customizationID) {
 		const customization = await webdeskDB.get("_customizations", UIManager.currentCustomizationID = customizationID)
 
@@ -979,7 +852,6 @@ var UIManager = new class {
 		this.loadCssVars(customization.appdock, "appdock")
 		this.loadCssVars(customization.launchers, "launchers")
 	}
-	// Load the user's background
 	async loadBackground(backgroundID) {
 		const backgroundContents = await webdeskDB.get("_backgrounds", UIManager.currentBackgroundID = backgroundID)
 
@@ -1005,7 +877,6 @@ const SettingsManager = new class {
 
 	openWindow() {
 		SettingsManager.window.style.display = "block"
-
 	}
 
 	constructor() {
@@ -1016,10 +887,8 @@ const SettingsManager = new class {
 	}
 }
 
-// Manages the service worker
 // TODO: Add a versioning system that empties the cache if any server asset is updated
 const ServiceWorkerManager = new class {
-	// Displays the size of the cache
 	loadInformation() {
 		navigator.storage.estimate().then(({ usage, quota }) => {
 			const usedMB = (usage / 1024 ** 2).toFixed(2)
@@ -1031,16 +900,9 @@ const ServiceWorkerManager = new class {
 	}
 
 	constructor() {
-		// Log the service worker information
 		this.loadInformation()
-		// Register the sw script as the service worker
 		navigator.serviceWorker.register("/sw")
 			// .then((registration) => { console.log("Service Worker registered successfully!", registration) })
 			.catch((error) => { console.error(error) })
 	}
-}
-
-// Intros the user to webdesk
-if (newUser) {
-	WebdeskEvent.MANIFESTS_READY.on((details) => { WMFactory.skeletonizeWindow({ app: "intro" }) })
 }
