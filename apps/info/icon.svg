@@ -1,6 +1,0 @@
-<svg version="1.1" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-	<g stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-		<circle cx="16" cy="16" r="14" fill="#00a1ff" stroke="#fff" style="paint-order:markers stroke fill"/>
-		<text x="12.759766" y="23.350237" fill="#ffffff" font-family="Rockwell" font-size="21.3px" style="paint-order:stroke fill markers" xml:space="preserve"><tspan x="12.759766" y="23.350237" font-size="21.3px">i</tspan></text>
-	</g>
-</svg>

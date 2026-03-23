@@ -15,15 +15,15 @@ As stated above the main part of Webdesk are windows. These `<article>` elements
 ## **To Do**
 - [ ] Clean Up code
 	- [ ] Improve async-ing
-	- [ ] Server side rendering of the page for lighthouse rules
-	- [ ] Improve code readability
-		- [ ] Variable names
-		- [ ] Event wrapping methods (no anon functions)
+	- [ ] ~~Server side rendering of the page for lighthouse rules~~
+	- [x] Improve code readability
+		- [x] Variable names
+		- [x] Event wrapping methods (no anon functions)
 - [ ] Finish Windows
-	- [ ] Titlebar messaging system
-	- [ ] Titlebar message movement system
-	- [ ] Secure settings app priviledge
-	- [ ] Smooth movement with animation frames
+	- [x] Titlebar messaging system
+	- [ ] ~~Titlebar message movement system~~
+	- [x] Secure settings app priviledge
+	- [ ] ~~Smooth movement with animation frames~~
 	- [ ] Settable margin size for resizing
 	- [ ] Add animations
 - [ ] Terminal App
@@ -37,8 +37,7 @@ As stated above the main part of Webdesk are windows. These `<article>` elements
 		- [ ] Add application settings
 		- [ ] Finish customization page
 		- [ ] Finish backgrounds page
-- [ ] Info App
-	- [ ] Begin it
+- [x] ~~Info App~~
 - [ ] Blog App
 	- [ ] Begin it
 - [ ] Improve styling rules
@@ -46,3 +45,4 @@ As stated above the main part of Webdesk are windows. These `<article>` elements
 	- [ ] Smart caching
 	- [ ] Frontend element
 - [ ] Event propagation tree diagram
+- [ ] Do the mobile website of evil

@@ -120,8 +120,8 @@ class WebdeskEvent {
 		FOCUS: { old: null, new: null, },
 		OPEN: { target: null, app: null },
 		CLOSE: { closed: null, open: [ ] },
-		INTERACTION: { target: null, x: null, y: null, },
 		TITLEBAR: { titlebar: null, app: null },
+		INTERACTION: { target: null, x: null, y: null, },
 	}
 
 	static MANIFESTS_READY = new WebdeskEvent(this.templates.MANIFEST)
@@ -274,7 +274,7 @@ const WMTitlebarFactory = new class {
 
 		titlebar.setAttribute("allowfullscreen", false)
 		titlebar.setAttribute("sandbox", "allow-scripts")
-		titlebar.setAttribute("title", `Application "${app}"'s titlebar`)
+		titlebar.setAttribute("title", `"${app}"'s application titlebar`)
 
 		if (path == "") { titlebar.src = "/api/_/defaultTitlebar" }
 		else { titlebar.src = `/apps/${app}/${path}` }
@@ -294,8 +294,10 @@ const WMTitlebarFactory = new class {
 		// else if (manifest.titlebar.path == "") { titlebarDocument.querySelector(".icon").src = `/apps/${appName}/${manifest.icon}` }
 	}
 	close(details) {
-		details.target.remove()
-		WebdeskEvent.WINDOW_CLOSE.emit({ closed: targetWindow, open: WMFactory.open })
+		if (details.app == "settings") { SettingsManager.closeWindow() }
+		else { details.target.remove() }
+
+		WebdeskEvent.WINDOW_CLOSE.emit({ closed: details.target, open: WMFactory.open })
 	}
 	maximise(details) {
 		if (details.target.classList.contains("maximised")) {
@@ -323,10 +325,10 @@ const WMTitlebarFactory = new class {
 
 		switch(message.command) {
 			case "style": {
-				const style = document.documentElement.getAttribute("style").split("; ")
-				const titlebar = style.filter((cssVar) => { return cssVar.startsWith("--windows-color") })
+				const styleVars = document.documentElement.getAttribute("style").split("; ")
+				const titlebarVars = styleVars.filter((cssVar) => { return cssVar.startsWith("--windows-color-titlebar") })
 
-				return port.postMessage({ command: "css", result: titlebar })
+				return port.postMessage({ command: "css", result: titlebarVars })
 			}
 			case "icon": {
 				const iconPath = mainifest.icon
@@ -350,7 +352,7 @@ const WMTitlebarFactory = new class {
 				return WebdeskEvent.WINDOW_MOVE_END.emit(details)
 			}
 			case "title": { return port.postMessage({ command: "title", result: app }) }
-			case "close": { return WMTitlebarFactory.close({ target: window }) }
+			case "close": { return WMTitlebarFactory.close({ target: window, app: app }) }
 			case "minimise": { return WMTitlebarFactory.minimise({ target: window }) }
 			case "maximise": { return WMTitlebarFactory.maximise({ target: window }) }
 		}
@@ -377,16 +379,17 @@ const WMFactory = new class {
 		WebdeskEvent.TITLEBAR_SETUP.emit({ titlebar: titlebar, app: details.app })
 
 		titlebar.classList.add("titlebar")
-
 		titlebarWrapper.append(titlebar)
+		titlebarWrapper.classList.add("titlebarWrapper")
 
 		content.classList.add("content")
 		content.setAttribute("allowfullscreen", false)
 		content.setAttribute("sandbox", `allow-scripts`)
-		content.setAttribute("title", `Application "${details.app}"'s content`)
+		content.setAttribute("title", `"${details.app}"'s application content`)
 		content.src = `/apps/${details.app}/${manifest.index}`
 
 		contentWrapper.append(content)
+		titlebarWrapper.classList.add("contentWrapper")
 
 		windowWrapper.setAttribute("app", details.app)
 		windowWrapper.append(titlebarWrapper, contentWrapper)
@@ -417,7 +420,7 @@ const WMFactory = new class {
 
 		window.addEventListener("resize", () => { WMMover.updatePositionIfCollision({ target: windowWrapper }) })
 
-		WebdeskEvent.WINDOW_OPEN.emit({ target: windowWrapper, app: details.app, })
+		WebdeskEvent.WINDOW_OPEN.emit({ target: windowWrapper, app: details.app })
 	}
 
 	constructor() {
@@ -485,27 +488,18 @@ const WMMover = new class {
 	centerWindow(details) {
 		const box = details.target.getBoundingClientRect()
 
-		details.target.style.transform = `translate(${(window.innerWidth - box.width) / 2}px,${(window.innerHeight - box.height) / 2}px)`
+		details.target.style.transform = `translate(${Math.round((window.innerWidth - box.width) / 2)}px,${Math.round((window.innerHeight - box.height) / 2)}px)`
 	}
 	followCursor(details) {
-		const targetWindow = details.target
-
 		details.target.style.transform = `translate(${details.x - WMMover.anchor.x}px,${details.y - WMMover.anchor.y}px)`
 	}
-	// TODO: Improve var naming and logic
 	updatePositionIfCollision(details) {
 		const box = details.target.getBoundingClientRect()
 
-		// If the window is beyond the right of the screen, move the window back to the edge
-		if (box.right > window.innerWidth) { box.x = (window.innerWidth - box.width) }
-		// If the window is beyond the left of the screen, move the window back to the edge
-		else if (box.left < 0) { box.x = 0 }
-		// If the window is beyond the bottom of the screen, move the window back to the edge
-		if (box.bottom > window.innerHeight) { box.y = (window.innerHeight - box.height) }
-		// If the window is beyond the top of the screen, move the window back to the edge
-		else if (box.top < 0) { box.y = 0 }
+		box.x = Math.min( Math.max(0, box.left), window.innerWidth - box.width )
+		box.y = Math.min( Math.max(0, box.top), window.innerHeight - box.height )
 
-		details.target.style.transform = `translate(${box.x}px,${box.y}px)`
+		details.target.style.transform = `translate(${Math.round(box.x)}px,${Math.round(box.y)}px)`
 	}
 	reset(details) {
 		WMMover.inMove = false
@@ -526,43 +520,33 @@ const WMMover = new class {
 }
 
 const WMResizer = new class {
-	box = null
-	edges = { }
+	edges = { top: null, right: null, bottom: null, left: null }
 	anchor = { x: null, y: null }
-	// TODO: Actually make this margin work and settable from settings
-	resizeMargin = 12
+	resizeMargin = 6
 	inResize = false
+	box = null
 
 	init(details) {
 		const box = WMResizer.box = details.target.getBoundingClientRect()
+
 		WMResizer.inResize = true
-
-		const offsets = {
-			top: details.y - box.top,
-			right: box.right - details.x,
-			bottom: box.bottom - details.y,
-			left: details.x - box.left,
-		}
-
-		const edges = WMResizer.edges = {
-			top: offsets.top <= WMResizer.resizeMargin,
-			right: offsets.right <= WMResizer.resizeMargin,
-			bottom: offsets.bottom <= WMResizer.resizeMargin,
-			left: offsets.left <= WMResizer.resizeMargin,
-		}
-
 		WMResizer.anchor.x = details.x
 		WMResizer.anchor.y = details.y
 
-		// TODO: There has to be a better way
-		if (edges.top && edges.right || edges.bottom && edges.left) { details.target.classList.add("resizeXY2", "resizing") }
-		else if (edges.top && edges.left || edges.bottom && edges.right) { details.target.classList.add("resizeXY1", "resizing") }
-		else if (edges.left || edges.right) { details.target.classList.add("resizeX", "resizing") }
-		else if (edges.top || edges.bottom) { details.target.classList.add("resizeY", "resizing") }
+		const edges = WMResizer.edges = {
+			top: details.y - box.top <= WMResizer.resizeMargin,
+			right: box.right - details.x <= WMResizer.resizeMargin,
+			bottom: box.bottom - details.y <= WMResizer.resizeMargin,
+			left: details.x - box.left <= WMResizer.resizeMargin,
+		}
+
+		if (edges.top && edges.right || edges.bottom && edges.left) { details.target.classList.add("XY2", "resizing") }
+		else if (edges.top && edges.left || edges.bottom && edges.right) { details.target.classList.add("XY1", "resizing") }
+		else if (edges.left || edges.right) { details.target.classList.add("X", "resizing") }
+		else if (edges.top || edges.bottom) { details.target.classList.add("Y", "resizing") }
 	}
 	followCursor(details) {
-		const resizingWindow = WMFactory.space.querySelector(".resizing")
-		if (!resizingWindow) { return }
+		const content = details.target.querySelector(".contentWrapper")
 
 		const { box, edges, anchor } = WMResizer
 		let { top, left, width, height } = box
@@ -580,13 +564,13 @@ const WMResizer = new class {
 			top -= deltaY
 		} else if (WMResizer.edges.bottom) { height -= deltaY }
 
-		resizingWindow.style.transform = `translate(${left}px,${top}px)`
-		resizingWindow.style.width = `${width}px`
-		resizingWindow.style.height = `${height}px`
+		details.target.style.transform = `translate(${left}px,${top}px)`
+		content.style.width = `${width}px`
+		content.style.height = `${height}px`
 	}
 	reset(details) {
 		WMResizer.inResize = false
-		details.target.classList.remove("resizeX", "resizeY", "resizeXY1", "resizeXY2", "resizing")
+		details.target.classList.remove("X", "Y", "XY1", "XY2", "resizing")
 	}
 
 	constructor() {
@@ -709,37 +693,41 @@ const AppDockManager = new class {
 	}
 }
 
-// TODO: Titlebar category for titlebar messaging system
 const defaultWindowsCustomization = new class {
 	color = {
 		background: "#D8DEE9",
 		border: "#4C566A",
-		title: "#2E3440",
 		dots: "#2E3440",
-		buttons: {
-			close: "#D08770",
-			maxi: "#EBCB8B",
-			mini: "#A3BE8C",
-		},
 		focus: {
 			background: "#ECEFF4",
 			border: "#2E3440",
-			title: "#2E3440",
 			dots: "#3B4252",
+		},
+		titlebar: {
+			title: "#2E3440",
 			buttons: {
 				close: "#D08770",
 				maxi: "#EBCB8B",
 				mini: "#A3BE8C",
 			},
+			focus: {
+				title: "#2E3440",
+				buttons: {
+					close: "#D08770",
+					maxi: "#EBCB8B",
+					mini: "#A3BE8C",
+				},
+			}
 		},
 	}
 	appearance = {
 		background: {
 			width: null,
-			height: null
+			height: null,
 		},
 		titlebar: null,
-		border: null,
+		border: "2px",
+		padding: "4px",
 		title: null,
 		icon: null,
 		dots: null,
@@ -876,9 +864,33 @@ const SettingsManager = new class {
 
 	openWindow() {
 		SettingsManager.window.style.display = "block"
+
+		WebdeskEvent.WINDOW_OPEN.emit({ target: SettingsManager.window, app: "settings" })
+		WebdeskEvent.WINDOW_UPDATED_FOCUS.on((details) => { WMFocuser.updateZIndex(details, SettingsManager.window) })
+
+		SettingsManager.window.addEventListener("pointerdown", (event) => {
+			SettingsManager.window.setPointerCapture(event.pointerId)
+
+			WebdeskEvent.WINDOW_RESIZE_START.emit({ target: SettingsManager.window, x: event.x, y: event.y })
+		})
+
+		SettingsManager.window.addEventListener("pointermove", (event) => {
+			if (WMResizer.inResize) {
+				WebdeskEvent.WINDOW_RESIZE.emit({ target: SettingsManager.window, x: event.x, y: event.y })
+			}
+		})
+
+		SettingsManager.window.addEventListener("pointerup", (event) => {
+			SettingsManager.window.releasePointerCapture(event.pointerId)
+
+			WebdeskEvent.WINDOW_RESIZE_END.emit({ target: SettingsManager.window, x: event.x, y: event.y })
+		})
+	}
+	closeWindow() {
+		SettingsManager.window.style.display = "none"
 	}
 	setupLauncher() {
-		this.launcher.addEventListener("click", () => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "settings" }) })
+		this.launcher.addEventListener("click", this.openWindow)
 	}
 	setupWindow() {
 		SettingsManager.window.style.display = "none"
@@ -914,3 +926,6 @@ const SWManager = new class {
 		// 	.catch((error) => { console.error(error) })
 	}
 }
+
+UIManager.newUserCustomizationInit()
+UIManager.newUserBackgroundInit()
