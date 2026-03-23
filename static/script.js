@@ -276,8 +276,6 @@ const WMTitlebarFactory = new class {
 		titlebar.setAttribute("sandbox", "allow-scripts")
 		titlebar.setAttribute("title", `Application "${app}"'s titlebar`)
 
-		console.log(path)
-
 		if (path == "") { titlebar.src = "/api/_/defaultTitlebar" }
 		else { titlebar.src = `/apps/${app}/${path}` }
 
