@@ -121,7 +121,7 @@ class WebdeskEvent {
 		OPEN: { target: null, app: null },
 		CLOSE: { closed: null, open: [ ] },
 		INTERACTION: { target: null, x: null, y: null, },
-		TITLEBAR: { titlebar: null, path: null, app: null },
+		TITLEBAR: { titlebar: null, app: null },
 	}
 
 	static MANIFESTS_READY = new WebdeskEvent(this.templates.MANIFEST)
@@ -268,7 +268,8 @@ const LauncherManager = new class {
 
 const WMTitlebarFactory = new class {
 	async setup(details) {
-		const { titlebar, path, app } = details
+		const { titlebar, app } = details
+		const path = ApplicationManifests[app].titlebar
 		const channel = new MessageChannel()
 
 		titlebar.setAttribute("allowfullscreen", false)
@@ -289,7 +290,7 @@ const WMTitlebarFactory = new class {
 			titlebar.contentWindow.postMessage({ command: "init" }, "*", [channel.port2])
 		})
 
-		// // If the app is DNI, remove the icon
+		// // If the app is a service, remove the icon
 		// if (manifest.service) { titlebarDocument.querySelector(".icon").remove() }
 		// // If the titlebar is the default one, add the icon
 		// else if (manifest.titlebar.path == "") { titlebarDocument.querySelector(".icon").src = `/apps/${appName}/${manifest.icon}` }
@@ -375,7 +376,7 @@ const WMFactory = new class {
 			content = document.createElement("iframe"),
 			titlebar = document.createElement("iframe")
 
-		WebdeskEvent.TITLEBAR_SETUP.emit({ titlebar: titlebar, path: manifest.titlebar, app: details.app })
+		WebdeskEvent.TITLEBAR_SETUP.emit({ titlebar: titlebar, app: details.app })
 
 		titlebar.classList.add("titlebar")
 
@@ -878,17 +879,26 @@ const SettingsManager = new class {
 	openWindow() {
 		SettingsManager.window.style.display = "block"
 	}
+	setupLauncher() {
+		this.launcher.addEventListener("click", () => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "settings" }) })
+	}
+	setupWindow() {
+		SettingsManager.window.style.display = "none"
+		WebdeskEvent.TITLEBAR_SETUP.emit({ titlebar: SettingsManager.window.querySelector(`.titlebar`), app: "settings" })
+	}
+	setupIcon() {
+		SettingsManager.icon.style.display = "none"
+	}
 
 	constructor() {
-		this.launcher.addEventListener("click", this.openWindow)
+		this.setupLauncher()
 
-		this.window.style.display = "none"
-		this.icon.style.display = "none"
+		WebdeskEvent.MANIFESTS_READY.on(this.setupWindow, this.setupIcon)
 	}
 }
 
 // TODO: Add a versioning system that empties the cache if any server asset is updated
-const ServiceWorkerManager = new class {
+const SWManager = new class {
 	loadInformation() {
 		navigator.storage.estimate().then(({ usage, quota }) => {
 			const usedMB = (usage / 1024 ** 2).toFixed(2)
@@ -901,8 +911,8 @@ const ServiceWorkerManager = new class {
 
 	constructor() {
 		this.loadInformation()
-		navigator.serviceWorker.register("/sw")
-			// .then((registration) => { console.log("Service Worker registered successfully!", registration) })
-			.catch((error) => { console.error(error) })
+		// navigator.serviceWorker.register("/sw")
+		// 	// .then((registration) => { console.log("Service Worker registered successfully!", registration) })
+		// 	.catch((error) => { console.error(error) })
 	}
 }
