@@ -488,10 +488,12 @@ const WMMover = new class {
 	centerWindow(details) {
 		const box = details.target.getBoundingClientRect()
 
-		details.target.style.transform = `translate(${Math.round((window.innerWidth - box.width) / 2)}px,${Math.round((window.innerHeight - box.height) / 2)}px)`
+		details.target.style.left = Math.round((window.innerWidth - box.width) / 2) + "px"
+		details.target.style.top = Math.round((window.innerHeight - box.height) / 2) + "px"
 	}
 	followCursor(details) {
-		details.target.style.transform = `translate(${details.x - WMMover.anchor.x}px,${details.y - WMMover.anchor.y}px)`
+		details.target.style.left = (details.x - WMMover.anchor.x) + "px"
+		details.target.style.top = (details.y - WMMover.anchor.y) + "px"
 	}
 	updatePositionIfCollision(details) {
 		const box = details.target.getBoundingClientRect()
@@ -499,7 +501,8 @@ const WMMover = new class {
 		box.x = Math.min( Math.max(0, box.left), window.innerWidth - box.width )
 		box.y = Math.min( Math.max(0, box.top), window.innerHeight - box.height )
 
-		details.target.style.transform = `translate(${Math.round(box.x)}px,${Math.round(box.y)}px)`
+		details.target.style.left = Math.round(box.x) + "px"
+		details.target.style.top = Math.round(box.y) + "px"
 	}
 	reset(details) {
 		WMMover.inMove = false
@@ -524,14 +527,16 @@ const WMResizer = new class {
 	anchor = { x: null, y: null }
 	resizeMargin = 6
 	inResize = false
-	box = null
+	startWindowBox = null
+	startContentBox = null
 
 	init(details) {
-		const box = WMResizer.box = details.target.getBoundingClientRect()
-
+		WMResizer.startContentBox = details.target.querySelector(".contentWrapper").getBoundingClientRect()
 		WMResizer.inResize = true
 		WMResizer.anchor.x = details.x
 		WMResizer.anchor.y = details.y
+
+		const box = WMResizer.startWindowBox = details.target.getBoundingClientRect()
 
 		const edges = WMResizer.edges = {
 			top: details.y - box.top <= WMResizer.resizeMargin,
@@ -540,33 +545,35 @@ const WMResizer = new class {
 			left: details.x - box.left <= WMResizer.resizeMargin,
 		}
 
-		if (edges.top && edges.right || edges.bottom && edges.left) { details.target.classList.add("XY2", "resizing") }
-		else if (edges.top && edges.left || edges.bottom && edges.right) { details.target.classList.add("XY1", "resizing") }
+		if (edges.top && edges.left || edges.bottom && edges.right) { details.target.classList.add("XY1", "resizing") }
+		else if (edges.top && edges.right || edges.bottom && edges.left) { details.target.classList.add("XY2", "resizing") }
 		else if (edges.left || edges.right) { details.target.classList.add("X", "resizing") }
 		else if (edges.top || edges.bottom) { details.target.classList.add("Y", "resizing") }
 	}
 	followCursor(details) {
 		const content = details.target.querySelector(".contentWrapper")
+		const { edges, anchor, startWindowBox, startContentBox } = WMResizer
 
-		const { box, edges, anchor } = WMResizer
-		let { top, left, width, height } = box
+		let { left, top } = startWindowBox
+		let { width, height } = startContentBox
 
-		const deltaX = anchor.x - details.x
-		const deltaY = anchor.y - details.y
+		const deltaX = details.x - anchor.x
+		const deltaY = details.y - anchor.y
 
-		if (WMResizer.edges.left) {
-			width += deltaX
-			left -= deltaX
-		} else if (WMResizer.edges.right) { width -= deltaX }
+		if (edges.left) {
+			width -= deltaX
+			left += deltaX
+		} else if (edges.right) { width += deltaX }
 
-		if (WMResizer.edges.top) {
-			height += deltaY
-			top -= deltaY
-		} else if (WMResizer.edges.bottom) { height -= deltaY }
+		if (edges.top) {
+			height -= deltaY
+			top += deltaY
+		} else if (edges.bottom) { height += deltaY }
 
-		details.target.style.transform = `translate(${left}px,${top}px)`
-		content.style.width = `${width}px`
-		content.style.height = `${height}px`
+		details.target.style.left = `${Math.round(left)}px`
+		details.target.style.top = `${Math.round(top)}px`
+		content.style.height = `${Math.round(height)}px`
+		content.style.width = `${Math.round(width)}px`
 	}
 	reset(details) {
 		WMResizer.inResize = false
@@ -721,11 +728,13 @@ const defaultWindowsCustomization = new class {
 		},
 	}
 	appearance = {
-		background: {
-			width: null,
-			height: null,
-		},
-		titlebar: null,
+		width: "37.5vmax",
+		height: "37.5vmin",
+		"min-width": "17.5vmax",
+		"min-height": "17.5vmin",
+		"max-width": "95vmax",
+		"max-height": "95vmin",
+		titlebar: "2.5vmin",
 		border: "2px",
 		padding: "4px",
 		title: null,

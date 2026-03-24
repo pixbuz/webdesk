@@ -1,7 +1,7 @@
 const mainElement = document.querySelector("main")
 const webdeskDB = window.parent.webdeskDB
 const UIManager = window.parent.UIManager
-let currentSubSection = mainElement.querySelector(`div[backgrounds]`)
+let currentSubSection = mainElement.children[0]
 
 function show(button) {
 	const subSectionName = button.getAttributeNames().at(0)

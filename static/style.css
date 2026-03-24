@@ -166,7 +166,7 @@ body {
 [app] {
 	padding: calc(var(--windows-appearance-border) + var(--windows-appearance-padding));
 	border-radius: calc(var(--windows-appearance-border) * 2 + var(--windows-appearance-padding));
-	will-change: transform;
+	will-change: top, left, width, height;
 	min-height: 12.5vmin;
 	min-width: 12.5vmin;
 	position: absolute;
@@ -193,11 +193,11 @@ body {
 [app].focus::after { opacity: 100%; }
 
 [app].maximised {
-	transform: none !important;
-	height: 100% !important;
-	width: 100% !important;
-	max-height: 100%;
-	max-width: 100%;
+	left: 0 !important;
+	top: 0 !important;
+
+	height: 100%;
+	width: 100%;
 }
 
 [app].minimised {
@@ -219,14 +219,31 @@ body {
 }
 
 [app] .contentWrapper {
+	min-height: var(--windows-appearance-min-height);
+	min-width: var(--windows-appearance-min-width);
+
+	max-height: var(--windows-appearance-max-height);
+	max-width: var(--windows-appearance-max-width);
+
+	height: var(--windows-appearance-height);
+	width: var(--windows-appearance-width);
+
 	pointer-events: none;
 	border-radius: 4px;
 	user-select: none;
-	max-height: 99svh;
-	max-width: 99svw;
 	overflow: hidden;
-	height: 37.5vmin;
-	width: 37.5vmax;
+}
+
+[app].maximised .contentWrapper {
+	height: 100% !important;
+	width: 100% !important;
+	max-height: 100vmin;
+	max-width: 100vmax;
+}
+
+[app].resizing .contentWrapper {
+	pointer-events: none;
+	user-select: none;
 }
 
 [app].focus .contentWrapper { pointer-events: all; }
@@ -239,10 +256,10 @@ body {
 }
 
 .Window:has([app].moving) { cursor: grabbing; }
-.Window:has([app].resizeX) { cursor: e-resize; }
-.Window:has([app].resizeY) { cursor: n-resize; }
-.Window:has([app].resizeXY1) { cursor: nw-resize; }
-.Window:has([app].resizeXY2) { cursor: ne-resize; }
+.Window:has([app].X) { cursor: e-resize; }
+.Window:has([app].Y) { cursor: n-resize; }
+.Window:has([app].XY1) { cursor: nw-resize; }
+.Window:has([app].XY2) { cursor: ne-resize; }
 
 /* ----- Color customization ----- */
 
