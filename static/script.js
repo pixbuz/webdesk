@@ -391,7 +391,7 @@ const WMFactory = new class {
 		content.src = `/apps/${details.app}/${manifest.index}`
 
 		contentWrapper.append(content)
-		titlebarWrapper.classList.add("contentWrapper")
+		contentWrapper.classList.add("contentWrapper")
 
 		windowWrapper.setAttribute("app", details.app)
 		windowWrapper.append(titlebarWrapper, contentWrapper)
