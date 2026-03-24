@@ -136,3 +136,11 @@ main > div:first-child {
 [colors] .Propriety p {
 	margin: auto 0;
 }
+
+[backgrounds] label {
+	background: #222;
+	aspect-ratio: 1;
+	display: block;
+	width: 2.5vmax;
+}
+

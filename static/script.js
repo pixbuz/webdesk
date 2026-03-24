@@ -178,6 +178,8 @@ fetch("/api/_/getManifests").then(async (response) => {
 	ApplicationManifests = await response.json()
 	WebdeskEvent.MANIFESTS_READY.emit(ApplicationManifests)
 	if (newUser) { WMFactory.skeletonizeWindow({ app: "intro" }) }
+	/* BEBUGGGG BEBUUUUUGGG */
+	SettingsManager.openWindow()
 })
 
 const time = new class {
@@ -545,6 +547,8 @@ const WMResizer = new class {
 			left: details.x - box.left <= WMResizer.resizeMargin,
 		}
 
+		if (details.target.classList.contains("maximised")) { details.target.classList.remove("maximised") }
+
 		if (edges.top && edges.left || edges.bottom && edges.right) { details.target.classList.add("XY1", "resizing") }
 		else if (edges.top && edges.right || edges.bottom && edges.left) { details.target.classList.add("XY2", "resizing") }
 		else if (edges.left || edges.right) { details.target.classList.add("X", "resizing") }
@@ -812,10 +816,10 @@ const defaultAppDockCustomization = new class {
 	}
 }
 
-var UIManager = new class {
+const UIManager = new class {
 	backgroundElement = document.querySelector(".Background")
-	currentCustomizationID = 0
-	currentBackgroundID = 0
+	currentCustomizationID = parseInt(localStorage.getItem("customization-id"))
+	currentBackgroundID = parseInt(localStorage.getItem("background-id"))
 
 	async newUserCustomizationInit() {
 		const theme = {
@@ -828,12 +832,16 @@ var UIManager = new class {
 		await webdeskDB.createTable("_customizations")
 		await webdeskDB.set("_customizations", 0, theme)
 		await webdeskDB.set("_customizations", "last-ID", 0)
+
+		UIManager.currentCustomizationID = 0
 	}
 	async newUserBackgroundInit() {
-		localStorage.setItem("backgrounds-id", 0)
+		localStorage.setItem("background-id", 0)
 		await webdeskDB.createTable("_backgrounds")
-		await webdeskDB.set("_backgrounds", 0, `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><filter id="cool"><feTurbulence baseFrequency='0.01' numOctaves="1" result='noise' filterRes="1000"/><feDiffuseLighting in='noise' lighting-color='var(#D8DEE9)' surfaceScale='6'><feDistantLight azimuth='45' elevation='60' /></feDiffuseLighting></filter><rect width="100%" height="100%" filter="url(#cool)" /></svg>`)
+		await webdeskDB.set("_backgrounds", 0, `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><filter id="cool"><feTurbulence baseFrequency='0.01' numOctaves="1" result='noise' filterRes="1000"/><feDiffuseLighting in='noise' lighting-color='#D8DEE9' surfaceScale='6'><feDistantLight azimuth='45' elevation='60' /></feDiffuseLighting></filter><rect width="100%" height="100%" filter="url(#cool)" /></svg>`)
 		await webdeskDB.set("_backgrounds", "last-ID", 0)
+
+		UIManager.currentBackgroundID = 0
 	}
 	loadCssVars(root, prefix = "") {
 		for (const key of Object.keys(root)) {
@@ -841,28 +849,31 @@ var UIManager = new class {
 			else { document.documentElement.style.setProperty(`--${prefix}-${key}`, root[key]) }
 		}
 	}
-	async loadCustomization(customizationID) {
-		const customization = await webdeskDB.get("_customizations", UIManager.currentCustomizationID = customizationID)
+	async loadCustomization(details) {
+		localStorage.setItem("customization-id", UIManager.currentCustomizationID = details.id)
 
-		this.loadCssVars(customization.windows, "windows")
-		this.loadCssVars(customization.appdock, "appdock")
-		this.loadCssVars(customization.launchers, "launchers")
+		UIManager.loadCssVars(details.content.windows, "windows")
+		UIManager.loadCssVars(details.content.appdock, "appdock")
+		UIManager.loadCssVars(details.content.launchers, "launchers")
 	}
-	async loadBackground(backgroundID) {
-		const backgroundContents = await webdeskDB.get("_backgrounds", UIManager.currentBackgroundID = backgroundID)
+	async loadBackground(details) {
+		console.log(details)
+		localStorage.setItem("background-id", UIManager.currentBackgroundID = details.id)
 
-		this.backgroundElement.innerHTML = backgroundContents
+		if (details.content) { UIManager.backgroundElement.innerHTML = details.content }
 	}
 
 	constructor() {(async () => {
-		const customizationID = localStorage.getItem("customization-id")
-		const backgroundID = localStorage.getItem("background-id")
+		console.log(this.currentBackgroundID)
+		
+		if (isNaN(this.currentCustomizationID)) { await this.newUserCustomizationInit() }
+		if (isNaN(this.currentBackgroundID)) { await this.newUserBackgroundInit() }
 
-		if (!customizationID) { await this.newUserCustomizationInit() }
-		if (!backgroundID) { await this.newUserBackgroundInit() }
+		window.addEventListener("newCustomization", (event) => { UIManager.loadCustomization(event.detail) })
+		window.addEventListener("newBackground", (event) => { UIManager.loadBackground(event.detail) })
 
-		this.loadCustomization(parseInt(customizationID) || 0)
-		this.loadBackground(parseInt(backgroundID) || 0)
+		this.loadCustomization({ id: this.currentCustomizationID, content: await webdeskDB.get("_customizations", this.currentCustomizationID) })
+		this.loadBackground({ id: this.currentBackgroundID, content: await webdeskDB.get("_backgrounds", this.currentBackgroundID) })
 	})()}
 }
 
@@ -894,9 +905,15 @@ const SettingsManager = new class {
 
 			WebdeskEvent.WINDOW_RESIZE_END.emit({ target: SettingsManager.window, x: event.x, y: event.y })
 		})
+
+		SettingsManager.icon.style.display = "block"
 	}
 	closeWindow() {
 		SettingsManager.window.style.display = "none"
+		SettingsManager.icon.style.display = "none"
+
+		SettingsManager.window.classList.remove("maximised")
+		SettingsManager.window.classList.remove("minimised")
 	}
 	setupLauncher() {
 		this.launcher.addEventListener("click", this.openWindow)
@@ -936,5 +953,6 @@ const SWManager = new class {
 	}
 }
 
-UIManager.newUserCustomizationInit()
-UIManager.newUserBackgroundInit()
+/* BEBUGGGG BEBUUUUUGGG */
+// UIManager.newUserCustomizationInit()
+// UIManager.newUserBackgroundInit()

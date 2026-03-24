@@ -1,6 +1,6 @@
-const mainElement = document.querySelector("main")
 const webdeskDB = window.parent.webdeskDB
-const UIManager = window.parent.UIManager
+
+const mainElement = document.querySelector("main")
 let currentSubSection = mainElement.children[0]
 
 function show(button) {
@@ -12,44 +12,90 @@ function show(button) {
 	currentSubSection = subSection
 }
 
-async function managebgUpload(event) {
-	for (let i = 0; i < event.target.files.length; i++) {
-		const file = event.target.files[i]
-		const reader = new FileReader()
+const Launchers = new class {
+	constructor() {
 
-		reader.addEventListener("error", () => { console.log("Error while reading file") })
-		reader.addEventListener("load", processImage)
-
-		if (!file.type.startsWith("image/")) { continue }
-		else if (file.type == "image/svg+xml") { processSVG(await file.text()) }
-		else { reader.readAsDataURL(file) }
 	}
 }
 
-async function processSVG(event) {
-	const background = event
-	const uploadedBGID = await uploadToDB(background)
-
-	UIManager.loadBackground(uploadedBGID)
+const Windows = new class {
+	constructor() {
+		
+	}
 }
 
-async function processImage(ReaderLoadEvent) {
-	const background = `<img src="${event.target.result}" />`
-	const uploadedBGID = await uploadToDB(background)
-
-	UIManager.loadBackground(uploadedBGID)
+const AppDock = new class {
+	constructor() {
+		
+	}
 }
 
-async function uploadToDB(uploadedBG) {
-	const backgroundID = await webdeskDB.get("_backgrounds", "last-ID")
-	const savedBackgrounds = await webdeskDB.getAll("_backgrounds")
-
-	if (savedBackgrounds.includes(uploadedBG)) { return savedBackgrounds.indexOf(uploadedBG) }
-
-	await webdeskDB.set("_backgrounds", (backgroundID + 1), uploadedBG)
-	await webdeskDB.set("_backgrounds", "last-ID", (backgroundID + 1))
-
-	return (backgroundID + 1)
+const Applications = new class {
+	constructor() {
+		
+	}
 }
 
-mainElement.querySelector("[bgUpload]").addEventListener("input", managebgUpload)
+const Colors = new class {
+	constructor() {
+		
+	}
+}
+
+const Background = new class {
+	reader = new FileReader()
+	button = mainElement.querySelector("#bgUpload")
+	saveID = 0
+
+	async manageUpload(event) {
+		for (let i = 0; i < event.target.files.length; i++) {
+			const file = event.target.files[i]
+
+			if (!file.type.startsWith("image/")) { continue }
+			else if (file.type == "image/svg+xml") { processSVG(await file.text()) }
+			else { Background.reader.readAsDataURL(file) }
+		}
+	}
+	processSVG(event) {
+		const background = event
+		Background.uploadBackgroundToDB(background)
+	}
+	processImage(event) {
+		const background = `<img src="${event.target.result}"/>`
+		Background.uploadBackgroundToDB(background)
+	}
+	async uploadBackgroundToDB(uploadedBG) {
+		const savedBackgrounds = await webdeskDB.getAll("_backgrounds")
+		const ID = Background.saveID += 1
+
+		if (savedBackgrounds.includes(uploadedBG)) { return savedBackgrounds.indexOf(uploadedBG) }
+
+		await webdeskDB.set("_backgrounds", ID, uploadedBG)
+		await webdeskDB.set("_backgrounds", "last-ID", ID)
+
+		const event = new CustomEvent("newBackground", { detail: { id: Background.saveID, content: uploadedBG }})
+		window.parent.dispatchEvent(event)
+		console.log("evented")
+	}
+
+	constructor() {
+		this.reader.addEventListener("load", this.processImage)
+		this.reader.addEventListener("error", () => { console.log("Error while reading file") })
+
+		this.button.addEventListener("input", this.manageUpload)
+
+		webdeskDB.get("_backgrounds", "last-ID").then((lastID) => { Background.saveID = lastID })
+	}
+}
+
+const Animations = new class {
+	constructor() {
+		
+	}
+}
+
+/* BEBUGGGG BEBUUUUUGGG */
+let subSection = mainElement.querySelector(`div[backgrounds]`)
+currentSubSection.style.display = "none"
+subSection.style.display = "block"
+currentSubSection = subSection

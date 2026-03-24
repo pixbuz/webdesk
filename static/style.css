@@ -180,12 +180,12 @@ body {
 }
 
 [app]::after {
-	margin-inline: calc(50% - 12px);
+	margin-inline: calc(50% - (var(--windows-appearance-border) + var(--windows-appearance-padding)) * 2);
 	pointer-events: none;
 	position: absolute;
 	opacity: 25%;
-	width: 12px;
 	content: "";
+	width: 12px;
 	height: 4px;
 	bottom: 2px;
 }
