@@ -76,29 +76,19 @@
 			const message = messageEvent.data
 
 			switch(message.command) {
-				case "init":
-					init(messageEvent.ports[0])
-					break
-				case "title":
-					document.querySelector(".title").innerText = message.result
-					break
-				case "icon":
-					document.querySelector(".icon").src = message.result
-					break
-				case "css":
-					document.documentElement.setAttribute("style", message.result.join("; "))
-					break
+				case "init": return init({ ...message.data, port: messageEvent.ports[0] })
 			}
 		}
 
-		function init(comPort) {
-			port = comPort
-
+		function init(data) {
+			port = data.port
 			port.onmessage = commandListener
 
-			port.postMessage({ command: "title" })
-			port.postMessage({ command: "icon" })
-			port.postMessage({ command: "style" })
+			document.querySelector(".title").innerText = data.title
+			document.documentElement.setAttribute("style", data.style)
+
+			if (data.service) { document.querySelector(".icon").remove() }
+			else { document.querySelector(".icon").src = data.icon }
 
 			// IDEA: using right mouse click moves but doesn't update the window focus
 			document.body.addEventListener("pointerdown", (event) => {

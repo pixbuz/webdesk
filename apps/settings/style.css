@@ -66,7 +66,6 @@ nav button svg {
 
 main {
 	scroll-behavior: smooth;
-	overflow-x: hidden;
 	padding-left: 4px;
 	overflow-y: auto;
 	height: 100%;
@@ -74,13 +73,16 @@ main {
 }
 
 main > div {
+	align-content: start;
+	flex-flow: row wrap;
 	display: none;
 	height: 100%;
 	width: 100%;
+	gap: 4px;
 }
 
 main > div:first-child {
-	display: block;
+	display: unset;
 }
 
 [colors] hr {
@@ -137,10 +139,72 @@ main > div:first-child {
 	margin: auto 0;
 }
 
-[backgrounds] label {
-	background: #222;
-	aspect-ratio: 1;
-	display: block;
-	width: 2.5vmax;
+[backgrounds] svg {
+	stroke-linejoin: round;
+	stroke-linecap: round;
+	stroke-width: 2px;
+	fill: none;
 }
 
+[backgrounds] label {
+	border: solid #2E3440 2px;
+	height: min(3vmax, 24px);
+	width: min(3vmax, 24px);
+	justify-content: center;
+	background: #ECEFF4;
+	align-items: center;
+	border-radius: 4px;
+	display: flex;
+	padding: 1px;
+}
+
+[backgrounds] label svg {
+	stroke: #000;
+}
+
+[backgrounds] button {
+	border: solid #2E3440 2px;
+	height: min(3vmax, 24px);
+	background: #ECEFF4;
+	flex-flow: row nowrap;
+	border-radius: 4px;
+	width: max-content;
+	padding: 0 4px;
+	display: flex;
+	color: red;
+	margin: 0;
+	gap: 2px;
+}
+
+[backgrounds] button svg {
+	stroke: red;
+}
+
+[backgrounds] .hr {
+	background: #2E3440;
+	margin-inline: 2.5%;
+	height: 1px;
+	width: 95%;
+}
+
+[backgrounds] .wrapper {
+	flex-flow: row wrap;
+	justify-content: start;
+	display: flex;
+	padding: 4px;
+	width: 100%;
+	gap: 4px;
+}
+
+[backgrounds] .wrapper .preview {
+	border: solid #2E3440 2px;
+	height: min(25vmin, 218px);
+	width: min(25vmax, 384px);
+	display: block;
+}
+
+[backgrounds] .wrapper .preview * {
+	pointer-events: none;
+	max-height: 100%;
+	max-width: 100%;
+}

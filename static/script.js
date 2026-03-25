@@ -1,7 +1,6 @@
 /// <reference lib="dom" />
 
 // TODO: Animations
-// TODO: Make code more readable with less comments (and better var names)
 // TODO: Generator functions tho?
 
 let newUser = false
@@ -113,7 +112,7 @@ var webdeskDB = new class {
 
 class WebdeskEvent {
 	static templates = {
-		MANIFEST: {},
+		EMPTY: {},
 		CLOCK: { update: [ ], },
 		LAUNCHER: { app: null, },
 		TARGET: { target: null },
@@ -121,10 +120,12 @@ class WebdeskEvent {
 		OPEN: { target: null, app: null },
 		CLOSE: { closed: null, open: [ ] },
 		TITLEBAR: { titlebar: null, app: null },
+		BACKGROUND: { id: null, background: null, },
+		CUSTOMIZATION: { id: null, css: null, object: null, },
 		INTERACTION: { target: null, x: null, y: null, },
 	}
 
-	static MANIFESTS_READY = new WebdeskEvent(this.templates.MANIFEST)
+	static MANIFESTS_READY = new WebdeskEvent(this.templates.EMPTY)
 
 	static LAUNCHER_CLICK = new WebdeskEvent(this.templates.LAUNCHER)
 
@@ -153,6 +154,14 @@ class WebdeskEvent {
 
 	static ICON_CLICK = new WebdeskEvent(this.templates.TARGET)
 
+	static CUSTOMIZATION_LOADED = new WebdeskEvent(this.templates.CUSTOMIZATION)
+	static CUSTOMIZATION_LOAD = new WebdeskEvent(this.templates.CUSTOMIZATION)
+
+	static BACKGROUND_LOADED = new WebdeskEvent(this.templates.BACKGROUND)
+	static BACKGROUND_REMOVE_ALL = new WebdeskEvent(this.templates.EMPTY)
+	static BACKGROUND_LOAD = new WebdeskEvent(this.templates.BACKGROUND)
+	static BACKGROUND_UPLOAD = new WebdeskEvent(this.templates.EMPTY)
+
 	emit(data = {}) {
 		const details = { ...this.template, ...data }
 		const event = new CustomEvent(this.name, {
@@ -173,6 +182,8 @@ class WebdeskEvent {
 		this.template = eventTemplate
 	}
 }
+
+window.WebdeskEvent = WebdeskEvent
 
 fetch("/api/_/getManifests").then(async (response) => {
 	ApplicationManifests = await response.json()
@@ -269,9 +280,12 @@ const LauncherManager = new class {
 }
 
 const WMTitlebarFactory = new class {
+	titlebarVars
+
 	async setup(details) {
 		const { titlebar, app } = details
 		const path = ApplicationManifests[app].titlebar
+		const manifest = ApplicationManifests[app]
 		const channel = new MessageChannel()
 
 		titlebar.setAttribute("allowfullscreen", false)
@@ -282,12 +296,15 @@ const WMTitlebarFactory = new class {
 		else { titlebar.src = `/apps/${app}/${path}` }
 
 		channel.port1.addEventListener("message", (messageEvent) => {
-			WMTitlebarFactory.commandInterpreter(titlebar, channel.port1, messageEvent)
+			WMTitlebarFactory.messageInterpreter(titlebar, channel.port1, messageEvent)
 		})
 		channel.port1.start()
 
 		titlebar.addEventListener("load", () => {
-			titlebar.contentWindow.postMessage({ command: "init" }, "*", [channel.port2])
+			titlebar.contentWindow.postMessage({
+				command: "init",
+				data: { style: WMTitlebarFactory.titlebarVars, icon: `/apps/${app}/${manifest.icon}`, title: app, service: manifest.service }
+			}, "*", [channel.port2])
 		})
 
 		// // If the app is a service, remove the icon
@@ -319,24 +336,12 @@ const WMTitlebarFactory = new class {
 			WebdeskEvent.WINDOW_MINIMISE.emit(details)
 		}
 	}
-	commandInterpreter(titlebar, port, messageEvent) {
+	messageInterpreter(titlebar, port, messageEvent) {
 		const window = titlebar.closest("[app]")
 		const app = window.getAttribute("app")
-		const mainifest = ApplicationManifests[app]
 		const message = messageEvent.data
 
 		switch(message.command) {
-			case "style": {
-				const styleVars = document.documentElement.getAttribute("style").split("; ")
-				const titlebarVars = styleVars.filter((cssVar) => { return cssVar.startsWith("--windows-color-titlebar") })
-
-				return port.postMessage({ command: "css", result: titlebarVars })
-			}
-			case "icon": {
-				const iconPath = mainifest.icon
-
-				return port.postMessage({ command: "icon", result: `/apps/${app}/${iconPath}` })
-			}
 			case "move-start": {
 				const details = { ...message.result, target: window }
 
@@ -353,15 +358,20 @@ const WMTitlebarFactory = new class {
 
 				return WebdeskEvent.WINDOW_MOVE_END.emit(details)
 			}
-			case "title": { return port.postMessage({ command: "title", result: app }) }
 			case "close": { return WMTitlebarFactory.close({ target: window, app: app }) }
 			case "minimise": { return WMTitlebarFactory.minimise({ target: window }) }
 			case "maximise": { return WMTitlebarFactory.maximise({ target: window }) }
 		}
 	}
+	setUpVars(details) {
+		WMTitlebarFactory.titlebarVars = details.css.split("; ")
+			.filter((cssVar) => { return cssVar.startsWith("--windows-color-titlebar") })
+			.join(";")
+	}
 
 	constructor() {
 		WebdeskEvent.TITLEBAR_SETUP.on(this.setup)
+		WebdeskEvent.CUSTOMIZATION_LOADED.on(this.setUpVars)
 	}
 }
 
@@ -831,7 +841,6 @@ const UIManager = new class {
 		localStorage.setItem("customization-id", 0)
 		await webdeskDB.createTable("_customizations")
 		await webdeskDB.set("_customizations", 0, theme)
-		await webdeskDB.set("_customizations", "last-ID", 0)
 
 		UIManager.currentCustomizationID = 0
 	}
@@ -839,7 +848,6 @@ const UIManager = new class {
 		localStorage.setItem("background-id", 0)
 		await webdeskDB.createTable("_backgrounds")
 		await webdeskDB.set("_backgrounds", 0, `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><filter id="cool"><feTurbulence baseFrequency='0.01' numOctaves="1" result='noise' filterRes="1000"/><feDiffuseLighting in='noise' lighting-color='#D8DEE9' surfaceScale='6'><feDistantLight azimuth='45' elevation='60' /></feDiffuseLighting></filter><rect width="100%" height="100%" filter="url(#cool)" /></svg>`)
-		await webdeskDB.set("_backgrounds", "last-ID", 0)
 
 		UIManager.currentBackgroundID = 0
 	}
@@ -849,31 +857,59 @@ const UIManager = new class {
 			else { document.documentElement.style.setProperty(`--${prefix}-${key}`, root[key]) }
 		}
 	}
+	// TODO: Check if selected custom is the same as current
 	async loadCustomization(details) {
+		if (!details.content) { return }
 		localStorage.setItem("customization-id", UIManager.currentCustomizationID = details.id)
 
 		UIManager.loadCssVars(details.content.windows, "windows")
 		UIManager.loadCssVars(details.content.appdock, "appdock")
 		UIManager.loadCssVars(details.content.launchers, "launchers")
-	}
-	async loadBackground(details) {
-		console.log(details)
-		localStorage.setItem("background-id", UIManager.currentBackgroundID = details.id)
 
-		if (details.content) { UIManager.backgroundElement.innerHTML = details.content }
+		WebdeskEvent.CUSTOMIZATION_LOADED.emit({ id: UIManager.currentCustomizationID, css: document.documentElement.style.cssText, object: details.content })
+	}
+	// TODO: Check if selected bg is the same as current
+	async loadBackground(details) {
+		if (!details.background) { return }
+
+		localStorage.setItem("background-id", UIManager.currentBackgroundID = details.id)
+		UIManager.backgroundElement.innerHTML = details.background
+
+		WebdeskEvent.BACKGROUND_LOADED.emit({ id: details.id, background: details.background })
+	}
+	async bulkUploadToDB(details) {
+		const savedBackgrounds = await webdeskDB.getAll("_backgrounds")
+		let rollingID = savedBackgrounds.length
+
+		WebdeskEvent.BACKGROUND_LOAD.emit({ id: rollingID + details.backgrounds.length - 1, background: details.backgrounds[details.backgrounds.length - 1] })
+
+		for (const background of details.backgrounds) {
+			// TODO: vvv Improve this with some sort of frontend thing informing
+			if (savedBackgrounds.includes(background)) { continue }
+
+			webdeskDB.set("_backgrounds", rollingID++, background)
+		}
+	}
+	async emptyBackgroundsDatabase() {
+		const IDs = (await webdeskDB.getAll("_backgrounds")).length
+
+		for (let i = 1; i < IDs; i++) { await webdeskDB.delete("_backgrounds", i) }
+
+		WebdeskEvent.BACKGROUND_LOAD.emit({ id: 0, background: await webdeskDB.get("_backgrounds", 0) })
 	}
 
 	constructor() {(async () => {
-		console.log(this.currentBackgroundID)
-		
 		if (isNaN(this.currentCustomizationID)) { await this.newUserCustomizationInit() }
 		if (isNaN(this.currentBackgroundID)) { await this.newUserBackgroundInit() }
 
-		window.addEventListener("newCustomization", (event) => { UIManager.loadCustomization(event.detail) })
-		window.addEventListener("newBackground", (event) => { UIManager.loadBackground(event.detail) })
-
 		this.loadCustomization({ id: this.currentCustomizationID, content: await webdeskDB.get("_customizations", this.currentCustomizationID) })
-		this.loadBackground({ id: this.currentBackgroundID, content: await webdeskDB.get("_backgrounds", this.currentBackgroundID) })
+		this.loadBackground({ id: this.currentBackgroundID, background: await webdeskDB.get("_backgrounds", this.currentBackgroundID) })
+
+		WebdeskEvent.CUSTOMIZATION_LOAD.on(this.loadCustomization)
+
+		WebdeskEvent.BACKGROUND_REMOVE_ALL.on(this.emptyBackgroundsDatabase)
+		WebdeskEvent.BACKGROUND_UPLOAD.on(this.bulkUploadToDB)
+		WebdeskEvent.BACKGROUND_LOAD.on(this.loadBackground)
 	})()}
 }
 
