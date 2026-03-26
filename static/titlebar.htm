@@ -35,7 +35,9 @@
 				text-align: center;
 				margin: auto;
 				flex: 1;
+				color: var(--windows-color-titlebar-title);
 			}
+			body.focus .title { color: var(--windows-color-titlebar-focus-title); }
 			.buttons {
 				justify-content: flex-end;
 				flex-flow: row nowrap;
@@ -56,6 +58,10 @@
 			[minimise] { background: var(--windows-color-titlebar-buttons-mini); }
 			[maximise] { background: var(--windows-color-titlebar-buttons-maxi); }
 			[close] { background: var(--windows-color-titlebar-buttons-close); }
+
+			body.focus [minimise] { background: var(--windows-color-titlebar-focus-buttons-mini); }
+			body.focus [maximise] { background: var(--windows-color-titlebar-focus-buttons-maxi); }
+			body.focus [close] { background: var(--windows-color-titlebar-focus-buttons-close); }
 		</style>
 	</head>
 	<body>
@@ -77,7 +83,18 @@
 
 			switch(message.command) {
 				case "init": return init({ ...message.data, port: messageEvent.ports[0] })
+				case "css": return updateVar(message.data)
+				case "focus": return updateFocus(message.data)
 			}
+		}
+
+		function updateFocus(inFocus) {
+			if (inFocus) { document.body.classList.add("focus") }
+			else { document.body.classList.remove("focus") }
+		}
+
+		function updateVar(details) {
+			document.documentElement.style.setProperty(details.css, details.value)
 		}
 
 		function init(data) {

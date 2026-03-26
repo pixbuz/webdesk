@@ -121,6 +121,7 @@ class WebdeskEvent {
 		FOCUS: { old: null, new: null, },
 		OPEN: { target: null, app: null },
 		CLOSE: { closed: null, open: [ ] },
+		CHANGE: { css: null, value: null, },
 		TITLEBAR: { titlebar: null, app: null },
 		BACKGROUND: { id: null, background: null, },
 		INTERACTION: { target: null, x: null, y: null, force: false, },
@@ -158,6 +159,7 @@ class WebdeskEvent {
 
 	static CUSTOMIZATION_LOADED = new WebdeskEvent(this.templates.CUSTOMIZATION)
 	static CUSTOMIZATION_LOAD = new WebdeskEvent(this.templates.CUSTOMIZATION)
+	static CUSTOMIZATION_CHANGE = new WebdeskEvent(this.templates.CHANGE)
 
 	static BACKGROUND_LOADED = new WebdeskEvent(this.templates.BACKGROUND)
 	static BACKGROUND_REMOVE_ALL = new WebdeskEvent(this.templates.EMPTY)
@@ -284,6 +286,7 @@ const LauncherManager = new class {
 
 const WMTitlebarFactory = new class {
 	titlebarVars
+	comPorts = new WeakMap()
 
 	async setup(details) {
 		const { titlebar, app } = details
@@ -310,10 +313,21 @@ const WMTitlebarFactory = new class {
 			}, "*", [channel.port2])
 		})
 
-		// // If the app is a service, remove the icon
-		// if (manifest.service) { titlebarDocument.querySelector(".icon").remove() }
-		// // If the titlebar is the default one, add the icon
-		// else if (manifest.titlebar.path == "") { titlebarDocument.querySelector(".icon").src = `/apps/${appName}/${manifest.icon}` }
+		WMTitlebarFactory.comPorts.set(titlebar, channel.port1)
+
+		WebdeskEvent.CUSTOMIZATION_CHANGE.on((details) => { channel.port1.postMessage({ command: "css", data: details }) })
+		WebdeskEvent.WINDOW_UPDATED_FOCUS.on(WMTitlebarFactory.relayFocusChange)
+	}
+	relayFocusChange(details) {
+		const newFocusedTitlebar = details.new.querySelector(".titlebar")
+		const newTitlebarPort = WMTitlebarFactory.comPorts.get(newFocusedTitlebar)
+		newTitlebarPort.postMessage({ command: "focus", data: true })
+
+		if (details.old) {
+			const oldFocusedTitlebar = details.old.querySelector(".titlebar")
+			const oldTitlebarPort = WMTitlebarFactory.comPorts.get(oldFocusedTitlebar)
+			oldTitlebarPort.postMessage({ command: "focus", data: false })
+		}
 	}
 	close(details) {
 		if (details.app == "settings") { SettingsManager.closeWindow() }
@@ -366,8 +380,15 @@ const WMTitlebarFactory = new class {
 			case "maximise": { return WMTitlebarFactory.maximise({ target: window }) }
 		}
 	}
+	updateVar(details) {
+		document.documentElement.style.setProperty(details.css, )
+		const replacePos = WMTitlebarFactory.titlebarVars.indexOf(details.css) + details.css.length + 1
+
+		WMTitlebarFactory.titlebarVars = WMTitlebarFactory.titlebarVars.substring(replacePos) + details.value + WMTitlebarFactory.titlebarVars.substring(replacePos + details.value.length)
+	}
 	setUpVars(details) {
-		WMTitlebarFactory.titlebarVars = details.css.split("; ")
+		WMTitlebarFactory.titlebarVars = details.css
+			.split("; ")
 			.filter((cssVar) => { return cssVar.startsWith("--windows-color-titlebar") })
 			.join(";")
 	}
@@ -375,6 +396,7 @@ const WMTitlebarFactory = new class {
 	constructor() {
 		WebdeskEvent.TITLEBAR_SETUP.on(this.setup)
 		WebdeskEvent.CUSTOMIZATION_LOADED.on(this.setUpVars)
+		WebdeskEvent.CUSTOMIZATION_CHANGE.on(this.updateVar)
 	}
 }
 
@@ -901,11 +923,15 @@ const UIManager = new class {
 
 		WebdeskEvent.BACKGROUND_LOAD.emit({ id: 0, background: await webdeskDB.get("_backgrounds", 0) })
 	}
+	previewCustomization(details) {
+		document.documentElement.style.setProperty(details.css, details.value)
+	}
 
 	constructor() {(async () => {
 		if (isNaN(this.currentCustomizationID)) { await this.newUserCustomizationInit() }
 		if (isNaN(this.currentBackgroundID)) { await this.newUserBackgroundInit() }
 
+		WebdeskEvent.CUSTOMIZATION_CHANGE.on(this.previewCustomization)
 		WebdeskEvent.CUSTOMIZATION_LOAD.on(this.loadCustomization)
 
 		WebdeskEvent.BACKGROUND_REMOVE_ALL.on(this.emptyBackgroundsDatabase)

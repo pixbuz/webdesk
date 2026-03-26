@@ -37,12 +37,35 @@ const Applications = new class {
 }
 
 const Colors = new class {
+	section = mainElement.querySelector(`[colors]`)
+	sectionButton = document.querySelector(`.sectionOpener[colors]`)
+	customID = parseInt(localStorage.getItem("customization-id") || 0)
+
+	updateInput(event) {
+		if (event.type == "input") {
+			const cssVar = event.target.name
+			const newColor = event.target.value
+
+			WebdeskEvent.CUSTOMIZATION_CHANGE.emit({ css: cssVar, value: newColor })
+		} else if (event.type == "change") {
+			// Update theme
+		}
+	}
+	async init() {
+
+	}
+
 	constructor() {
-		
+		this.sectionButton.addEventListener("click", this.init, { once: true })
+
+		for (const input of this.section.querySelectorAll("input")) {
+			input.addEventListener("change", this.updateInput.bind(this))
+			input.addEventListener("input", this.updateInput.bind(this))
+		}
 	}
 }
 
-// TODO: Improve asyncing, rn it blocks the whole site when loading
+// TODO: Improve the loading, rn it blocks the whole site
 const Background = new class {
 	sectionButton = document.querySelector(`.sectionOpener[backgrounds]`)
 	section = mainElement.querySelector(`[backgrounds]`)
@@ -67,8 +90,8 @@ const Background = new class {
 			const reader = new FileReader()
 
 			reader.onload = (event) => { resolve(Background.processImage(event.target.result)) }
-			// TODO: vvv Improve this
 			reader.onerror = (error) => { reject(error) }
+			// TODO: ^^^^^ Improve this
 
 			reader.readAsDataURL(file)
 		})
@@ -96,6 +119,7 @@ const Background = new class {
 	}
 	previewFactory(details, mode) {
 		const preview = document.createElement("button")
+
 		preview.classList.add("preview")
 		preview.setAttribute("title", "Set this as the background")
 
@@ -115,10 +139,11 @@ const Background = new class {
 		WebdeskEvent.BACKGROUND_LOAD.emit({ id: backgroundID, background: backgroundContent })
 	}
 	removeAllBackgrounds() {
-		WebdeskEvent.BACKGROUND_REMOVE_ALL.emit({})
 		Background.previewsWrapper.style = "none"
+		WebdeskEvent.BACKGROUND_REMOVE_ALL.emit({})
 
 		const previews = Array.from(Background.previewsWrapper.children)
+
 		previews
 			.slice(0, previews.length - 1)
 			.forEach((preview) => { preview.remove() })
@@ -143,9 +168,12 @@ const Background = new class {
 }
 
 const Animations = new class {
+	section = mainElement.querySelector(`[animations]`)
 	sectionButton = document.querySelector(`.sectionOpener[animations]`)
+	something = this.section
 
 	init() {
+		
 	}
 
 	constructor() {
@@ -158,7 +186,7 @@ for (const button of document.querySelectorAll("button.sectionOpener")) {
 }
 
 /* BEBUGGGG BEBUUUUUGGG */
-let subSection = mainElement.querySelector(`div[backgrounds]`)
+let subSection = mainElement.querySelector(`div[colors]`)
 currentSubSection.style.display = "none"
 subSection.style.display = "flex"
 currentSubSection = subSection
