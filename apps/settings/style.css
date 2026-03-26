@@ -36,7 +36,7 @@ nav section h6 {
 	display: block;
 }
 
-nav section button {
+nav section .sectionOpener {
 	flex-flow: row nowrap;
 	border-radius: 8px;
 	user-select: none;
@@ -50,14 +50,19 @@ nav section button {
 	gap: 4px;
 }
 
-nav section button:hover {
+nav section .sectionOpener:hover {
 	background: rgba(0, 0, 0, 10%);
 }
 
-nav button svg {
+nav .sectionOpener p {
+	pointer-events: none;
+}
+
+nav .sectionOpener svg {
 	stroke-linejoin: round;
 	stroke-linecap: round;
 	stroke: currentColor;
+	pointer-events: none;
 	stroke-width: 2;
 	aspect-ratio: 1;
 	height: 16px;
@@ -200,11 +205,15 @@ main > div:first-child {
 	border: solid #2E3440 2px;
 	height: min(25vmin, 218px);
 	width: min(25vmax, 384px);
+	overflow: hidden;
+	contain: content;
 	display: block;
 }
 
 [backgrounds] .wrapper .preview * {
+	image-rendering: crisp-edges;
 	pointer-events: none;
+	object-fit: cover;
 	max-height: 100%;
 	max-width: 100%;
 }

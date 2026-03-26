@@ -1,11 +1,10 @@
-const WebdeskEvent = window.parent.WebdeskEvent
-const webdeskDB = window.parent.webdeskDB
+const { WebdeskEvent, webdeskDB } = window.parent
 
 const mainElement = document.querySelector("main")
 let currentSubSection = mainElement.children[0]
 
-function show(button) {
-	const subSectionName = button.getAttributeNames().at(0)
+function show(event) {
+	const subSectionName = event.target.getAttributeNames().at(0)
 	const subSection = mainElement.querySelector(`div[${subSectionName}]`)
 
 	currentSubSection.style.display = "none"
@@ -45,63 +44,69 @@ const Colors = new class {
 
 // TODO: Improve asyncing, rn it blocks the whole site when loading
 const Background = new class {
-	uploadButton = mainElement.querySelector("#upload")
-	deleteButton = mainElement.querySelector("#removeAll")
-	previewsWrapper = mainElement.querySelector(".wrapper")
+	sectionButton = document.querySelector(`.sectionOpener[backgrounds]`)
+	section = mainElement.querySelector(`[backgrounds]`)
+	uploadButton = this.section.querySelector("#upload")
+	deleteButton = this.section.querySelector("#removeAll")
+	previewsWrapper = this.section.querySelector(".wrapper")
 
 	async manageUpload(event) {
-		const backgrounds = []
-
 		for (let i = 0; i < event.target.files.length; i++) {
 			const file = event.target.files[i]
+			let background
 
-			// CAn be imrpoved with promises
 			if (!file.type.startsWith("image/")) { continue }
-			else if (file.type == "image/svg+xml") { backgrounds.push(Background.processSVG(await file.text())) }
-			else {
-				const reader = new FileReader()
-				reader.addEventListener("load", (event) => { backgrounds.push(Background.processImage(event)) })
-				// TODO: vvv Improve this
-				reader.addEventListener("error", () => { console.log("Error while reading file") })
+			else if (file.type == "image/svg+xml") { background = await Background.processSVG(file.text()) }
+			else { background = await Background.readImage(file) }
 
-				reader.readAsDataURL(file)
-			}
+			WebdeskEvent.BACKGROUND_UPLOAD.emit({ background: background })
 		}
-
-		// NOTE: This can very easly become a progress bar
-		while (backgrounds.length != event.target.files.length) {
-			await new Promise(r => setTimeout(r))
-			// console.log(backgrounds.length, event.target.files.length)
-		}
-
-		
-
-		WebdeskEvent.BACKGROUND_UPLOAD.emit({ backgrounds: backgrounds })
 	}
-	processSVG(event) {
-		return event
+	readImage(file) {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader()
+
+			reader.onload = (event) => { resolve(Background.processImage(event.target.result)) }
+			// TODO: vvv Improve this
+			reader.onerror = (error) => { reject(error) }
+
+			reader.readAsDataURL(file)
+		})
 	}
-	processImage(event) {
-		return `<img src="${event.target.result}"/>`
+	processImage(encodedImage) { return `<img src="${event.target.result}"/>` }
+	async processSVG(svgTextPromise) {
+		const text = await svgTextPromise
+
+		if (!text.startsWith("<svg")) { return undefined }
+		else { return text }
 	}
 	async showAllBackgroundsPreviews() {
 		const backgrounds = await webdeskDB.getAll("_backgrounds")
+		const fragment = document.createDocumentFragment()
 
-		for (let i = backgrounds.length - 1; i >= 0; i--) {
-			Background.addPreview(i, backgrounds[i])
-		}
+		backgrounds
+			.reverse()
+			.forEach(async (background, i) => {
+				const preview = Background.previewFactory({ id: backgrounds.length - i - 1, background: background }, "return")
+				fragment.appendChild(preview)
+				await new Promise(r => setTimeout(r, 10))
+			})
+
+		Background.previewsWrapper.append(fragment)
 	}
-	addPreview(id, content, asFirst = false) {
+	previewFactory(details, mode) {
 		const preview = document.createElement("button")
 		preview.classList.add("preview")
 		preview.setAttribute("title", "Set this as the background")
 
-		preview.innerHTML = content
-		preview.setAttribute("bgID", id)
+		preview.innerHTML = details.background
+		preview.setAttribute("bgID", details.id)
 		preview.addEventListener("click", Background.loadBackground)
 
-		if (asFirst) { this.previewsWrapper.prepend(preview) }
-		else { this.previewsWrapper.append(preview) }
+		switch(mode) {
+			case "return": return preview
+			default: return Background.previewsWrapper.prepend(preview)
+		}
 	}
 	async loadBackground(event) {
 		const backgroundID = parseInt(event.target.getAttribute("bgID"))
@@ -111,23 +116,45 @@ const Background = new class {
 	}
 	removeAllBackgrounds() {
 		WebdeskEvent.BACKGROUND_REMOVE_ALL.emit({})
-		// TODO: Remove all previews
+		Background.previewsWrapper.style = "none"
+
+		const previews = Array.from(Background.previewsWrapper.children)
+		previews
+			.slice(0, previews.length - 1)
+			.forEach((preview) => { preview.remove() })
+
+		Background.previewsWrapper.style = "flex"
+	}
+
+	init() {
+		Background.showAllBackgroundsPreviews()
+		Background.previewsWrapper.style = "flex"
 	}
 
 	constructor() {
 		this.uploadButton.addEventListener("input", this.manageUpload)
 		this.deleteButton.addEventListener("click", this.removeAllBackgrounds)
+		this.sectionButton.addEventListener("click", this.init, { once: true })
 
-		this.showAllBackgroundsPreviews()
+		this.previewsWrapper.style = "none"
 
-		webdeskDB.getAll("_backgrounds", "last-ID").then((backgrounds) => { Background.saveID = backgrounds.length - 1 })
+		WebdeskEvent.BACKGROUND_UPLOADED.on(this.previewFactory.bind(this))
 	}
 }
 
 const Animations = new class {
-	constructor() {
-		
+	sectionButton = document.querySelector(`.sectionOpener[animations]`)
+
+	init() {
 	}
+
+	constructor() {
+		this.sectionButton.addEventListener("click", this.init, { once: true })
+	}
+}
+
+for (const button of document.querySelectorAll("button.sectionOpener")) {
+	button.addEventListener("click", show)
 }
 
 /* BEBUGGGG BEBUUUUUGGG */
@@ -135,3 +162,5 @@ let subSection = mainElement.querySelector(`div[backgrounds]`)
 currentSubSection.style.display = "none"
 subSection.style.display = "flex"
 currentSubSection = subSection
+
+export {}

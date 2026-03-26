@@ -4,11 +4,11 @@
 // TODO: Generator functions tho?
 
 let newUser = false
-// TODO: Make this into a object/class
-var ApplicationManifests
+// TODO: Make this into a object/class?
+let ApplicationManifests
 
 // Simplifies IndexDB interactions
-var webdeskDB = new class {
+const webdeskDB = new class {
 	version = 1
 	// Helper for the main functions for interacting with the database
 	async _run(tableName, mode, callback) {
@@ -110,6 +110,8 @@ var webdeskDB = new class {
 	}
 }
 
+window.webdeskDB = webdeskDB
+
 class WebdeskEvent {
 	static templates = {
 		EMPTY: {},
@@ -121,8 +123,8 @@ class WebdeskEvent {
 		CLOSE: { closed: null, open: [ ] },
 		TITLEBAR: { titlebar: null, app: null },
 		BACKGROUND: { id: null, background: null, },
-		CUSTOMIZATION: { id: null, css: null, object: null, },
-		INTERACTION: { target: null, x: null, y: null, },
+		INTERACTION: { target: null, x: null, y: null, force: false, },
+		CUSTOMIZATION: { id: null, css: null, object: null, force: false, },
 	}
 
 	static MANIFESTS_READY = new WebdeskEvent(this.templates.EMPTY)
@@ -161,6 +163,7 @@ class WebdeskEvent {
 	static BACKGROUND_REMOVE_ALL = new WebdeskEvent(this.templates.EMPTY)
 	static BACKGROUND_LOAD = new WebdeskEvent(this.templates.BACKGROUND)
 	static BACKGROUND_UPLOAD = new WebdeskEvent(this.templates.EMPTY)
+	static BACKGROUND_UPLOADED = new WebdeskEvent(this.templates.BACKGROUND)
 
 	emit(data = {}) {
 		const details = { ...this.template, ...data }
@@ -830,6 +833,7 @@ const UIManager = new class {
 	backgroundElement = document.querySelector(".Background")
 	currentCustomizationID = parseInt(localStorage.getItem("customization-id"))
 	currentBackgroundID = parseInt(localStorage.getItem("background-id"))
+	saveID = 1
 
 	async newUserCustomizationInit() {
 		const theme = {
@@ -859,41 +863,41 @@ const UIManager = new class {
 	}
 	// TODO: Check if selected custom is the same as current
 	async loadCustomization(details) {
-		if (!details.content) { return }
+		if (!details.object) { return }
+		else if (!details.force && details.id == UIManager.currentBackgroundID) { return }
+
 		localStorage.setItem("customization-id", UIManager.currentCustomizationID = details.id)
 
-		UIManager.loadCssVars(details.content.windows, "windows")
-		UIManager.loadCssVars(details.content.appdock, "appdock")
-		UIManager.loadCssVars(details.content.launchers, "launchers")
+		UIManager.loadCssVars(details.object.windows, "windows")
+		UIManager.loadCssVars(details.object.appdock, "appdock")
+		UIManager.loadCssVars(details.object.launchers, "launchers")
 
-		WebdeskEvent.CUSTOMIZATION_LOADED.emit({ id: UIManager.currentCustomizationID, css: document.documentElement.style.cssText, object: details.content })
+		WebdeskEvent.CUSTOMIZATION_LOADED.emit({ id: UIManager.currentCustomizationID, css: document.documentElement.style.cssText, object: details.object })
 	}
 	// TODO: Check if selected bg is the same as current
 	async loadBackground(details) {
 		if (!details.background) { return }
+		else if (!details.force && details.id == UIManager.currentBackgroundID) { return }
 
 		localStorage.setItem("background-id", UIManager.currentBackgroundID = details.id)
 		UIManager.backgroundElement.innerHTML = details.background
 
 		WebdeskEvent.BACKGROUND_LOADED.emit({ id: details.id, background: details.background })
 	}
-	async bulkUploadToDB(details) {
+	async uploadBackgroundToDB(details) {
 		const savedBackgrounds = await webdeskDB.getAll("_backgrounds")
-		let rollingID = savedBackgrounds.length
+		const ID = UIManager.saveID++
 
-		WebdeskEvent.BACKGROUND_LOAD.emit({ id: rollingID + details.backgrounds.length - 1, background: details.backgrounds[details.backgrounds.length - 1] })
+		// TODO: vvv Improve this with some sort of frontend thing informing
+		if (!details.background) { return }
+		else if (savedBackgrounds.includes(details.background)) { return }
 
-		for (const background of details.backgrounds) {
-			// TODO: vvv Improve this with some sort of frontend thing informing
-			if (savedBackgrounds.includes(background)) { continue }
-
-			webdeskDB.set("_backgrounds", rollingID++, background)
-		}
+		WebdeskEvent.BACKGROUND_LOAD.emit({ id: ID, background: details.background })
+		webdeskDB.set("_backgrounds", ID, details.background)
+		WebdeskEvent.BACKGROUND_UPLOADED.emit({ id: ID, background: details.background })
 	}
 	async emptyBackgroundsDatabase() {
-		const IDs = (await webdeskDB.getAll("_backgrounds")).length
-
-		for (let i = 1; i < IDs; i++) { await webdeskDB.delete("_backgrounds", i) }
+		for (let i = 1; i < UIManager.saveID; i++) { await webdeskDB.delete("_backgrounds", i) }
 
 		WebdeskEvent.BACKGROUND_LOAD.emit({ id: 0, background: await webdeskDB.get("_backgrounds", 0) })
 	}
@@ -902,14 +906,16 @@ const UIManager = new class {
 		if (isNaN(this.currentCustomizationID)) { await this.newUserCustomizationInit() }
 		if (isNaN(this.currentBackgroundID)) { await this.newUserBackgroundInit() }
 
-		this.loadCustomization({ id: this.currentCustomizationID, content: await webdeskDB.get("_customizations", this.currentCustomizationID) })
-		this.loadBackground({ id: this.currentBackgroundID, background: await webdeskDB.get("_backgrounds", this.currentBackgroundID) })
-
 		WebdeskEvent.CUSTOMIZATION_LOAD.on(this.loadCustomization)
 
 		WebdeskEvent.BACKGROUND_REMOVE_ALL.on(this.emptyBackgroundsDatabase)
-		WebdeskEvent.BACKGROUND_UPLOAD.on(this.bulkUploadToDB)
+		WebdeskEvent.BACKGROUND_UPLOAD.on(this.uploadBackgroundToDB)
 		WebdeskEvent.BACKGROUND_LOAD.on(this.loadBackground)
+		
+		WebdeskEvent.CUSTOMIZATION_LOAD.emit({ id: this.currentCustomizationID, css: null, object: await webdeskDB.get("_customizations", this.currentCustomizationID), force: true })
+		WebdeskEvent.BACKGROUND_LOAD.emit({ id: this.currentBackgroundID, background: await webdeskDB.get("_backgrounds", this.currentBackgroundID), force: true })
+
+		this.saveID = (await webdeskDB.getAll("_backgrounds")).length
 	})()}
 }
 
@@ -992,3 +998,5 @@ const SWManager = new class {
 /* BEBUGGGG BEBUUUUUGGG */
 // UIManager.newUserCustomizationInit()
 // UIManager.newUserBackgroundInit()
+
+export {}

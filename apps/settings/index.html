@@ -10,7 +10,7 @@
 		<nav>
 			<section class="general">
 				<h6>General</h6>
-				<button launchers onclick="show(this)">
+				<button launchers class="sectionOpener">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-square-stack">
 						<path d="M4 10c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2"/>
 						<path d="M10 16c-1.1 0-2-.9-2-2v-4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2"/>
@@ -18,7 +18,7 @@
 					</svg>
 					<p>Launchers</p>
 				</button>
-				<button windows onclick="show(this)">
+				<button windows class="sectionOpener">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-app-window-mac">
 						<rect width="20" height="16" x="2" y="4" rx="2"/>
 						<path d="M6 8h.01"/>
@@ -27,7 +27,7 @@
 					</svg>
 					<p>Windows</p>
 				</button>
-				<button appdock onclick="show(this)">
+				<button appdock class="sectionOpener">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 12" class="lucide-computer">
 						<rect width="20" height="8" x="2" y="2" rx="2" id="rect2" />
 						<path d="M 6,6 H 8" id="path2" />
@@ -35,7 +35,7 @@
 					</svg>
 					<p>App Dock</p>
 				</button>
-				<button apps onclick="show(this)">
+				<button apps class="sectionOpener">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-blocks">
 						<path d="M10 22V7a1 1 0 0 0-1-1H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5a1 1 0 0 0-1-1H2"/>
 						<rect x="14" y="2" width="8" height="8" rx="1"/>
@@ -45,7 +45,7 @@
 			</section>
 			<section class="customization">
 				<h6>Customization</h6>
-				<button colors onclick="show(this)">
+				<button colors class="sectionOpener">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-swatch-book">
 						<path d="M11 17a4 4 0 0 1-8 0V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2Z"/>
 						<path d="M16.7 13H19a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7"/>
@@ -54,7 +54,7 @@
 					</svg>
 					<p>Colors</p>
 				</button>
-				<button backgrounds onclick="show(this)">
+				<button backgrounds class="sectionOpener">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20" class="lucide-wallpaper">
 						<path d="m9 17 6.1-6.1a2 2 0 0 1 2.81.01L22 15"/>
 						<circle cx="8" cy="9" r="2"/>
@@ -62,7 +62,7 @@
 					</svg>
 					<p>Backgrounds</p>
 				</button>
-				<button animations onclick="show(this)">
+				<button animations class="sectionOpener">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-circle-play">
 						<path d="M9 9.003a1 1 0 0 1 1.517-.859l4.997 2.997a1 1 0 0 1 0 1.718l-4.997 2.997A1 1 0 0 1 9 14.996z"/>
 						<circle cx="12" cy="12" r="10"/>
@@ -214,6 +214,6 @@
 				<input type="text" name="" id="">
 			</div>
 		</main>
-		<script src="settings.js"></script>
+		<script src="settings.js" type="module"></script>
 	</body>
 </html>
