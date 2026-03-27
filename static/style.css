@@ -278,6 +278,10 @@ body {
 .Window:has([app].XY1) { cursor: nw-resize; }
 .Window:has([app].XY2) { cursor: ne-resize; }
 
+[icon] > * {
+	pointer-events: none;
+}
+
 /* ----- Color customization ----- */
 
 .AppDock {

@@ -1074,6 +1074,7 @@ const SettingsManager = new class {
 		this.setupLauncher()
 
 		WebdeskEvent.MANIFESTS_READY.on(this.setupWindow, this.setupIcon)
+		this.icon.addEventListener("click", (event) => { this.window.classList.remove("minimised") })
 	}
 }
 
