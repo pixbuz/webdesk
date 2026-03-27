@@ -164,9 +164,10 @@ body {
 }
 
 [app] {
+	will-change: top, left, width, height;
+
 	padding: calc(var(--windows-appearance-border) + var(--windows-appearance-padding));
 	border-radius: calc(var(--windows-appearance-border) * 2 + var(--windows-appearance-padding));
-	will-change: top, left, width, height;
 	min-height: 12.5vmin;
 	min-width: 12.5vmin;
 	position: absolute;
@@ -193,11 +194,12 @@ body {
 [app].focus::after { opacity: 100%; }
 
 [app].maximised {
-	left: 0 !important;
-	top: 0 !important;
+	animation: Window-maximising-moving 100ms linear forwards;
+}
 
-	height: 100%;
-	width: 100%;
+[app].maximised::before {
+	border-radius: 0;
+	inset: 0;
 }
 
 [app].minimised {
@@ -205,6 +207,8 @@ body {
 }
 
 [app] .titlebarWrapper {
+	padding-bottom: var(--windows-appearance-padding);
+
 	user-select: none;
 	overflow: hidden;
 	height: 2.5vmin;
@@ -219,6 +223,8 @@ body {
 }
 
 [app] .contentWrapper {
+	will-change: width, height;
+
 	min-height: var(--windows-appearance-min-height);
 	min-width: var(--windows-appearance-min-width);
 
@@ -235,10 +241,10 @@ body {
 }
 
 [app].maximised .contentWrapper {
-	height: 100% !important;
-	width: 100% !important;
-	max-height: 100vmin;
-	max-width: 100vmax;
+	animation: Window-maximising-resizing 100ms linear forwards;
+
+	max-height: 100svh;
+	max-width: 100svw;
 }
 
 [app].resizing .contentWrapper {
@@ -253,6 +259,13 @@ body {
 	border: none;
 	height: 100%;
 	width: 100%;
+}
+
+[app].moving,
+[app].resizing,
+[app].moving .contentWrapper,
+[app].resizing .contentWrapper {
+	transition: none;
 }
 
 .Window:has([app].moving) { cursor: grabbing; }
@@ -317,56 +330,22 @@ body {
 	background-repeat: space;
 }
 
-/* ----- Animations ----- */
-
-.Window.Space:has(.maximised:not(.minimised)) ~ .AppDock:hover {
-	animation: AppDock-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
-	opacity: 1;
-}
-
-.Window.Space:has(.maximised:not(.minimised)) ~ .AppDock {
-	animation: AppDock-maximised-down 250ms cubic-bezier(.25, -0.25, .5, 0) normal none;
-	opacity: 0;
-}
-
-.AppDock {
-	animation: AppDock-maximised-up 250ms cubic-bezier(.25, -0.25, .5, 0) normal forwards;
-}
-
-[app] {
-	transition: transform 25ms cubic-bezier(.25, .5, 1, 1);
-}
-
-[app].resizeX,
-[app].resizeY,
-[app].resizeXY1,
-[app].resizeXY2,
-[app].opening { transition: none; }
-
-[app].maximised::before {
-	border-radius: 0;
-	inset: 0;
-	transition: inset 100ms linear,
-		border-radius 100ms linear;
-}
-
-[app].maximised {
-	transition: transform 100ms cubic-bezier(.25, .5, 1, 1),
-		width 100ms cubic-bezier(.25, .5, 1, 1),
-		height 100ms cubic-bezier(.25, .5, 1, 1);
-}
-
-[app].from-maximised {
-	transition: transform 100ms cubic-bezier(.25, .5, 1, 1),
-		width 100ms cubic-bezier(.25, .5, 1, 1),
-		height 100ms cubic-bezier(.25, .5, 1, 1);
-}
-
-[app].closing {
-	transition-duration: 100ms;
-}
-
 /* ----- Keyframes animations ----- */
+
+@keyframes Window-maximising-resizing {
+	to {
+		height: 100svh;
+		width: 100svw;
+	}
+}
+
+@keyframes Window-maximising-moving {
+	to {
+		padding: 4px 0 0 0;
+		left: 0;
+		top: 0;
+	}
+}
 
 @keyframes AppDock-maximised-up {
 	from {

@@ -198,7 +198,7 @@ for (const button of document.querySelectorAll("button.sectionOpener")) {
 }
 
 /* BEBUGGGG BEBUUUUUGGG */
-let subSection = mainElement.querySelector(`div[colors]`)
+let subSection = mainElement.querySelector(`div[animations]`)
 currentSubSection.style.display = "none"
 subSection.style.display = "flex"
 currentSubSection = subSection

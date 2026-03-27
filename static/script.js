@@ -2,6 +2,7 @@
 
 // NOTE: Generator functions tho?
 
+// TODO: Settings titlebar
 // TODO: Improve focusWindow logic
 // TODO: Better param names than "details"
 // TODO: Make centerWindow toggle-able from settings
@@ -446,7 +447,7 @@ const WMTitlebarFactory = new class {
 	setUpVars(details) {
 		WMTitlebarFactory.titlebarVars = details.css
 			.split("; ")
-			.filter((cssVar) => { return cssVar.startsWith("--windows-color-titlebar") })
+			.filter((cssVar) => { return cssVar.startsWith("--windows-") && cssVar.includes("titlebar") })
 			.join("; ")
 	}
 
@@ -1062,6 +1063,7 @@ const SettingsManager = new class {
 	}
 	setupWindow() {
 		SettingsManager.window.style.display = "none"
+
 		WebdeskEvent.TITLEBAR_SETUP.emit({ titlebar: SettingsManager.window.querySelector(`.titlebar`), app: "settings" })
 	}
 	setupIcon() {

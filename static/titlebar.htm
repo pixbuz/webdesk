@@ -15,8 +15,8 @@
 			body {
 				justify-content: space-between;
 				flex-flow: row nowrap;
-				padding: 0 1% 4px 1%;
 				overflow: hidden;
+				padding: 0 8px;
 				display: flex;
 				width: 100%;
 			}
@@ -31,11 +31,11 @@
 				width: 21px;
 			}
 			.title {
+				color: var(--windows-color-titlebar-title);
 				text-transform: capitalize;
 				text-align: center;
 				margin: auto;
 				flex: 1;
-				color: var(--windows-color-titlebar-title);
 			}
 			body.focus .title { color: var(--windows-color-titlebar-focus-title); }
 			.buttons {
@@ -51,9 +51,8 @@
 				pointer-events: all;
 				aspect-ratio: 1.25;
 				border-radius: 4px;
-				aspect-ratio: 1.25;
-				height: 75svh;
 				border: none;
+				height: 85%;
 			}
 			[minimise] { background: var(--windows-color-titlebar-buttons-mini); }
 			[maximise] { background: var(--windows-color-titlebar-buttons-maxi); }
