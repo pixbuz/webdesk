@@ -90,9 +90,10 @@ main > div:first-child {
 	display: unset;
 }
 
-[colors] hr {
-	border: solid 1px black;
-	margin: 8px auto;
+div > .hr {
+	background: #2E3440;
+	margin-inline: 2.5%;
+	height: 1px;
 	width: 95%;
 }
 
@@ -183,13 +184,6 @@ main > div:first-child {
 
 [backgrounds] button svg {
 	stroke: red;
-}
-
-div > .hr {
-	background: #2E3440;
-	margin-inline: 2.5%;
-	height: 1px;
-	width: 95%;
 }
 
 [backgrounds] .wrapper {

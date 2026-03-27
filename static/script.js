@@ -1,13 +1,23 @@
 /// <reference lib="dom" />
 
-// TODO: Animations
-// TODO: Generator functions tho?
+// NOTE: Generator functions tho?
+
+// TODO: Improve focusWindow logic
+// TODO: Better param names than "details"
+// TODO: Make centerWindow toggle-able from settings
+// TODO: Make ApplicationManifests into a object/class?
+// TODO: Make a better system for window to icon and icon to window for the appdock
+// TODO: Add a versioning system for the SW that empties the cache if any server asset is updated
+// TODO: Improve backgrounds upload with a frontend element/thing informing about skips cuz duplicates
+
+// IDEA: Make a UPDATE Z INDEX event for cleaner (event driven) logic
+// IDEA: Windows get added to the window space after the iframes loaded
+// IDEA: Conjure a system for passive highest z-index resolve for windows focus shift
+// IDEA: Quick window switching with focusWindow on WebdeskEvent.WINDOW_MOVE instead of WebdeskEvent.WINDOW_MOVE_START
 
 let newUser = false
-// TODO: Make this into a object/class?
 let ApplicationManifests
 
-// Simplifies IndexDB interactions
 const webdeskDB = new class {
 	version = 1
 	// Helper for the main functions for interacting with the database
@@ -478,7 +488,6 @@ const WMFactory = new class {
 		windowWrapper.setAttribute("app", details.app)
 		windowWrapper.append(titlebarWrapper, contentWrapper)
 
-		// IDEA: Windows get added to the window space after the iframes loaded
 		WMFactory.space.appendChild(windowWrapper)
 		WMFactory.open.push(windowWrapper)
 
@@ -515,8 +524,6 @@ const WMFactory = new class {
 const WMFocuser = new class {
 	focusedWindow = null
 
-	// TODO: Improve this logic
-	/** @param {InteractionTemplate} details */
 	focusWindow(details) {
 		if (details.target != WMFocuser.focusedWindow || !WMFocuser.focusedWindow) {
 			if (WMFocuser.focusedWindow) { WMFocuser.focusedWindow.classList.remove("focus") }
@@ -527,14 +534,12 @@ const WMFocuser = new class {
 			WMFocuser.focusedWindow.classList.add("focus")
 		}
 	}
-	// IDEA: Make a UPDATE Z INDEX event for cleaner (event driven) logic
 	updateZIndex(details, targetWindow) {
 		const zIndex = parseInt(targetWindow.style.zIndex)
 
 		if (details.new == targetWindow) { targetWindow.style.zIndex = 29 }
 		else if (zIndex > 20) { targetWindow.style.zIndex = zIndex - 1 }
 	}
-	// IDEA: Conjure a system for passive highest z-index resolve
 	shiftFocus(details) {
 		const targetWindow = details.open.sort((a, b) => {
 			if (a.style.zIndex > b.style.zIndex) { return a }
@@ -545,7 +550,6 @@ const WMFocuser = new class {
 			WebdeskEvent.WINDOW_UPDATED_FOCUS.emit({ old: WMFocuser.focusedWindow, new: targetWindow })
 		}
 
-		// NOTE: Could be undefined
 		WMFocuser.focusedWindow = targetWindow
 	}
 
@@ -553,7 +557,6 @@ const WMFocuser = new class {
 		WebdeskEvent.WINDOW_CLOSE.on(this.shiftFocus)
 
 		WebdeskEvent.WINDOW_RESIZE_START.on(this.focusWindow)
-		// IDEA: Quick window switching with WebdeskEvent.WINDOW_MOVE instead of WebdeskEvent.WINDOW_MOVE_START
 		WebdeskEvent.WINDOW_MOVE_START.on(this.focusWindow)
 		WebdeskEvent.WINDOW_OPEN.on(this.focusWindow)
 	}
@@ -595,8 +598,7 @@ const WMMover = new class {
 	}
 
 	constructor() {
-		// TODO: Make it toggle-able from settings
-		WebdeskEvent.WINDOW_OPEN.on(this.centerWindow.bind(this))
+		WebdeskEvent.WINDOW_OPEN.on(this.centerWindow)
 
 		WebdeskEvent.WINDOW_MOVE_START.on(this.init)
 		WebdeskEvent.WINDOW_MOVE.on(this.followCursor)
@@ -678,7 +680,6 @@ const AppDockManager = new class {
 	element = document.querySelector(".AppDock")
 	clock = this.element.querySelector(".Clock")
 	open = this.element.querySelector(".Open")
-	// TODO: There has to be a better way
 	windowToIcon = new WeakMap()
 	iconToWindow = new WeakMap()
 	maximised = {
@@ -731,7 +732,6 @@ const AppDockManager = new class {
 			icon.remove()
 		}
 	}
-	// NOTE: iconToWindow is only used for this... Kinda wasteful but loops are sad
 	focusLinkedWindow(details) {
 		const window = AppDockManager.iconToWindow.get(details.target)
 
@@ -966,7 +966,6 @@ const UIManager = new class {
 		const savedBackgrounds = await webdeskDB.getAll("_backgrounds")
 		const ID = UIManager.saveID++
 
-		// TODO: vvv Improve this with some sort of frontend thing informing
 		if (!details.background) { return }
 		else if (savedBackgrounds.includes(details.background)) { return }
 
@@ -1076,7 +1075,6 @@ const SettingsManager = new class {
 	}
 }
 
-// TODO: Add a versioning system that empties the cache if any server asset is updated
 const SWManager = new class {
 	loadInformation() {
 		navigator.storage.estimate().then(({ usage, quota }) => {

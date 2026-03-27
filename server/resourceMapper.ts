@@ -1,3 +1,6 @@
+// TODO: Handle applicationWatcher's special cases
+// TODO: Improve var naming
+
 import { log } from "./log.ts"
 import { config } from "../server.config.ts"
 
@@ -191,7 +194,6 @@ export const resources = new class {
 	// Watches for application changes
 	private async applicationWatcher() {
 		for await (const fileEvent of Deno.watchFs("apps", { recursive: true })) {
-			// TODO: Handle these special cases
 			switch (fileEvent.kind) {
 				case "any": log.debug(`Noticed something (any) happened to "${fileEvent.paths.join(`" and "`)}"`); continue
 				case "other": log.debug(`Noticed something (other) happened to "${fileEvent.paths.join(`" and "`)}"`); continue

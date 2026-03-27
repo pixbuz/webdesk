@@ -1,3 +1,7 @@
+// TODO: Custom color pickers
+// TODO: Improve read image error logic
+// TODO: Improve Background loading, rn it blocks the whole site
+
 const { WebdeskEvent, webdeskDB } = window.parent
 
 const mainElement = document.querySelector("main")
@@ -75,7 +79,6 @@ const Colors = new class {
 	}
 }
 
-// TODO: Improve the loading, rn it blocks the whole site
 const Background = new class {
 	sectionButton = document.querySelector(`.sectionOpener[backgrounds]`)
 	section = mainElement.querySelector(`[backgrounds]`)
@@ -101,7 +104,6 @@ const Background = new class {
 
 			reader.onload = (event) => { resolve(Background.processImage(event.target.result)) }
 			reader.onerror = (error) => { reject(error) }
-			// TODO: ^^^^^ Improve this
 
 			reader.readAsDataURL(file)
 		})

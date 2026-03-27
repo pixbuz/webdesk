@@ -1,3 +1,5 @@
+// TODO: Improve var naming
+
 import { log } from "./log.ts"
 import { config } from "../server.config.ts"
 import { resources } from "./resourceMapper.ts"
