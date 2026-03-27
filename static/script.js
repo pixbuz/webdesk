@@ -112,80 +112,128 @@ const webdeskDB = new class {
 
 window.webdeskDB = webdeskDB
 
-class WebdeskEvent {
-	static templates = {
-		EMPTY: {},
-		CLOCK: { update: [ ], },
-		LAUNCHER: { app: null, },
-		TARGET: { target: null },
-		FOCUS: { old: null, new: null, },
-		OPEN: { target: null, app: null },
-		CLOSE: { closed: null, open: [ ] },
-		CHANGE: { css: null, value: null, },
-		TITLEBAR: { titlebar: null, app: null },
-		BACKGROUND: { id: null, background: null, },
-		INTERACTION: { target: null, x: null, y: null, force: false, },
-		CUSTOMIZATION: { id: null, css: null, object: null, force: false, },
+/** @typedef {Object} EmptyTemplate */
+
+/** @typedef {Object} ClockTemplate
+ * @property {string[]} update */
+
+/** @typedef {Object} LauncherTemplate
+ * @property {string} app */
+
+/** @typedef {Object} TargetTemplate
+ * @property {HTMLElement} target */
+
+/** @typedef {Object} FocusTemplate
+ * @property {HTMLElement} old
+ * @property {HTMLElement} new */
+
+/** @typedef {Object} OpenTemplate
+ * @property {HTMLElement} target
+ * @property {string} app */
+
+/** @typedef {Object} CloseTemplate
+ * @property {HTMLElement} closed
+ * @property {HTMLElement[]} open */
+
+/** @typedef {Object} ChangeTemplate
+ * @property {string} css
+ * @property {string} value */
+
+/** @typedef {Object} TitlebarTemplate
+ * @property {HTMLElement} titlebar
+ * @property {any} app */
+
+/** @typedef {Object} BackgroundTemplate
+ * @property {number} id
+ * @property {string} background */
+
+/** @typedef {Object} InteractionTemplate
+ * @property {HTMLElement} target
+ * @property {number} x
+ * @property {number} y
+ * @property {boolean} force */
+
+/** @typedef {Object} CustomizationTemplate
+ * @property {number} id
+ * @property {string} css
+ * @property {Object} object
+ * @property {boolean} force */
+
+/** @template T */
+class WebdeskEventBase {
+	constructor() {
+		this.name = Math.random().toString(36).substring(2, 9)
 	}
 
-	static MANIFESTS_READY = new WebdeskEvent(this.templates.EMPTY)
-
-	static LAUNCHER_CLICK = new WebdeskEvent(this.templates.LAUNCHER)
-
-	static TITLEBAR_SETUP = new WebdeskEvent(this.templates.TITLEBAR)
-
-	static WINDOW_MOVE_START = new WebdeskEvent(this.templates.INTERACTION)
-	static WINDOW_MOVE = new WebdeskEvent(this.templates.INTERACTION)
-	static WINDOW_MOVE_END = new WebdeskEvent(this.templates.INTERACTION)
-
-	static WINDOW_RESIZE_START = new WebdeskEvent(this.templates.INTERACTION)
-	static WINDOW_RESIZE = new WebdeskEvent(this.templates.INTERACTION)
-	static WINDOW_RESIZE_END = new WebdeskEvent(this.templates.INTERACTION)
-
-	static WINDOW_OPEN = new WebdeskEvent(this.templates.OPEN)
-	static WINDOW_CLOSE = new WebdeskEvent(this.templates.CLOSE)
-
-	static WINDOW_UPDATED_FOCUS = new WebdeskEvent(this.templates.FOCUS)
-
-	static WINDOW_MAXIMISE = new WebdeskEvent(this.templates.TARGET)
-	static WINDOW_MAXIMISE_END = new WebdeskEvent(this.templates.TARGET)
-
-	static WINDOW_MINIMISE = new WebdeskEvent(this.templates.TARGET)
-	static WINDOW_MINIMISE_END = new WebdeskEvent(this.templates.TARGET)
-
-	static CLOCK_UPDATE = new WebdeskEvent(this.templates.CLOCK)
-
-	static ICON_CLICK = new WebdeskEvent(this.templates.TARGET)
-
-	static CUSTOMIZATION_LOADED = new WebdeskEvent(this.templates.CUSTOMIZATION)
-	static CUSTOMIZATION_LOAD = new WebdeskEvent(this.templates.CUSTOMIZATION)
-	static CUSTOMIZATION_CHANGE = new WebdeskEvent(this.templates.CHANGE)
-
-	static BACKGROUND_LOADED = new WebdeskEvent(this.templates.BACKGROUND)
-	static BACKGROUND_REMOVE_ALL = new WebdeskEvent(this.templates.EMPTY)
-	static BACKGROUND_LOAD = new WebdeskEvent(this.templates.BACKGROUND)
-	static BACKGROUND_UPLOAD = new WebdeskEvent(this.templates.EMPTY)
-	static BACKGROUND_UPLOADED = new WebdeskEvent(this.templates.BACKGROUND)
-
+	/** @param {Partial<T>} data */
 	emit(data = {}) {
-		const details = { ...this.template, ...data }
-		const event = new CustomEvent(this.name, {
-			detail: details,
+		window.dispatchEvent(new CustomEvent(this.name, {
+			detail: data,
 			bubbles: true,
 			composed: true
-		})
-		window.dispatchEvent(event)
-	}
-	on(...callBackFunctions) {
-		callBackFunctions.forEach((callback) => {
-			window.addEventListener(this.name, (event) => { callback(event.detail) })
-		})
+		}))
 	}
 
-	constructor(eventTemplate = {}) {
-		this.name = Math.random().toString(36)
-		this.template = eventTemplate
+	/** @param {...((details: T) => void)} callbacks */
+	on(...callbacks) {
+		callbacks.forEach(cb => {
+			window.addEventListener(this.name, (e) => cb(/** @type {any} */(e).detail))
+		})
 	}
+}
+
+/** @extends {WebdeskEventBase<EmptyTemplate>} */ class EmptyEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<LauncherTemplate>} */ class LauncherEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<TitlebarTemplate>} */ class TitlebarEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<InteractionTemplate>} */ class InteractionEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<OpenTemplate>} */ class OpenEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<CloseTemplate>} */ class CloseEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<FocusTemplate>} */ class FocusEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<TargetTemplate>} */ class TargetEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<ClockTemplate>} */ class ClockEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<CustomizationTemplate>} */ class CustomizationEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<ChangeTemplate>} */ class ChangeEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<BackgroundTemplate>} */ class BackgroundEvent extends WebdeskEventBase {}
+
+class WebdeskEvent {
+	static MANIFESTS_READY = new EmptyEvent()
+	static LAUNCHER_CLICK = new LauncherEvent()
+	static TITLEBAR_SETUP = new TitlebarEvent()
+	
+	static WINDOW_MOVE_START = new InteractionEvent()
+	static WINDOW_MOVE = new InteractionEvent()
+	static WINDOW_MOVE_END = new InteractionEvent()
+	
+	static WINDOW_RESIZE_START = new InteractionEvent()
+	static WINDOW_RESIZE = new InteractionEvent()
+	static WINDOW_RESIZE_END = new InteractionEvent()
+	
+	static WINDOW_OPEN = new OpenEvent()
+	static WINDOW_CLOSE = new CloseEvent()
+	static WINDOW_UPDATED_FOCUS = new FocusEvent()
+	
+	static WINDOW_MAXIMISE = new TargetEvent()
+	static WINDOW_MAXIMISE_END = new TargetEvent()
+	
+	static WINDOW_MINIMISE = new TargetEvent()
+	static WINDOW_MINIMISE_END = new TargetEvent()
+	
+	static ICON_CLICK = new TargetEvent()
+	static CLOCK_UPDATE = new ClockEvent()
+	
+	static CUSTOMIZATION_LOAD = new CustomizationEvent()
+	static CUSTOMIZATION_LOADED = new CustomizationEvent()
+	
+	static CUSTOMIZATION_CHANGE = new ChangeEvent()
+	static CUSTOMIZATION_CHANGE_SAVE = new ChangeEvent()
+	static CUSTOMIZATION_CHANGE_SAVED = new CustomizationEvent()
+	
+	static BACKGROUND_LOAD = new BackgroundEvent()
+	static BACKGROUND_LOADED = new BackgroundEvent()
+	static BACKGROUND_REMOVE_ALL = new EmptyEvent()
+
+	static BACKGROUND_UPLOAD = new EmptyEvent()
+	static BACKGROUND_UPLOADED = new BackgroundEvent()
 }
 
 window.WebdeskEvent = WebdeskEvent
@@ -272,6 +320,7 @@ const LauncherManager = new class {
 
 		launcherWrapper.addEventListener("click", () => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: appName }) })
 	}
+	/** @param {EmptyTemplate} details */
 	queueLaunchers(details) {
 		for (const appName of Object.keys(details).sort()) {
 			if (details[appName].service) { continue }
@@ -380,23 +429,18 @@ const WMTitlebarFactory = new class {
 			case "maximise": { return WMTitlebarFactory.maximise({ target: window }) }
 		}
 	}
-	updateVar(details) {
-		document.documentElement.style.setProperty(details.css, )
-		const replacePos = WMTitlebarFactory.titlebarVars.indexOf(details.css) + details.css.length + 1
-
-		WMTitlebarFactory.titlebarVars = WMTitlebarFactory.titlebarVars.substring(replacePos) + details.value + WMTitlebarFactory.titlebarVars.substring(replacePos + details.value.length)
-	}
 	setUpVars(details) {
+		console.log(details)
 		WMTitlebarFactory.titlebarVars = details.css
 			.split("; ")
 			.filter((cssVar) => { return cssVar.startsWith("--windows-color-titlebar") })
-			.join(";")
+			.join("; ")
 	}
 
 	constructor() {
 		WebdeskEvent.TITLEBAR_SETUP.on(this.setup)
 		WebdeskEvent.CUSTOMIZATION_LOADED.on(this.setUpVars)
-		WebdeskEvent.CUSTOMIZATION_CHANGE.on(this.updateVar)
+		WebdeskEvent.CUSTOMIZATION_CHANGE_SAVED.on(this.setUpVars)
 	}
 }
 
@@ -469,6 +513,7 @@ const WMFocuser = new class {
 	focusedWindow = null
 
 	// TODO: Improve this logic
+	/** @param {InteractionTemplate} details */
 	focusWindow(details) {
 		if (details.target != WMFocuser.focusedWindow || !WMFocuser.focusedWindow) {
 			if (WMFocuser.focusedWindow) { WMFocuser.focusedWindow.classList.remove("focus") }
@@ -855,6 +900,8 @@ const UIManager = new class {
 	backgroundElement = document.querySelector(".Background")
 	currentCustomizationID = parseInt(localStorage.getItem("customization-id"))
 	currentBackgroundID = parseInt(localStorage.getItem("background-id"))
+	currentCustomizationObject
+	currentBackgroundImage
 	saveID = 1
 
 	async newUserCustomizationInit() {
@@ -877,26 +924,32 @@ const UIManager = new class {
 
 		UIManager.currentBackgroundID = 0
 	}
-	loadCssVars(root, prefix = "") {
-		for (const key of Object.keys(root)) {
-			if (root[key] instanceof Object) { this.loadCssVars(root[key], `${prefix ? prefix + "-" : ""}${key}`) }
-			else { document.documentElement.style.setProperty(`--${prefix}-${key}`, root[key]) }
+	computeCustomizationVars(customizationObject, prefix) {
+		const varList = []
+
+		if (!customizationObject) { customizationObject = UIManager.currentCustomizationObject[prefix] }
+
+		for (const key of Object.keys(customizationObject)) {
+			if (customizationObject[key] instanceof Object) { varList.push(...this.computeCustomizationVars(customizationObject[key], `${prefix + "-"}${key}`)) }
+			else { varList.push(`--${prefix}-${key}: ${customizationObject[key]};`) }
 		}
+
+		return varList
 	}
-	// TODO: Check if selected custom is the same as current
 	async loadCustomization(details) {
 		if (!details.object) { return }
 		else if (!details.force && details.id == UIManager.currentBackgroundID) { return }
 
 		localStorage.setItem("customization-id", UIManager.currentCustomizationID = details.id)
 
-		UIManager.loadCssVars(details.object.windows, "windows")
-		UIManager.loadCssVars(details.object.appdock, "appdock")
-		UIManager.loadCssVars(details.object.launchers, "launchers")
+		const launchers = UIManager.computeCustomizationVars(details.object.launchers, "launchers").join(" ")
+		const windows = UIManager.computeCustomizationVars(details.object.windows, "windows").join(" ")
+		const appdock = UIManager.computeCustomizationVars(details.object.appdock, "appdock").join(" ")
+
+		document.documentElement.style.cssText = `${launchers}${windows}${appdock}`
 
 		WebdeskEvent.CUSTOMIZATION_LOADED.emit({ id: UIManager.currentCustomizationID, css: document.documentElement.style.cssText, object: details.object })
 	}
-	// TODO: Check if selected bg is the same as current
 	async loadBackground(details) {
 		if (!details.background) { return }
 		else if (!details.force && details.id == UIManager.currentBackgroundID) { return }
@@ -918,6 +971,24 @@ const UIManager = new class {
 		webdeskDB.set("_backgrounds", ID, details.background)
 		WebdeskEvent.BACKGROUND_UPLOADED.emit({ id: ID, background: details.background })
 	}
+	async updateCustomizationToDB(details) {
+		const customizationVar = details.css.substring(2)
+		const varTree = customizationVar.split("-")
+		const targetKey = varTree.pop()
+
+		let indexer = UIManager.currentCustomizationObject
+
+		for (const leaf of varTree) { indexer = indexer[leaf] }
+
+		indexer[targetKey] = details.value
+		await webdeskDB.set("_customizations", UIManager.currentCustomizationID, UIManager.currentCustomizationObject)
+
+		const launchers = UIManager.computeCustomizationVars(UIManager.currentCustomizationID.launchers, "launchers").join(" ")
+		const windows = UIManager.computeCustomizationVars(UIManager.currentCustomizationID.windows, "windows").join(" ")
+		const appdock = UIManager.computeCustomizationVars(UIManager.currentCustomizationID.appdock, "appdock").join(" ")
+
+		WebdeskEvent.CUSTOMIZATION_CHANGE_SAVED.emit({ id: UIManager.currentCustomizationID, css: `${launchers}${windows}${appdock}`, object: UIManager.currentCustomizationObject })
+	}
 	async emptyBackgroundsDatabase() {
 		for (let i = 1; i < UIManager.saveID; i++) { await webdeskDB.delete("_backgrounds", i) }
 
@@ -931,6 +1002,7 @@ const UIManager = new class {
 		if (isNaN(this.currentCustomizationID)) { await this.newUserCustomizationInit() }
 		if (isNaN(this.currentBackgroundID)) { await this.newUserBackgroundInit() }
 
+		WebdeskEvent.CUSTOMIZATION_CHANGE_SAVE.on(this.updateCustomizationToDB)
 		WebdeskEvent.CUSTOMIZATION_CHANGE.on(this.previewCustomization)
 		WebdeskEvent.CUSTOMIZATION_LOAD.on(this.loadCustomization)
 
@@ -938,8 +1010,8 @@ const UIManager = new class {
 		WebdeskEvent.BACKGROUND_UPLOAD.on(this.uploadBackgroundToDB)
 		WebdeskEvent.BACKGROUND_LOAD.on(this.loadBackground)
 		
-		WebdeskEvent.CUSTOMIZATION_LOAD.emit({ id: this.currentCustomizationID, css: null, object: await webdeskDB.get("_customizations", this.currentCustomizationID), force: true })
-		WebdeskEvent.BACKGROUND_LOAD.emit({ id: this.currentBackgroundID, background: await webdeskDB.get("_backgrounds", this.currentBackgroundID), force: true })
+		WebdeskEvent.CUSTOMIZATION_LOAD.emit({ id: this.currentCustomizationID, css: null, object: this.currentCustomizationObject = (await webdeskDB.get("_customizations", this.currentCustomizationID)), force: true })
+		WebdeskEvent.BACKGROUND_LOAD.emit({ id: this.currentBackgroundID, background: this.currentBackgroundImage = (await webdeskDB.get("_backgrounds", this.currentBackgroundID)), force: true })
 
 		this.saveID = (await webdeskDB.getAll("_backgrounds")).length
 	})()}

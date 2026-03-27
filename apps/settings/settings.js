@@ -48,11 +48,18 @@ const Colors = new class {
 
 			WebdeskEvent.CUSTOMIZATION_CHANGE.emit({ css: cssVar, value: newColor })
 		} else if (event.type == "change") {
-			// Update theme
+			const cssVar = event.target.name
+			const newColor = event.target.value
+
+			WebdeskEvent.CUSTOMIZATION_CHANGE_SAVE.emit({ css: cssVar, value: newColor })
 		}
 	}
 	async init() {
+		const customizationVars = window.parent.document.documentElement.style.cssText
 
+		for (const input of Colors.section.querySelectorAll("input")) {
+			console.log(input.name)
+		}
 	}
 
 	constructor() {
@@ -163,7 +170,7 @@ const Background = new class {
 
 		this.previewsWrapper.style = "none"
 
-		WebdeskEvent.BACKGROUND_UPLOADED.on(this.previewFactory.bind(this))
+		WebdeskEvent.BACKGROUND_UPLOADED.on(this.previewFactory)
 	}
 }
 
