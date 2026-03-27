@@ -203,7 +203,7 @@ body {
 }
 
 [app].minimised {
-	display: none;
+	animation: Window-minimising-moving 1000ms linear forwards;
 }
 
 [app] .titlebarWrapper {
@@ -247,6 +247,10 @@ body {
 	max-width: 100svw;
 }
 
+[app].minimised .contentWrapper {
+	animation: Window-minimising-resizing 1000ms linear forwards;
+}
+
 [app].resizing .contentWrapper {
 	pointer-events: none;
 	user-select: none;
@@ -276,54 +280,37 @@ body {
 
 /* ----- Color customization ----- */
 
-/* App Dock */
 .AppDock {
 	border: var(--appdock-appearance-border-style) var(--appdock-color-border) var(--appdock-appearance-border-width);
 	background: var(--appdock-color-background);
 	color: var(--appdock-color-text);
 }
 
-/* App Dock Clock */
 .AppDock .Clock p {
 	background: var(--appdock-color-text);
 	background-clip: text;
 	color: transparent;
 }
 
-/* Launcher */
-[launcher] {
-	color: var(--launchers-color-text);
-}
+[launcher] { color: var(--launchers-color-text); }
 
-/* Unfocused Window Border */
 [app] {
 	background: var(--windows-color-border);
 	color: var(--windows-color-title);
 }
 
-/* Unfocused Window Background */
-[app]::before {
-	background: var(--windows-color-background);
-}
+[app]::before { background: var(--windows-color-background); }
 
-/* Unfocused Window Dots */
 [app]::after {
 	background: radial-gradient(circle, var(--windows-color-dots) 37.5%, transparent 50%);
 	background-size: 4px 4px;
 	background-repeat: space;
 }
 
-/* Focused Window Border */
-[app].focus {
-	background: var(--windows-color-focus-border);
-}
+[app].focus { background: var(--windows-color-focus-border); }
 
-/* Focused Window Background */
-[app].focus::before {
-	background: var(--windows-color-focus-background);
-}
+[app].focus::before { background: var(--windows-color-focus-background); }
 
-/* Focused Window Dots */
 [app].focus::after {
 	background: radial-gradient(circle, var(--windows-color-focus-dots) 37.5%, transparent 50%);
 	background-size: 4px 4px;
@@ -331,6 +318,22 @@ body {
 }
 
 /* ----- Keyframes animations ----- */
+
+@keyframes Window-minimising-moving {
+	to {
+		opacity: 0;
+		translate: -50% -50%;
+		left: 50%;
+		top: 150%;
+	}
+}
+
+@keyframes Window-minimising-resizing {
+	to {
+		height: 0;
+		width: 0;
+	}
+}
 
 @keyframes Window-maximising-resizing {
 	to {
