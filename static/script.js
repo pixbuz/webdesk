@@ -4,6 +4,7 @@
 
 // TODO: Settings titlebar
 // TODO: Improve focusWindow logic
+// TODO: Pass variables to content iframes
 // TODO: Better param names than "details"
 // TODO: Make centerWindow toggle-able from settings
 // TODO: Make ApplicationManifests into a object/class?

@@ -74,7 +74,8 @@ const webdesk = new class {
 		// Contains the endpoints mapped to the functions
 		const commands: Record<string, unknown> = {
 			"/api/_/getManifests": returnManifests,
-			"/api/_/defaultTitlebar": Deno.readFileSync(`${config.staticFolder}/titlebar.htm`)
+			"/api/_/defaultTitlebar": Deno.readFileSync(`${config.staticFolder}/titlebar.htm`),
+			"/api/_/assetsHash": resources.getAssetsHash,
 		}
 
 		return commands
@@ -182,6 +183,7 @@ const applications = new class {
 // Server resources as in assets and commands, and assets mime type
 export const resources = new class {
 	private cwd = Deno.cwd()
+	private hash: string = ""
 	// Maps endpoints to the associated assets
 	assets: Record<string, Uint8Array> = {}
 	// Contains the endpoints MIME types
@@ -190,6 +192,17 @@ export const resources = new class {
 	commands: Record<string, unknown> = {}
 	// Saves each endpoint filepath
 	origins: Record<string, string> = {}
+
+	private async generateHashFromAssets() {
+		const data = new TextEncoder().encode(JSON.stringify(resources.assets))
+		const hashBuffer = await crypto.subtle.digest("SHA-1", data)
+		const hashArray = Array.from(new Uint8Array(hashBuffer))
+
+		resources.hash = hashArray.join("")
+		console.log(resources.hash)
+	}
+
+	getAssetsHash() { return resources.hash }
 
 	// Watches for application changes
 	private async applicationWatcher() {
@@ -216,8 +229,9 @@ export const resources = new class {
 					log.info(`File modified! Updating endpoint "${endpoint}"`)
 					resources.registerAssets({ [endpoint]: Deno.readFileSync(file) }, { [endpoint]: file })
 				}
+
+				resources.generateHashFromAssets()
 			})
-			// this.init()
 		}
 	}
 	// Watcher for changes with webdesk files
@@ -269,6 +283,8 @@ export const resources = new class {
 		const { assets, origins, commands} = webdesk.index()
 		this.registerAssets(assets, origins)
 		this.registerCommand(commands)
+
+		resources.generateHashFromAssets()
 	}
 
 	constructor() {
