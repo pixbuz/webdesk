@@ -241,7 +241,11 @@ window.WebdeskEvent = WebdeskEvent
 fetch("/api/_/getManifests").then(async (response) => {
 	ApplicationManifests = await response.json()
 	WebdeskEvent.MANIFESTS_READY.emit(ApplicationManifests)
-	if (newUser) { WMFactory.skeletonizeWindow({ app: "intro" }) }
+
+	if (newUser) { setTimeout(() => {
+		WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" })
+	}, 100) }
+
 	/* BEBUGGGG BEBUUUUUGGG */
 	SettingsManager.openWindow()
 })
@@ -430,7 +434,6 @@ const WMTitlebarFactory = new class {
 		}
 	}
 	setUpVars(details) {
-		console.log(details)
 		WMTitlebarFactory.titlebarVars = details.css
 			.split("; ")
 			.filter((cssVar) => { return cssVar.startsWith("--windows-color-titlebar") })

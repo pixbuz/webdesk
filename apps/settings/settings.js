@@ -55,10 +55,13 @@ const Colors = new class {
 		}
 	}
 	async init() {
-		const customizationVars = window.parent.document.documentElement.style.cssText
+		const customizationVars = window.parent.document.documentElement.style.cssText.split("; ")
+		const customizationLookup = Object.fromEntries(customizationVars.map((pair) => { return pair.split(": ") }))
 
 		for (const input of Colors.section.querySelectorAll("input")) {
-			console.log(input.name)
+			const cssVar = input.name
+
+			input.value = customizationLookup[cssVar]
 		}
 	}
 
