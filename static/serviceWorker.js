@@ -3,49 +3,43 @@
 
 // TODO: Stuff in the front end for sw errors
 
-// IDEA: Use multiple caches for different things IF overlap problem emerges
-
-let updateCacheFlag = false
-let updated = new Set()
 let cache
 
-async function reactToAssetsChanges(response) {
-	const currentAssetsHash = new Response(await response.text())
-	const savedAssetsHash = await cache.match("hash")
+async function init(event) {
+	const currentAssetsHashRequest = await fetch("/api/_/assetsHash")
+	const assetsHash = await currentAssetsHashRequest.text()
 
-	if (savedAssetsHash !== currentAssetsHash) {
-		updateCacheFlag = true
-		cache.put("hash", currentAssetsHash)
-		console.log("Assets changed from last registration!")
-	} else { console.log("Assets hash stayed the same") }
+	cache = await caches.open(assetsHash)
+	const cacheContents = await cache.keys()
+
+	if (cacheContents.length === 0) { purgeOldCaches(assetsHash) }
 }
 
-async function init() {
-	cache = await caches.open("webdesk")
+async function purgeOldCaches(currentHash) {
+	const oldCaches = await caches.keys()
 
-	fetch("/api/_/assetsHash")
-		.then(reactToAssetsChanges)
-		.catch((error) => { console.log(error) })
+	for (const name of oldCaches) {
+		console.log(`Deleting ${name} cache`)
+		if (name !== currentHash) { caches.delete(name) }
+	}
 }
-
-let initPromise = init()
 
 async function interceptor(event) {
-	await initPromise
 	const cached = await cache.match(event.request, { ignoreSearch: true })
+	const requestURL = new URL(event.request.url)
 
-	if (event.request.method !== "GET") { return fetch(event.request) }
-	else if ((updateCacheFlag && !updated.has(event.request.url)) || !cached) {
-		const serverResponse = await fetch(event.request)
+	if (cached) { return cached }
 
+	const serverResponse = await fetch(event.request)
+	if (event.request.method === "GET" && requestURL.pathname !== "/api/_/assetsHash") {
 		if (serverResponse.ok) {
 			cache.put(event.request, serverResponse.clone())
-			updated.add(event.request.url)
 		} else { /* Error */ }
+	}
 
-		return serverResponse
-	} else { return cached }
+	return serverResponse
 }
 
-self.addEventListener("install", () => { self.skipWaiting() })
+self.addEventListener("install", self.skipWaiting)
+self.addEventListener("activate", (event) => { event.waitUntil(init()) })
 self.addEventListener("fetch", (event) => { event.respondWith(interceptor(event)) })
