@@ -1,3 +1,5 @@
+// TODO: Sub origins... fun
+
 import { log } from "./log.ts"
 import { config } from "../server.config.ts"
 import { resources } from "./resourceMapper.ts"

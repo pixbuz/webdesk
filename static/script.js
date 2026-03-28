@@ -11,6 +11,7 @@
 // TODO: Splitting the classes into single files, again?
 // TODO: WebdeskEvent "off" method for removing event listeners
 // TODO: Make a better system for window to icon and icon to window for the appdock
+// TODO: Messaging system between titlebar, content and front end script (triumvirate)
 // TODO: Add a versioning system for the SW that empties the cache if any server asset is updated
 // TODO: Improve backgrounds upload with a frontend element/thing informing about skips cuz duplicates
 
@@ -1094,7 +1095,6 @@ const SWManager = new class {
 	}
 
 	constructor() {
-		this.loadInformation()
 		navigator.serviceWorker.register("/sw")
 			.catch((error) => { console.error(error) })
 	}

@@ -7,10 +7,10 @@ enum Platforms {
 export const config = Object.freeze({
 	platform: Platforms.WINDOWS,
 	staticFolder: "static",
-	hostname: "localhost",
+	hostname: "0.0.0.0",
 	appFolder: "apps",
 	logDebug: true,
-	port: 8000,
+	port: 80,
 	ssl: false,
 	cert: "",
 	key: "",
