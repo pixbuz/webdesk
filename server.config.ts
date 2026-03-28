@@ -1,11 +1,11 @@
-enum Platform {
+enum Platforms {
 	WINDOWS,
 	LINUX
 }
 
 // TODO: Make this do more
 export const config = Object.freeze({
-	platform: Platform.WINDOWS,
+	platform: Platforms.WINDOWS,
 	staticFolder: "static",
 	hostname: "localhost",
 	appFolder: "apps",

@@ -8,6 +8,8 @@
 // TODO: Better param names than "details"
 // TODO: Make centerWindow toggle-able from settings
 // TODO: Make ApplicationManifests into a object/class?
+// TODO: Splitting the classes into single files, again?
+// TODO: WebdeskEvent "off" method for removing event listeners
 // TODO: Make a better system for window to icon and icon to window for the appdock
 // TODO: Add a versioning system for the SW that empties the cache if any server asset is updated
 // TODO: Improve backgrounds upload with a frontend element/thing informing about skips cuz duplicates
@@ -173,10 +175,6 @@ window.webdeskDB = webdeskDB
 
 /** @template T */
 class WebdeskEventBase {
-	constructor() {
-		this.name = Math.random().toString(36).substring(2, 9)
-	}
-
 	/** @param {Partial<T>} data */
 	emit(data = {}) {
 		window.dispatchEvent(new CustomEvent(this.name, {
@@ -188,9 +186,13 @@ class WebdeskEventBase {
 
 	/** @param {...((details: T) => void)} callbacks */
 	on(...callbacks) {
-		callbacks.forEach(cb => {
-			window.addEventListener(this.name, (e) => cb(/** @type {any} */(e).detail))
+		callbacks.forEach((callBack) => {
+			window.addEventListener(this.name, (event) => callBack((event).detail))
 		})
+	}
+
+	constructor() {
+		this.name = Math.random().toString(36).substring(2, 9)
 	}
 }
 
@@ -1055,6 +1057,7 @@ const SettingsManager = new class {
 	closeWindow() {
 		SettingsManager.window.style.display = "none"
 		SettingsManager.icon.style.display = "none"
+		SettingsManager.window.querySelector(".contentWrapper").style.cssText = ""
 
 		SettingsManager.window.classList.remove("maximised")
 		SettingsManager.window.classList.remove("minimised")
@@ -1092,9 +1095,8 @@ const SWManager = new class {
 
 	constructor() {
 		this.loadInformation()
-		// navigator.serviceWorker.register("/sw")
-		// 	// .then((registration) => { console.log("Service Worker registered successfully!", registration) })
-		// 	.catch((error) => { console.error(error) })
+		navigator.serviceWorker.register("/sw")
+			.catch((error) => { console.error(error) })
 	}
 }
 

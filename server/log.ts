@@ -61,6 +61,14 @@ export const log = new class {
 		await new Promise<void>(res => res())
 	}
 
+	async printStack(errorStack?: string) {
+		if (!errorStack) { return }
+
+		for (const line of errorStack.split("\n")) { log.warn(line) }
+
+		await new Promise<void>(res => res())
+	}
+
 	async error(message: string) {
 		const absTime = this.getAbsTime(), relTime = this.getRelTime()
 

@@ -1,5 +1,4 @@
-// TODO: Handle applicationWatcher's special cases
-// TODO: Improve var naming
+// TODO: Handle applicationWatcher special cases
 
 import { log } from "./log.ts"
 import { config } from "../server.config.ts"
@@ -35,8 +34,6 @@ const MIMES: Readonly<Record<string, string>> = Object.freeze({
 	"wav": "audio/wav",
 })
 
-// Provided a manifest object, returns it normalized
-// ^^^^^^^^ with no manifest, returns an empty manifest
 class WebdeskApplicationManifest {
 	routes: Record<string, string> = {}
 	description: string = "No description"
@@ -62,151 +59,38 @@ class WebdeskApplicationManifest {
 	}
 }
 
-// Returns the manifests of the installed applications
-function returnManifests(_request: Request) {
-	return new Response(JSON.stringify(applications.manifests), { status: 200, headers: { "content-type": MIMES.json } })
+type ResourcesUpdatedData = {
+	origins: Record<string, string>
+	commands: Record<string, unknown>
+	assets: Record<string, string | Uint8Array>
 }
 
-// Webdesk logic class
+type AssetUpdatedData = {
+	endpoint: string
+	data: Uint8Array
+	origin: string
+}
+
+class BackendEvent<T = void> {
+	private callbacks: ((data: T) => void)[] = [ ]
+
+	static RESOURCES_UPDATED = new BackendEvent<ResourcesUpdatedData>()
+	static ASSET_UPDATED = new BackendEvent<AssetUpdatedData>()
+
+	emit(data: T) { this.callbacks.forEach((callback) => { callback(data) }) }
+	on(...newCallbacks: ((data: T) => void)[]) { this.callbacks.push(...newCallbacks) }
+
+	constructor() { }
+}
+
 const webdesk = new class {
-	// Indexes webdesk's API commands
-	command() {
-		// Contains the endpoints mapped to the functions
-		const commands: Record<string, unknown> = {
-			"/api/_/getManifests": returnManifests,
-			"/api/_/defaultTitlebar": Deno.readFileSync(`${config.staticFolder}/titlebar.htm`),
-			"/api/_/assetsHash": resources.getAssetsHash,
-		}
+	private ignoreFileEvents = false
 
-		return commands
-	}
-	// Indexes webdesk's files
-	index(): { assets: Record<string, string | Uint8Array>, origins: Record<string, string>, commands: Record<string, unknown> } {
-		// Contains webdesk's file contents
-		const assets: Record<string, Uint8Array> = {}
-		// Contains webdesk's file paths
-		const origins: Record<string, string> = {}
+	private async watcher() {
+		for await (const fileEvent of Deno.watchFs("static")) {
+			if (webdesk.ignoreFileEvents) { continue }
+			webdesk.ignoreFileEvents = true
 
-		assets["/"] = Deno.readFileSync(origins["/"] = `${config.staticFolder}/index.htm`)
-		assets["/style"] = Deno.readFileSync(origins["/style"] = `${config.staticFolder}/style.css`)
-		assets["/sw"] = Deno.readFileSync(origins["/sw"] = `${config.staticFolder}/serviceWorker.js`)
-		assets["/script"] = Deno.readFileSync(origins["/script"] = `${config.staticFolder}/script.js`)
-		assets["/manifest"] = Deno.readFileSync(origins["/manifest"] = `${config.staticFolder}/manifest.json`)
-
-		// Contains webdesk's api commands
-		const commands: Record<string, unknown> = this.command()
-
-		return { assets: assets, origins: origins, commands: commands }
-	}
-}
-// Application indexer logic class
-const applications = new class {
-	// Contains the manifests of the installed apps
-	manifests: Record<string, WebdeskApplicationManifest> = {}
-	// Indexes all the wanted app assets in parallel
-	private async indexAssets(appName: string, custom: Record<string, string>, ignore: string[], path: string = ""): Promise<[Record<string, Uint8Array>, Record<string, string>]> {
-		// Contains an apps assets
-		const assets: Record<string, Uint8Array> = {}
-		// Used for file types an apps assets
-		const origins: Record<string, string> = {}
-		// Processing queue
-		const indexingTasks: Promise<[Record<string, Uint8Array>, Record<string, string>]>[] = []
-
-		// Read all the files in the current folder
-		for await (const entry of Deno.readDir(`${config.appFolder}/${appName}${path}`)) {
-			// If the ignore list contains the relative path of an entry, skip indexing
-			if (ignore.includes(`${path}${entry.name}`) || entry.isSymlink) {
-				log.debug(`Skipped indexing of ${appName}'s ${entry.name} (from "${config.appFolder}/${appName}${path}")`)
-				continue
-			}
-			// If the entry is a folder, queue it to index
-			else if (entry.isDirectory) { indexingTasks.push(this.indexAssets(appName, custom, ignore, `${path}/${entry.name}`)) }
-			// If the file is supposed to have a custom path, use it
-			else if (custom[`${path}${entry.name}`]) {
-				assets[`/${config.appFolder}/${appName}/${custom[`${path}${entry.name}`]}`] = Deno.readFileSync(
-					origins[`/${config.appFolder}/${appName}/${custom[`${path}${entry.name}`]}`] = `${config.appFolder}/${appName}${path}/${entry.name}`
-				)
-			}
-			// Otherwise save it as the relative path
-			else {
-				assets[`/${config.appFolder}/${appName}${path}/${entry.name}`] = Deno.readFileSync(
-					origins[`/${config.appFolder}/${appName}${path}/${entry.name}`] = `${config.appFolder}/${appName}${path}/${entry.name}`
-				)
-			}
-		}
-
-		// Wait for all subfolders to finish indexing
-		const subfolders = await Promise.all(indexingTasks)
-		for (const [subAssets, subOrigins] of subfolders) {
-			// Add the assets from the subfolders
-			Object.assign(assets, subAssets)
-			// Add the origins from the subfolders
-			Object.assign(origins, subOrigins)
-		}
-
-		return [ assets, origins ]
-	}
-	// Register the commands of an app
-	private async indexCommands(appName: string, modules: string[] = []) {
-		// Contains the application commands
-		const commands: Record<string, unknown> = {}
-
-		// For each file with server commands
-		for (const path of modules) {
-			// Import the module
-			const module = await import(`../${config.appFolder}/${appName}/${path}`)
-			// For each export of the module, map it to an endpoint
-			for (const entry of Object.keys(module)) { commands[`/api/${appName}/${entry}`] = module[entry] }
-		}
-
-		return commands
-	}
-	// Indexes an app, assets and commands included
-	async index(appName: string): Promise<{ assets: Record<string, string | Uint8Array>, origins: Record<string, string>, commands: Record<string, unknown> }> {
-		// Read the manifest contents as text
-		const textManifest = await Deno.readTextFile(`${config.appFolder}/${appName}/manifest.json`)
-		// Normalize the manifest
-		const manifest: WebdeskApplicationManifest = new WebdeskApplicationManifest(JSON.parse(textManifest))
-		// Save the application manifest
-		applications.manifests[appName] = manifest
-
-		// Index the app default assets
-		const [assets, origins] = await this.indexAssets(appName, manifest.routes, manifest.ignore)
-		// Index the app commands
-		const commands = await this.indexCommands(appName, manifest.modules)
-
-		return { assets: assets, origins: origins, commands: commands }
-	}
-}
-
-
-// Server resources as in assets and commands, and assets mime type
-export const resources = new class {
-	private cwd = Deno.cwd()
-	private hash: string = ""
-	// Maps endpoints to the associated assets
-	assets: Record<string, Uint8Array> = {}
-	// Contains the endpoints MIME types
-	mime: Record<string, string | undefined> = {}
-	// Maps endpoints to the associated function
-	commands: Record<string, unknown> = {}
-	// Saves each endpoint filepath
-	origins: Record<string, string> = {}
-
-	private async generateHashFromAssets() {
-		const data = new TextEncoder().encode(JSON.stringify(resources.assets))
-		const hashBuffer = await crypto.subtle.digest("SHA-1", data)
-		const hashArray = Array.from(new Uint8Array(hashBuffer))
-
-		resources.hash = hashArray.join("")
-		console.log(resources.hash)
-	}
-
-	getAssetsHash() { return resources.hash }
-
-	// Watches for application changes
-	private async applicationWatcher() {
-		for await (const fileEvent of Deno.watchFs("apps", { recursive: true })) {
 			switch (fileEvent.kind) {
 				case "any": log.debug(`Noticed something (any) happened to "${fileEvent.paths.join(`" and "`)}"`); continue
 				case "other": log.debug(`Noticed something (other) happened to "${fileEvent.paths.join(`" and "`)}"`); continue
@@ -221,75 +105,207 @@ export const resources = new class {
 
 			fileEvent.paths.forEach((path: string) => {
 				let file
-				if (config.platform == 0) { file = path.substring(resources.cwd.length + 1).replaceAll("\\", "/") }
+				
+				if (config.platform === 0) { file = path.substring(resources.cwd.length + 1).replaceAll("\\", "/") }
 				else { file = path.substring(resources.cwd.length + 3) }
-				const endpoint = resources.origins[file]
 
-				if (endpoint) {
-					log.info(`File modified! Updating endpoint "${endpoint}"`)
-					resources.registerAssets({ [endpoint]: Deno.readFileSync(file) }, { [endpoint]: file })
+				log.warn(`Webdesk file modified! Updating endpoint`)
+
+				switch(file) {
+					case `${config.staticFolder}/index.htm`: return BackendEvent.ASSET_UPDATED.emit({ endpoint: "/", data: Deno.readFileSync(file), origin: file })
+					case `${config.staticFolder}/style.css`: return BackendEvent.ASSET_UPDATED.emit({ endpoint: "/style", data: Deno.readFileSync(file), origin: file })
+					case `${config.staticFolder}/serviceWorker.js`: return BackendEvent.ASSET_UPDATED.emit({ endpoint: "/sw", data: Deno.readFileSync(file), origin: file })
+					case `${config.staticFolder}/script.js`: return BackendEvent.ASSET_UPDATED.emit({ endpoint: "/script", data: Deno.readFileSync(file), origin: file })
+					case `${config.staticFolder}/manifest.json`: return BackendEvent.ASSET_UPDATED.emit({ endpoint: "/manifest", data: Deno.readFileSync(file), origin: file })
 				}
-
-				resources.generateHashFromAssets()
 			})
+
+			setTimeout(() => { webdesk.ignoreFileEvents = false }, 75)
 		}
 	}
-	// Watcher for changes with webdesk files
-	private async webdeskWatcher() {
-		for await (const fileEvent of Deno.watchFs("static")) {
-			log.info(`One of webdesk's files changed, re-indexing all webdesk files`)
+	register(): { assets: Record<string, string | Uint8Array>, origins: Record<string, string>, commands: Record<string, unknown> } {
+		const assets: Record<string, Uint8Array> = {}
+		const origins: Record<string, string> = {}
 
-			const { assets, origins, commands} = webdesk.index()
-			this.registerAssets(assets, origins)
-			this.registerCommand(commands)
-		}
-	}
-	// Batch log stuff
-	private logRegistred(message: string, endpoints: string[]) {
-		endpoints.forEach((endpoint) => { log.info(`${message} "${endpoint}"`) })
-	}
-	// Register a server asset
-	private registerAssets(asset: Record<string, string | Uint8Array> = {}, origins: Record<string, string> = {}) {
-		this.logRegistred("Registred asset on", Object.keys(asset))
+		assets["/"] = Deno.readFileSync(origins["/"] = `${config.staticFolder}/index.htm`)
+		assets["/style"] = Deno.readFileSync(origins["/style"] = `${config.staticFolder}/style.css`)
+		assets["/sw"] = Deno.readFileSync(origins["/sw"] = `${config.staticFolder}/serviceWorker.js`)
+		assets["/script"] = Deno.readFileSync(origins["/script"] = `${config.staticFolder}/script.js`)
+		assets["/manifest"] = Deno.readFileSync(origins["/manifest"] = `${config.staticFolder}/manifest.json`)
 
-		// Register the mime for each origin
-		for (const endpoint of Object.keys(origins)) {
-			// Map the asset to the mime
-			this.mime[endpoint] = MIMES[origins[endpoint].split(".").at(-1)!]
-			// Map the file to the endpoint for dynamic updating
-			this.origins[origins[endpoint]] = endpoint
+		const commands: Record<string, unknown> = {
+			"/api/_/assetsHash": resources.getAssetsHash,
+			"/api/_/getManifests": applications.getManifests,
+			"/api/_/defaultTitlebar": [ Deno.readFileSync(`${config.staticFolder}/titlebar.htm`), "text/html" ],
 		}
 
-		Object.assign(this.assets, asset)
-	}
-	// Register a server command
-	private registerCommand(command = {}) {
-		this.logRegistred("Registred command on", Object.keys(command))
-		Object.assign(this.commands, command)
-	}
-
-	private async init() {
-		// For every app in the app folder
-		for await (const entry of Deno.readDir(`${config.appFolder}/`)) {
-			if (!entry.isDirectory) { continue }
-			// Register the app resources to the server
-			applications.index(entry.name).then(({ assets, origins, commands }) => {
-				this.registerAssets(assets, origins)
-				this.registerCommand(commands)
-			}).catch((error: Error) => { log.warn(`Error during indexing of app "${entry.name}": ${error.message}`) })
-		}
-
-		// Register webdesk resources to the server
-		const { assets, origins, commands} = webdesk.index()
-		this.registerAssets(assets, origins)
-		this.registerCommand(commands)
-
-		resources.generateHashFromAssets()
+		return { assets: assets, origins: origins, commands: commands }
 	}
 
 	constructor() {
+		this.watcher()
+	}
+}
+
+const applications = new class {
+	private ignoreFileEvents = false
+	private manifests: Record<string, WebdeskApplicationManifest> = {}
+
+	private async getAssets(appName: string, custom: Record<string, string>, ignore: string[], path: string = ""): Promise<{ assets: Record<string, Uint8Array>, origins: Record<string, string> }> {
+		const localOrigins: Record<string, string> = {}
+		const localAssets: Record<string, Uint8Array> = {}
+		const indexingTasks: Promise<{ assets: Record<string, Uint8Array>, origins: Record<string, string> }>[] = []
+
+		for await (const entry of Deno.readDir(`${config.appFolder}/${appName}${path}`)) {
+			if (ignore.includes(`${path}${entry.name}`) || entry.isSymlink) {
+				log.debug(`Skipped indexing of application ${appName}'s "${entry.name}" (from "${config.appFolder}/${appName}${path}")`)
+				continue
+			}
+			else if (entry.isDirectory) { indexingTasks.push(this.getAssets(appName, custom, ignore, `${path}/${entry.name}`)) }
+			else {
+				const endpointPath = custom[`${path}${entry.name}`] || `${path}/${entry.name}`.substring(1)
+				const endpoint = `/apps/${appName}/` + endpointPath
+				localAssets[endpoint] = Deno.readFileSync(localOrigins[endpoint] = `${config.appFolder}/${appName}${path}/${entry.name}`)
+			}
+		}
+
+		const subFolders = await Promise.all(indexingTasks)
+
+		for (const subFolder of subFolders) {
+			Object.assign(localAssets, subFolder.assets)
+			Object.assign(localOrigins, subFolder.origins)
+		}
+
+		return { assets: localAssets, origins: localOrigins }
+	}
+	private async watcher() {
+		for await (const fileEvent of Deno.watchFs("apps", { recursive: true })) {
+			if (applications.ignoreFileEvents) { continue }
+			applications.ignoreFileEvents = true
+
+			switch (fileEvent.kind) {
+				case "any": log.debug(`Noticed something (any) happened to "${fileEvent.paths.join(`" and "`)}"`); continue
+				case "other": log.debug(`Noticed something (other) happened to "${fileEvent.paths.join(`" and "`)}"`); continue
+
+				case "access": log.debug(`Noticed a file access for "${fileEvent.paths.join(`" and "`)}" was/were accessed`); continue
+				case "create": log.debug(`Noticed a file creation for "${fileEvent.paths.join(`" and "`)}" was/were created`); continue
+				case "rename": log.debug(`Noticed a file rename for "${fileEvent.paths.join(`" and "`)}" was/were renamed`); continue
+				case "remove": log.debug(`Noticed a file deletion for "${fileEvent.paths.join(`" and "`)}" was/were deleted`); continue
+
+				case "modify": log.debug(`Noticed that "${fileEvent.paths.join(`" and "`)}" was/were modified`); break
+			}
+
+			fileEvent.paths.forEach((path: string) => {
+				let file
+				
+				if (config.platform === 0) { file = path.substring(resources.cwd.length + 1).replaceAll("\\", "/") }
+				else { file = path.substring(resources.cwd.length + 3) }
+
+				const fileEndpoint = resources.origins[file]
+
+				if (fileEndpoint) {
+					log.info(`File modified! Requesting endpoint update`)
+					BackendEvent.ASSET_UPDATED.emit({ endpoint: fileEndpoint, data: Deno.readFileSync(file), origin: file })
+				}
+			})
+
+			setTimeout(() => { applications.ignoreFileEvents = false }, 75)
+		}
+	}
+	private async getCommands(appName: string, modules: string[] = []) {
+		const commands: Record<string, unknown> = {}
+
+		for (const path of modules) {
+			const module = await import(`../${config.appFolder}/${appName}/${path}`)
+			for (const entry of Object.keys(module)) { commands[`/api/${appName}/${entry}`] = module[entry] }
+		}
+
+		return commands
+	}
+	async register(appName: string): Promise<{ assets: Record<string, string | Uint8Array>, origins: Record<string, string>, commands: Record<string, unknown> }> {
+		const textManifest = await Deno.readTextFile(`${config.appFolder}/${appName}/manifest.json`)
+		const manifest: WebdeskApplicationManifest = new WebdeskApplicationManifest(JSON.parse(textManifest))
+		applications.manifests[appName] = manifest
+
+		const { assets: appAssets, origins: appOrigins } = await this.getAssets(appName, manifest.routes, manifest.ignore)
+		const appCommands = await this.getCommands(appName, manifest.modules)
+
+		return { assets: appAssets, origins: appOrigins, commands: appCommands }
+	}
+	getManifests(_request: Request) {
+		return new Response(JSON.stringify(applications.manifests), { status: 200, headers: { "content-type": MIMES.json } })
+	}
+
+	constructor() {
+		this.watcher()
+	}
+}
+
+export const resources = new class {
+	private hash: string = ""
+
+	readonly cwd = Deno.cwd()
+
+	mime: Record<string, string | undefined> = {}
+	assets: Record<string, Uint8Array> = {}
+	commands: Record<string, unknown> = {}
+	origins: Record<string, string> = {}
+
+	private async generateHashFromAssets() {
+		const data = new TextEncoder().encode(JSON.stringify(resources.assets))
+		const hashBuffer = await crypto.subtle.digest("SHA-1", data)
+		const hashArray = Array.from(new Uint8Array(hashBuffer))
+
+		resources.hash = hashArray.join("")
+		log.debug(`Assets hash changed: ${resources.hash}`)
+	}
+	private logRegistred(message: string, endpoints: string[]) {
+		endpoints.forEach((endpoint) => { log.info(`${message} "${endpoint}"`) })
+	}
+	private registerResources({ assets, origins, commands }: { assets: Record<string, string | Uint8Array>, origins: Record<string, string>, commands: Record<string, unknown> }) {
+		const assetCount = Object.keys(assets).length
+		const commandCount = Object.keys(commands).length
+
+		resources.logRegistred("Registred asset on", Object.keys(assets))
+
+		for (const endpoint of Object.keys(origins)) {
+			resources.mime[endpoint] = MIMES[origins[endpoint].split(".").at(-1)!]
+			resources.origins[origins[endpoint]] = endpoint
+		}
+
+		Object.assign(resources.assets, assets)
+
+		resources.logRegistred("Registred command on", Object.keys(commands))
+		Object.assign(resources.commands, commands)
+
+		log.info(`Updated ${assetCount} assets and ${commandCount} commands`)
+		resources.generateHashFromAssets()
+	}
+	private registerAsset({ endpoint, data, origin }: { endpoint: string, data: Uint8Array | string, origin: string }) {
+		const update = {
+			assets: { [endpoint]: data },
+			origins: { [endpoint]: origin },
+			commands: { },
+		}
+
+		resources.registerResources(update)
+	}
+	private async init() {
+		for await (const entry of Deno.readDir(`${config.appFolder}/`)) {
+			if (!entry.isDirectory) { continue }
+
+			try { resources.registerResources(await applications.register(entry.name)) }
+			catch(error) { log.warn(`Error during indexing of app "${entry.name}": ${(error as Error).message}`) }
+		}
+
+		resources.registerResources(webdesk.register())
+	}
+	getAssetsHash() { return resources.hash }
+
+	constructor() {
 		this.init()
-		this.applicationWatcher()
-		this.webdeskWatcher()
+
+		BackendEvent.RESOURCES_UPDATED.on(this.registerResources)
+		BackendEvent.ASSET_UPDATED.on(this.registerAsset)
 	}
 }
