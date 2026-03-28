@@ -112,10 +112,15 @@ const webdesk = new class {
 				log.warn(`Webdesk file modified! Updating endpoint`)
 
 				switch(file) {
+					case `${config.staticFolder}/js/launchers.js`: return BackendEvent.ASSET_UPDATED.emit({ endpoint: "/launchers", data: Deno.readFileSync(file), origin: file })
+					case `${config.staticFolder}/js/core.js`: return BackendEvent.ASSET_UPDATED.emit({ endpoint: "/core", data: Deno.readFileSync(file), origin: file })
+					case `${config.staticFolder}/js/dock.js`: return BackendEvent.ASSET_UPDATED.emit({ endpoint: "/dock", data: Deno.readFileSync(file), origin: file })
+					case `${config.staticFolder}/js/ui.js`: return BackendEvent.ASSET_UPDATED.emit({ endpoint: "/ui", data: Deno.readFileSync(file), origin: file })
+					case `${config.staticFolder}/js/wm.js`: return BackendEvent.ASSET_UPDATED.emit({ endpoint: "/wm", data: Deno.readFileSync(file), origin: file })
+					case `${config.staticFolder}/js/sw.js`: return BackendEvent.ASSET_UPDATED.emit({ endpoint: "/sw", data: Deno.readFileSync(file), origin: file })
+
 					case `${config.staticFolder}/index.htm`: return BackendEvent.ASSET_UPDATED.emit({ endpoint: "/", data: Deno.readFileSync(file), origin: file })
 					case `${config.staticFolder}/style.css`: return BackendEvent.ASSET_UPDATED.emit({ endpoint: "/style", data: Deno.readFileSync(file), origin: file })
-					case `${config.staticFolder}/serviceWorker.js`: return BackendEvent.ASSET_UPDATED.emit({ endpoint: "/sw", data: Deno.readFileSync(file), origin: file })
-					case `${config.staticFolder}/script.js`: return BackendEvent.ASSET_UPDATED.emit({ endpoint: "/script", data: Deno.readFileSync(file), origin: file })
 					case `${config.staticFolder}/manifest.json`: return BackendEvent.ASSET_UPDATED.emit({ endpoint: "/manifest", data: Deno.readFileSync(file), origin: file })
 				}
 			})
@@ -129,9 +134,14 @@ const webdesk = new class {
 
 		assets["/"] = Deno.readFileSync(origins["/"] = `${config.staticFolder}/index.htm`)
 		assets["/style"] = Deno.readFileSync(origins["/style"] = `${config.staticFolder}/style.css`)
-		assets["/sw"] = Deno.readFileSync(origins["/sw"] = `${config.staticFolder}/serviceWorker.js`)
-		assets["/script"] = Deno.readFileSync(origins["/script"] = `${config.staticFolder}/script.js`)
 		assets["/manifest"] = Deno.readFileSync(origins["/manifest"] = `${config.staticFolder}/manifest.json`)
+
+		assets["/launchers"] = Deno.readFileSync(origins["/launchers"] = `${config.staticFolder}/js/launchers.js`)
+		assets["/core"] = Deno.readFileSync(origins["/core"] = `${config.staticFolder}/js/core.js`)
+		assets["/dock"] = Deno.readFileSync(origins["/dock"] = `${config.staticFolder}/js/dock.js`)
+		assets["/ui"] = Deno.readFileSync(origins["/ui"] = `${config.staticFolder}/js/ui.js`)
+		assets["/wm"] = Deno.readFileSync(origins["/wm"] = `${config.staticFolder}/js/wm.js`)
+		assets["/sw"] = Deno.readFileSync(origins["/sw"] = `${config.staticFolder}/js/sw.js`)
 
 		const commands: Record<string, unknown> = {
 			"/api/_/assetsHash": resources.getAssetsHash,

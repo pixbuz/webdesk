@@ -2,7 +2,7 @@
 // TODO: Improve read image error logic
 // TODO: Improve Background loading, rn it blocks the whole site
 
-const { WebdeskEvent, webdeskDB } = window.parent
+import { WebdeskEvent, webdeskDB } from "/core"
 
 const mainElement = document.querySelector("main")
 let currentSubSection = mainElement.children[0]
@@ -202,5 +202,3 @@ let subSection = mainElement.querySelector(`div[animations]`)
 currentSubSection.style.display = "none"
 subSection.style.display = "flex"
 currentSubSection = subSection
-
-export {}

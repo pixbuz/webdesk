@@ -35,14 +35,14 @@ As stated above the main part of Webdesk are windows. These `<article>` elements
 	- [ ] Finish settings
 		- [ ] Add animations settings
 		- [ ] Add application settings
-		- [ ] Finish customization page
-		- [ ] Finish backgrounds page
+		- [x] Finish customization page
+		- [x] Finish backgrounds page
 - [x] ~~Info App~~
 - [ ] Blog App
 	- [ ] Begin it
 - [ ] Improve styling rules
 - [ ] Finish service worker
-	- [ ] Smart caching
+	- [x] Smart caching
 	- [ ] Frontend element
 - [ ] Event propagation tree diagram
 - [ ] Do the mobile website of evil

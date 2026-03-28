@@ -3,7 +3,15 @@
 		"module": "commonjs",
 		"target": "es6",
 		"checkJs": false,
-		"lib": ["dom", "dom.iterable", "esnext", "webworker"],
+		"lib": [ "dom", "dom.iterable", "esnext", "webworker" ],
+		"paths": {
+			"/core": ["./static/js/core.js"],
+			"/dock": ["./static/js/dock.js"],
+			"/launchers": ["./static/js/launchers.js"],
+			// "/sw": ["./static/js/sw.js"],
+			"/ui": ["./static/js/ui.js"],
+			"/wm": ["./static/js/wm.js"],
+		}
 	},
-	"exclude": ["node_modules"]
+	"exclude": [ "node_modules", ".chrome-profile" ]
 }
