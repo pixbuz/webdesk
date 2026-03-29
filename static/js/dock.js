@@ -104,7 +104,7 @@ function focus({ lost, gain }) {
 /** @param {import("./core").ClockData} clockData */
 function updateClockElement({ update }) {
 	update.forEach((piece) => {
-		clockPieces[piece].innerText = `${time.clock[piece]}`.padStart(2, 0)
+		clockPieces[piece].innerText = `${time[piece]}`.padStart(2, 0)
 	})
 }
 
@@ -124,5 +124,5 @@ WebdeskEvent.WINDOW_MAXIMISE_END.on(maximised.remove)
 WebdeskEvent.WINDOW_UPDATED_FOCUS.on(focus)
 
 Object.keys(clockPieces).forEach((piece) => {
-	clockPieces[piece].innerText = `${time.clock[piece]}`.padStart(2, 0)
+	clockPieces[piece].innerText = `${time[piece]}`.padStart(2, 0)
 })

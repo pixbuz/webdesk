@@ -237,38 +237,34 @@ export class WebdeskEvent {
 
 export const time = new class {
 	init = new Date()
-	clock = {
-		seconds: this.init.getSeconds(),
-		minutes: this.init.getMinutes(),
-		hours: this.init.getHours(),
-	}
-	date = {
-		day: this.init.getDate(),
-		month: this.init.getMonth() + 1,
-		year: this.init.getFullYear(),
-	}
+	seconds = this.init.getSeconds()
+	minutes = this.init.getMinutes()
+	hours = this.init.getHours()
+	day = this.init.getDate()
+	month = this.init.getMonth() + 1
+	year = this.init.getFullYear()
 
 	progress() {
 		const changed = [ "seconds" ]
-		time.clock.seconds++
+		time.seconds++
 
-		if (time.clock.seconds >= 60) {
-			time.clock.seconds = 0
-			time.clock.minutes++
+		if (time.seconds >= 60) {
+			time.seconds = 0
+			time.minutes++
 
 			changed.push("minutes")
 		}
 
-		if (time.clock.minutes >= 60) {
-			time.clock.minutes = 0
-			time.clock.hours++
+		if (time.minutes >= 60) {
+			time.minutes = 0
+			time.hours++
 
 			changed.push("hours")
 		}
 
-		if (time.clock.hours >= 24) {
-			time.clock.hours = 0
-			time.date.day++
+		if (time.hours >= 24) {
+			time.hours = 0
+			time.day++
 
 			changed.push("day")
 		}
@@ -319,12 +315,11 @@ export const MessagingHub = new class {
 	/** @type {Map<HTMLElement, object>} */
 	windowToChannels = new Map()
 
-
-	/** @param {MessageEvent} event
+	/** @param {MessageEvent<object>} event
 	/** @param {MessagePort} sendPort */
-	commandResponder({ data }, sendPort) {
-		console.log(data)
-		switch(data) {
+	commandResponder({ command, data }, sendPort) {
+		console.log(command, data)
+		switch(command) {
 
 		}
 	}

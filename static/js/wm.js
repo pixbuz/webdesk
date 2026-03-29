@@ -32,8 +32,6 @@ const WMTitlebarFactory = new class {
 			title: app,
 		}}
 
-		console.log(WMTitlebarFactory.titlebarVars)
-
 		comChannel.port1.addEventListener("message", (messageEvent) => { WMTitlebarFactory.messageInterpreter(messageEvent, appWindow) })
 
 		titlebar.addEventListener("load", () => { WebdeskEvent.TITLEBAR_READY.emit({ data: titlebar, message: initMessage }) }, { once: true })
@@ -93,7 +91,7 @@ const WMTitlebarFactory = new class {
 			}
 			case "move-start": { return WebdeskEvent.WINDOW_MOVE_START.emit({ ...message.data, target: appWindow }) }
 
-			case "close": { return WMTitlebarFactory.close({ target: appWindow, app: window.getAttribute("app") }) }
+			case "close": { return WMTitlebarFactory.close({ target: appWindow, app: appWindow.getAttribute("app") }) }
 			case "minimise": { return WMTitlebarFactory.minimise({ target: appWindow }) }
 			case "maximise": { return WMTitlebarFactory.maximise({ target: appWindow }) }
 		}

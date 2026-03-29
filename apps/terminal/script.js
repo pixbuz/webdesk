@@ -2,7 +2,21 @@ const cli = document.querySelector(`[name="cli"]`)
 const output = document.querySelector(".output")
 let port
 
-window.addEventListener("message", (event) => { port = event.ports }, { once: true })
+window.addEventListener("message", com, { once: true })
+
+function com({ data: message, ports }) {
+	if (!port) {
+		port = ports[0]
+		port.start()
+		port.addEventListener("message", com)
+	}
+
+	console.log(data)
+
+	switch(message.command) {
+
+	}
+}
 
 async function init() {
 	commHistory = await webdeskDB.get("terminal", "history")

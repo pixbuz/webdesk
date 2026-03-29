@@ -6,17 +6,19 @@ const mainElement = document.querySelector("main")
 let currentSubSection = mainElement.children[0]
 let port
 
-window.addEventListener("message", com)
+window.addEventListener("message", com, { once: true })
 
 function com({ data: message, ports }) {
 	if (!port) {
 		port = ports[0]
 		port.start()
+		port.addEventListener("message", com)
 	}
 
 	console.log(data)
 
 	switch(message.command) {
+
 	}
 }
 

@@ -1,8 +1,10 @@
-// TODO: Sub origins... fun
+// TODO: App sub origins, so deprecate /apps/
+// TODO: Improve logging to make it actually usefull
 
 import { log } from "./log.ts"
 import { config } from "../server.config.ts"
 import { resources } from "./resourceMapper.ts"
+import { Route } from "./newMapper.ts"
 
 class ErrorResponse extends Response {
 	static notValidResponse(requestURL: string, type: string) {
@@ -26,7 +28,6 @@ class WebdeskResponse extends Response {
 	}
 }
 
-config.ssl ? log.info("Setting up SSL") : log.warn("Running the server unsecured")
 const options = config.ssl ? {
 	cert: config.cert,
 	key: config.key,
@@ -41,14 +42,22 @@ const options = config.ssl ? {
 
 const _server = Deno.serve({
 	...options,
-	onListen({hostname, port}) { log.info(`Server listening on ${config.ssl ? "https:" : "http:"}//${hostname}:${port}`) }
+	onListen({ hostname, port }) { setupRouter(hostname, port) }
 })
+
+async function setupRouter(hostname: string, port: number) {
+	config.ssl ? log.info("Setting up SSL") : log.warn("Running the server unsecured")
+	log.info(`Server listening on ${config.ssl ? "https:" : "http:"}//${hostname}:${port}`)
+
+	for await (const app of Deno.readDir("apps")) {
+		const route = Route.create(app.name)
+	}
+}
 
 function requestHandler(browserRequest: Request, _connInfo: Deno.ServeHandlerInfo<Deno.NetAddr>): Response {
 	const requestURL: URL = new URL(browserRequest.url)
+	const subOrigin: string = requestURL.hostname.split(".").at(0)
 	const requestTree: string[] = requestURL.pathname.substring(1).split("/")
-
-	log.debug(`Recived request for "${requestURL.pathname}"`)
 
 	if (requestTree[0] == "api") { return apiReplier(browserRequest) }
 	else { return assetsReplier(requestURL) }
