@@ -7,54 +7,49 @@
 // IDEA: Conjure a system for passive highest z-index resolve for windows focus shift
 // IDEA: Quick window switching with focusWindow on WebdeskEvent.WINDOW_MOVE instead of WebdeskEvent.WINDOW_MOVE_START
 
-import { WebdeskEvent, ApplicationManifests } from "./core"
+import { WebdeskEvent, ApplicationManifests, MessagingHub } from "./core"
 
 const WMTitlebarFactory = new class {
-	comPorts = new WeakMap()
 	titlebarVars
 
-	/** @param {import("./core").TitlebarData} titlebarData */
-	async setup({ titlebar, app }) {
+	/** @param {import("./core").OpeningData} openingData */
+	async setup({ window: appWindow, titlebar, app }) {
+		const comChannel = MessagingHub.windowToChannels.get(appWindow).titlebar
 		const path = ApplicationManifests[app].titlebar
 		const manifest = ApplicationManifests[app]
-		const channel = new MessageChannel()
 
 		titlebar.setAttribute("allowfullscreen", false)
 		titlebar.setAttribute("sandbox", "allow-scripts")
 		titlebar.setAttribute("title", `"${app}"'s application titlebar`)
 
-		if (path == "") { titlebar.src = "/api/_/defaultTitlebar" }
+		if (path == "") { titlebar.src = "/api/_/titlebar" }
 		else { titlebar.src = `/apps/${app}/${path}` }
 
-		channel.port1.addEventListener("message", (messageEvent) => {
-			WMTitlebarFactory.messageInterpreter(titlebar, channel.port1, messageEvent)
-		})
-		channel.port1.start()
+		const initMessage = { command: "init", data: {
+			style: WMTitlebarFactory.titlebarVars,
+			icon: `/apps/${app}/${manifest.icon}`,
+			service: manifest.service,
+			title: app,
+		}}
 
-		titlebar.addEventListener("load", () => {
-			titlebar.contentWindow.postMessage({
-				command: "init",
-				data: { style: WMTitlebarFactory.titlebarVars, icon: `/apps/${app}/${manifest.icon}`, title: app, service: manifest.service }
-			}, "*", [channel.port2])
-		})
+		console.log(WMTitlebarFactory.titlebarVars)
 
-		WMTitlebarFactory.comPorts.set(titlebar, channel.port1)
+		comChannel.port1.addEventListener("message", (messageEvent) => { WMTitlebarFactory.messageInterpreter(messageEvent, appWindow) })
 
-		WebdeskEvent.CUSTOMIZATION_CHANGE.on((titlebarData) => { channel.port1.postMessage({ command: "css", data: titlebarData }) })
+		titlebar.addEventListener("load", () => { WebdeskEvent.TITLEBAR_READY.emit({ data: titlebar, message: initMessage }) }, { once: true })
+
+		WebdeskEvent.CUSTOMIZATION_CHANGE.on((titlebarData) => { comChannel.send.postMessage({ command: "css", data: titlebarData }) })
 		WebdeskEvent.WINDOW_UPDATED_FOCUS.on(WMTitlebarFactory.relayFocusChange)
 	}
 	/** @param {import("./core").FocusData} focusData */
 	relayFocusChange({ lost, gain }) {
 		if (gain) {
-			const newFocusedTitlebar = gain.querySelector(".titlebar")
-			const newTitlebarPort = WMTitlebarFactory.comPorts.get(newFocusedTitlebar)
-			newTitlebarPort.postMessage({ command: "focus", data: true })
+			const messageChannel = MessagingHub.windowToChannels.get(gain).titlebar
+			messageChannel.port1.postMessage({ command: "focus", data: true })
 		}
-
 		if (lost) {
-			const oldFocusedTitlebar = lost.querySelector(".titlebar")
-			const oldTitlebarPort = WMTitlebarFactory.comPorts.get(oldFocusedTitlebar)
-			oldTitlebarPort.postMessage({ command: "focus", data: false })
+			const messageChannel = MessagingHub.windowToChannels.get(lost).titlebar
+			messageChannel.port1.postMessage({ command: "focus", data: false })
 		}
 	}
 	/** @param {import("./core").TargetData} targetData */
@@ -84,25 +79,23 @@ const WMTitlebarFactory = new class {
 			WebdeskEvent.WINDOW_MINIMISE.emit({ target, app })
 		}
 	}
-	messageInterpreter(titlebar, port, messageEvent) {
-		const window = titlebar.closest("[app]")
-		const app = window.getAttribute("app")
-		const message = messageEvent.data
-
+	/** @param {MessageEvent} messageEvent
+	@param {HTMLElement} appWindow */
+	messageInterpreter({ data: message }, appWindow) {
 		switch(message.command) {
 			case "move-end": {
-				if (WMMover.inMove) { return WebdeskEvent.WINDOW_MOVE_END.emit({ ...message.result, target: window }) }
+				if (WMMover.inMove) { return WebdeskEvent.WINDOW_MOVE_END.emit({ ...message.data, target: appWindow }) }
 				else { return }
 			}
 			case "move": {
-				if (WMMover.inMove) { return WebdeskEvent.WINDOW_MOVE.emit({ ...message.result, target: window }) }
+				if (WMMover.inMove) { return WebdeskEvent.WINDOW_MOVE.emit({ ...message.data, target: appWindow }) }
 				else { return }
 			}
-			case "move-start": { return WebdeskEvent.WINDOW_MOVE_START.emit({ ...message.result, target: window }) }
+			case "move-start": { return WebdeskEvent.WINDOW_MOVE_START.emit({ ...message.data, target: appWindow }) }
 
-			case "close": { return WMTitlebarFactory.close({ target: window, app: app }) }
-			case "minimise": { return WMTitlebarFactory.minimise({ target: window }) }
-			case "maximise": { return WMTitlebarFactory.maximise({ target: window }) }
+			case "close": { return WMTitlebarFactory.close({ target: appWindow, app: window.getAttribute("app") }) }
+			case "minimise": { return WMTitlebarFactory.minimise({ target: appWindow }) }
+			case "maximise": { return WMTitlebarFactory.maximise({ target: appWindow }) }
 		}
 	}
 	/** @param {import("./core").CustomizationData} customizationData */
@@ -114,7 +107,7 @@ const WMTitlebarFactory = new class {
 	}
 
 	constructor() {
-		WebdeskEvent.TITLEBAR_SETUP.on(this.setup)
+		WebdeskEvent.WINDOW_OPENING.on(this.setup)
 		WebdeskEvent.CUSTOMIZATION_LOADED.on(this.setUpVars)
 		WebdeskEvent.CUSTOMIZATION_CHANGE_SAVED.on(this.setUpVars)
 	}
@@ -134,7 +127,7 @@ const WMFactory = new class {
 			content = document.createElement("iframe"),
 			titlebar = document.createElement("iframe")
 
-		WebdeskEvent.TITLEBAR_SETUP.emit({ titlebar: titlebar, app: app })
+		WebdeskEvent.WINDOW_OPENING.emit({ window: windowWrapper, titlebar: titlebar, app })
 
 		titlebar.classList.add("titlebar")
 		titlebarWrapper.append(titlebar)
@@ -145,6 +138,7 @@ const WMFactory = new class {
 		content.setAttribute("sandbox", `allow-scripts`)
 		content.setAttribute("title", `"${app}"'s application content`)
 		content.src = `/apps/${app}/${manifest.index}`
+		content.addEventListener("load", () => { WebdeskEvent.CONTENT_READY.emit({ data: content }) }, { once: true })
 
 		contentWrapper.append(content)
 		contentWrapper.classList.add("contentWrapper")
@@ -155,7 +149,7 @@ const WMFactory = new class {
 		WMFactory.space.appendChild(windowWrapper)
 		WMFactory.open.push(windowWrapper)
 
-		WebdeskEvent.WINDOW_UPDATED_FOCUS.on(() => { WMFocuser.updateZIndex({ app }, windowWrapper) })
+		WebdeskEvent.WINDOW_UPDATED_FOCUS.on((focusData) => { WMFactory.updateZIndex(focusData, windowWrapper) })
 
 		windowWrapper.addEventListener("pointerdown", (event) => {
 			windowWrapper.setPointerCapture(event.pointerId)
@@ -181,6 +175,13 @@ const WMFactory = new class {
 
 		WebdeskEvent.WINDOW_OPEN.emit({ target: windowWrapper, app: app })
 	}
+	/** @param {import("./core").FocusData} focusData */
+	updateZIndex({ lost, gain }, target) {
+		const zIndex = parseInt(target.style.zIndex)
+		target.style.zIndex = Math.min(zIndex - 1, 20)
+
+		if (gain == target) { target.style.zIndex = 29 }
+	}
 
 	constructor() {
 		WebdeskEvent.LAUNCHER_CLICK.on(this.skeletonizeWindow)
@@ -190,23 +191,15 @@ const WMFactory = new class {
 const WMFocuser = new class {
 	focusedWindow = null
 
-	/** @param {import("./core").TargetData} targetData */
-	focusWindow({ target, app }) {
-		if (target != WMFocuser.focusedWindow || !WMFocuser.focusedWindow) {
+	focusWindow(mixture) {
+		if (mixture.target != WMFocuser.focusedWindow || !WMFocuser.focusedWindow) {
 			if (WMFocuser.focusedWindow) { WMFocuser.focusedWindow.classList.remove("focus") }
 
-			WebdeskEvent.WINDOW_UPDATED_FOCUS.emit({ old: WMFocuser.focusedWindow, new: target })
+			WebdeskEvent.WINDOW_UPDATED_FOCUS.emit({ lost: WMFocuser.focusedWindow, gain: mixture.target })
 
-			WMFocuser.focusedWindow = target
+			WMFocuser.focusedWindow = mixture.target
 			WMFocuser.focusedWindow.classList.add("focus")
 		}
-	}
-	/** @param {import("./core").FocusData} focusData */
-	updateZIndex({ lost, gain }, targetWindow) {
-		const zIndex = parseInt(targetWindow.style.zIndex)
-
-		if (gain === targetWindow) { targetWindow.style.zIndex = 29 }
-		else if (zIndex > 20) { targetWindow.style.zIndex = zIndex - 1 }
 	}
 	/** @param {import("./core").CloseData} closeData */
 	shiftFocus({ closed, open }) {
@@ -358,11 +351,38 @@ const SettingsManager = new class {
 	window = document.querySelector(`[app="settings"]`)
 	icon = document.querySelector(`[icon="settings"]`)
 
+	opened = false
+
 	openWindow() {
+		if (SettingsManager.opened) { return }
+		SettingsManager.opened = true
+
 		SettingsManager.window.style.display = "block"
+		SettingsManager.icon.style.display = "block"
 
 		WebdeskEvent.WINDOW_OPEN.emit({ target: SettingsManager.window, app: "settings" })
-		WebdeskEvent.WINDOW_UPDATED_FOCUS.on((focusData) => { WMFocuser.updateZIndex(focusData, SettingsManager.window) })
+		WebdeskEvent.WINDOW_UPDATED_FOCUS.on((focusData) => { WMFactory.updateZIndex(focusData, SettingsManager.window) })
+	}
+	closeWindow() {
+		SettingsManager.window.style.display = "none"
+		SettingsManager.icon.style.display = "none"
+		SettingsManager.opened = false
+
+		SettingsManager.window.querySelector(".contentWrapper").style.cssText = ""
+
+		SettingsManager.window.classList.remove("maximised")
+		SettingsManager.window.classList.remove("minimised")
+	}
+	/** @param {import("./core").ReadyData} readyData */
+	setupWindow() {
+		// debug: needs { data } on top
+		SettingsManager.window.style.display = "none"
+
+		/* with custom titlebar it's useless -> */ WebdeskEvent.WINDOW_OPENING.emit({
+			window: SettingsManager.window,
+			titlebar: SettingsManager.window.querySelector(".titlebar"),
+			app: "settings"
+		})
 
 		SettingsManager.window.addEventListener("pointerdown", (event) => {
 			SettingsManager.window.setPointerCapture(event.pointerId)
@@ -383,28 +403,15 @@ const SettingsManager = new class {
 				WebdeskEvent.WINDOW_RESIZE_END.emit({ target: SettingsManager.window, x: event.x, y: event.y })
 			}
 		})
-
-		SettingsManager.icon.style.display = "block"
-	}
-	closeWindow() {
-		SettingsManager.window.style.display = "none"
-		SettingsManager.icon.style.display = "none"
-		SettingsManager.window.querySelector(".contentWrapper").style.cssText = ""
-
-		SettingsManager.window.classList.remove("maximised")
-		SettingsManager.window.classList.remove("minimised")
-	}
-	setupWindow() {
-		SettingsManager.window.style.display = "none"
-
-		WebdeskEvent.TITLEBAR_SETUP.emit({ titlebar: SettingsManager.window.querySelector(`.titlebar`), app: "settings" })
 	}
 
 	constructor() {
 		this.launcher.addEventListener("click", this.openWindow)
 		this.icon.style.display = "none"
 
-		WebdeskEvent.MANIFESTS_READY.on(this.setupWindow, this.openWindow /* DEBUG BEBUUUUUGGG */)
+		WebdeskEvent.MANIFESTS_READY.on()
+		setTimeout(this.setupWindow, 900)
+		setTimeout(this.openWindow, 1000)
 		this.icon.addEventListener("click", (event) => { this.window.classList.remove("minimised") })
 	}
 }

@@ -24,8 +24,8 @@ function addLauncher(appName, manifest) {
 	launcherWrapper.addEventListener("click", () => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: appName }) })
 }
 
-/** @param {EmptyTemplate} manifests */
-function queueLaunchers(manifests) {
+/** @param {import("./core").ReadyData} readyData */
+function queueLaunchers({ data: manifests }) {
 	for (const appName of Object.keys(manifests).sort()) {
 		if (manifests[appName].service) { continue }
 		else { addLauncher(appName, manifests[appName]) }

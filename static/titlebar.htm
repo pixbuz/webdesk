@@ -75,63 +75,57 @@
 		</div>
 	</body>
 	<script>
-		let port
+let port
 
-		function commandListener(messageEvent) {
-			const message = messageEvent.data
+window.addEventListener("message", com)
 
-			switch(message.command) {
-				case "init": return init({ ...message.data, port: messageEvent.ports[0] })
-				case "css": return updateVar(message.data)
-				case "focus": return updateFocus(message.data)
-			}
-		}
+function com({ data: message, ports }) {
+	if (!port) {
+		port = ports[0]
+		port.start()
+	}
 
-		function updateFocus(inFocus) {
-			if (inFocus) { document.body.classList.add("focus") }
-			else { document.body.classList.remove("focus") }
-		}
+	switch(message.command) {
+		case "init": return init(message.data)
+		case "css": return updateVar(message.data)
+		case "focus": return updateFocus(message.data)
+	}
+}
 
-		function updateVar(details) {
-			document.documentElement.style.setProperty(details.css, details.value)
-		}
+function updateFocus(inFocus) {
+	if (inFocus) { document.body.classList.add("focus") }
+	else { document.body.classList.remove("focus") }
+}
 
-		function init(data) {
-			port = data.port
-			port.onmessage = commandListener
+function updateVar(details) {
+	document.documentElement.style.setProperty(details.css, details.value)
+}
 
-			document.querySelector(".title").innerText = data.title
-			document.documentElement.setAttribute("style", data.style)
+function init({ title, style, icon, service }) {
+	document.querySelector(".title").innerText = title
+	document.documentElement.setAttribute("style", style)
 
-			if (data.service) { document.querySelector(".icon").remove() }
-			else { document.querySelector(".icon").src = data.icon }
+	if (service) { document.querySelector(".icon").remove() }
+	else { document.querySelector(".icon").src = icon }
 
-			// IDEA: using right mouse click moves but doesn't update the window focus
-			document.body.addEventListener("pointerdown", (event) => {
-				// If the element clicked is a button, ignore the event
-				if (event.target.tagName === "BUTTON") { return }
+	// IDEA: using right mouse click moves but doesn't update the window focus
+	document.body.addEventListener("pointerdown", (event) => {
+		if (event.target.tagName === "BUTTON") { return }
+		document.body.setPointerCapture(event.pointerId)
 
-				document.body.setPointerCapture(event.pointerId)
+		port.postMessage({ command: "move-start", data: { x: event.screenX, y: event.screenY } })
+	})
 
-				port.postMessage({ command: "move-start", result: { x: event.screenX, y: event.screenY } })
-			})
+	document.body.addEventListener("pointermove", (event) => {
+		port.postMessage({ command: "move", data: { x: event.screenX, y: event.screenY } })
+	})
 
-			// Send an event when the user moves
-			document.body.addEventListener("pointermove", (event) => {
-				port.postMessage({ command: "move", result: { x: event.screenX, y: event.screenY } })
-			})
+	document.body.addEventListener("pointerup", (event) => {
+		if (event.target.tagName === "BUTTON") { return }
+		document.body.releasePointerCapture(event.pointerId)
 
-			// Send an event when releases the click in the titlebar
-			document.body.addEventListener("pointerup", (event) => {
-				// If the element clicked is a button, ignore the event
-				if (event.target.tagName === "BUTTON") { return }
-
-				document.body.releasePointerCapture(event.pointerId)
-
-				port.postMessage({ command: "move-end", result: { x: event.screenX, y: event.screenY } })
-			})
-		}
-
-		window.addEventListener("message", commandListener)
+		port.postMessage({ command: "move-end", data: { x: event.screenX, y: event.screenY } })
+	})
+}
 	</script>
 </html>

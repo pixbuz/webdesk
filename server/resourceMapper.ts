@@ -146,7 +146,7 @@ const webdesk = new class {
 		const commands: Record<string, unknown> = {
 			"/api/_/assetsHash": resources.getAssetsHash,
 			"/api/_/getManifests": applications.getManifests,
-			"/api/_/defaultTitlebar": [ Deno.readFileSync(`${config.staticFolder}/titlebar.htm`), "text/html" ],
+			"/api/_/titlebar": [ Deno.readFileSync(`${config.staticFolder}/titlebar.htm`), "text/html" ],
 		}
 
 		return { assets: assets, origins: origins, commands: commands }

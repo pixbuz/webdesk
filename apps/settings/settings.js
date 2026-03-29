@@ -2,10 +2,23 @@
 // TODO: Improve read image error logic
 // TODO: Improve Background loading, rn it blocks the whole site
 
-import { WebdeskEvent, webdeskDB } from "/core"
-
 const mainElement = document.querySelector("main")
 let currentSubSection = mainElement.children[0]
+let port
+
+window.addEventListener("message", com)
+
+function com({ data: message, ports }) {
+	if (!port) {
+		port = ports[0]
+		port.start()
+	}
+
+	console.log(data)
+
+	switch(message.command) {
+	}
+}
 
 function show(event) {
 	const subSectionName = event.target.getAttributeNames().at(0)
@@ -60,12 +73,19 @@ const Colors = new class {
 	}
 	async init() {
 		const customizationVars = window.parent.document.documentElement.style.cssText.split("; ")
-		const customizationLookup = Object.fromEntries(customizationVars.map((pair) => { return pair.split(": ") }))
+		const launchersStyleVars = StyleSheets.launchers.cssRules[0]
+		const windowsStyleVars = StyleSheets.windows.cssRules[0]
+		const dockStyleVars = StyleSheets.dock.cssRules[0]
 
 		for (const input of Colors.section.querySelectorAll("input")) {
 			const cssVar = input.name
+			let value
 
-			input.value = customizationLookup[cssVar]
+			if (cssVar.startsWith("--dock")) { value = dockStyleVars.style.getPropertyValue(cssVar) }
+			else if (cssVar.startsWith("--windows")) { value = windowsStyleVars.style.getPropertyValue(cssVar) }
+			else if (cssVar.startsWith("--launchers")) { value = launchersStyleVars.style.getPropertyValue(cssVar) }
+
+			input.value = value
 		}
 	}
 

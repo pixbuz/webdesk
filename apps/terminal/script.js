@@ -1,10 +1,10 @@
-// TODO: Message bridge to access IndexDB and Localstorage from windows
-// const webdeskDB = window.parent.webdeskDB
 const cli = document.querySelector(`[name="cli"]`)
 const output = document.querySelector(".output")
-let commHistory, pos
+let port
 
-;(async () => {
+window.addEventListener("message", (event) => { port = event.ports }, { once: true })
+
+async function init() {
 	commHistory = await webdeskDB.get("terminal", "history")
 
 	if (commHistory == undefined) {
@@ -14,7 +14,21 @@ let commHistory, pos
 	}
 
 	pos = commHistory.length
-})()
+}
+
+function commandError(reason) {
+	console.log(reason)
+}
+
+async function showCommandResult(response) {
+	const line = document.createElement("p")
+	output.append(line)
+
+	response.text().then((text) => {
+		line.innerHTML += `<span>>> ${cli.value}</span><br>${text}`
+		cli.value = ""
+	})
+}
 
 document.addEventListener("keydown", async (event) => {
 	if (event.key == "Enter" && cli.value) {
@@ -38,16 +52,4 @@ document.addEventListener("keydown", async (event) => {
 	}
 })
 
-function commandError(reason) {
-	console.log(reason)
-}
-
-async function showCommandResult(response) {
-	const line = document.createElement("p")
-	output.append(line)
-
-	response.text().then((text) => {
-		line.innerHTML += `<span>>> ${cli.value}</span><br>${text}`
-		cli.value = ""
-	})
-}
+init()

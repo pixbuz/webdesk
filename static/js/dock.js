@@ -3,8 +3,18 @@
 import { time, WebdeskEvent, ApplicationManifests } from "./core"
 
 const element = document.querySelector(".Dock")
-const clock = element.querySelector(".Clock")
 const open = element.querySelector(".Open")
+
+const clock = element.querySelector(".Clock")
+const clockPieces = {
+	seconds: clock.querySelector(".seconds"),
+	minutes: clock.querySelector(".minutes"),
+	hours: clock.querySelector(".hours"),
+
+	day: clock.querySelector(".day"),
+	month: clock.querySelector(".month"),
+	year: clock.querySelector(".year"),
+}
 
 const windowToIcon = new WeakMap()
 const iconToWindow = new WeakMap()
@@ -93,27 +103,9 @@ function focus({ lost, gain }) {
 
 /** @param {import("./core").ClockData} clockData */
 function updateClockElement({ update }) {
-	for (const piece of update) {
-		switch(piece) {
-			case "seconds":
-			case "minutes":
-			case "hours": clock.querySelector(`.${piece}`).innerText = `${time.clock[piece]}`.padStart(2, 0); continue
-
-			case "day":
-			case "month":
-			case "year": clock.querySelector(`.${piece}`).innerText = `${time.date[piece]}`.padStart(2, 0); continue
-		}
-	}
-}
-
-function initClockElement() {
-	this.clock.querySelector(".seconds").innerText = `${time.clock.seconds}`.padStart(2, 0)
-	this.clock.querySelector(".minutes").innerText = `${time.clock.minutes}`.padStart(2, 0)
-	this.clock.querySelector(".hours").innerText = `${time.clock.hours}`.padStart(2, 0)
-
-	this.clock.querySelector(".day").innerText = `${time.date.day}`.padStart(2, 0)
-	this.clock.querySelector(".month").innerText = `${time.date.month}`.padStart(2, 0)
-	this.clock.querySelector(".year").innerText = `${time.date.year}`
+	update.forEach((piece) => {
+		clockPieces[piece].innerText = `${time.clock[piece]}`.padStart(2, 0)
+	})
 }
 
 WebdeskEvent.ICON_CLICK.on(focusLinkedWindow)
@@ -130,3 +122,7 @@ WebdeskEvent.WINDOW_MAXIMISE.on(maximised.add)
 WebdeskEvent.WINDOW_MAXIMISE_END.on(maximised.remove)
 
 WebdeskEvent.WINDOW_UPDATED_FOCUS.on(focus)
+
+Object.keys(clockPieces).forEach((piece) => {
+	clockPieces[piece].innerText = `${time.clock[piece]}`.padStart(2, 0)
+})

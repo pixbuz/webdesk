@@ -1,8 +1,10 @@
 // NOTE: Generator functions tho?
+// NOTE: Dumping all messages from all windows is easy but unsecure
 
 // TODO: Settings titlebar
 // TODO: Error handling for database things
 // TODO: Make ApplicationManifests into a object/class?
+// TODO: Message bridge to access IndexDB and Localstorage from windows
 // TODO: Messaging system between titlebar, content and front end script (triumvirate)
 
 let newUser = false
@@ -122,6 +124,10 @@ export const webdeskDB = new class {
  * @property {HTMLElement} target
  * @property {string} app */
 
+/** @typedef {Object} ReadyData
+ * @property {object} message
+ * @property {any} data */
+
 /** @typedef {Object} FocusData
  * @property {HTMLElement} lost
  * @property {HTMLElement} gain */
@@ -134,8 +140,9 @@ export const webdeskDB = new class {
  * @property {string} css
  * @property {string} value */
 
-/** @typedef {Object} TitlebarData
+/** @typedef {Object} OpeningData
  * @property {HTMLElement} titlebar
+ * @property {HTMLElement} window
  * @property {any} app */
 
 /** @typedef {Object} BackgroundData
@@ -166,16 +173,14 @@ class WebdeskEventBase {
 	on(...newCallbacks) { this.callbacks.push(...newCallbacks) }
 
 	/** @param {...((data: T) => void)} callback */
-	off(callback) {
-		this.callbacks = this.callbacks.filter(cb => cb !== callback)
-	}
+	off(callback) { this.callbacks = this.callbacks.filter((registredCallback) => { registredCallback !== callback }) }
 
 	constructor() { }
 }
 
 /** @extends {WebdeskEventBase<EmptyData>} */ class EmptyEvent extends WebdeskEventBase {}
 /** @extends {WebdeskEventBase<LauncherData>} */ class LauncherEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<TitlebarData>} */ class TitlebarEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<OpeningData>} */ class OpeningEvent extends WebdeskEventBase {}
 /** @extends {WebdeskEventBase<InteractionData>} */ class InteractionEvent extends WebdeskEventBase {}
 /** @extends {WebdeskEventBase<CloseData>} */ class CloseEvent extends WebdeskEventBase {}
 /** @extends {WebdeskEventBase<FocusData>} */ class FocusEvent extends WebdeskEventBase {}
@@ -184,40 +189,44 @@ class WebdeskEventBase {
 /** @extends {WebdeskEventBase<CustomizationData>} */ class CustomizationEvent extends WebdeskEventBase {}
 /** @extends {WebdeskEventBase<ChangeData>} */ class ChangeEvent extends WebdeskEventBase {}
 /** @extends {WebdeskEventBase<BackgroundData>} */ class BackgroundEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<ReadyData>} */ class ReadyEvent extends WebdeskEventBase {}
 
 export class WebdeskEvent {
-	static MANIFESTS_READY = new EmptyEvent()
+	static MANIFESTS_READY = new ReadyEvent()
 	static LAUNCHER_CLICK = new LauncherEvent()
-	static TITLEBAR_SETUP = new TitlebarEvent()
-	
+	static TITLEBAR_READY = new ReadyEvent()
+
+	static CONTENT_READY = new ReadyEvent()
+
 	static WINDOW_MOVE_START = new InteractionEvent()
 	static WINDOW_MOVE = new InteractionEvent()
 	static WINDOW_MOVE_END = new InteractionEvent()
-	
+
 	static WINDOW_RESIZE_START = new InteractionEvent()
 	static WINDOW_RESIZE = new InteractionEvent()
 	static WINDOW_RESIZE_END = new InteractionEvent()
-	
+
+	static WINDOW_OPENING = new OpeningEvent()
 	static WINDOW_OPEN = new TargetEvent()
 	static WINDOW_CLOSE = new CloseEvent()
 	static WINDOW_UPDATED_FOCUS = new FocusEvent()
-	
+
 	static WINDOW_MAXIMISE = new TargetEvent()
 	static WINDOW_MAXIMISE_END = new TargetEvent()
-	
+
 	static WINDOW_MINIMISE = new TargetEvent()
 	static WINDOW_MINIMISE_END = new TargetEvent()
-	
+
 	static ICON_CLICK = new TargetEvent()
 	static CLOCK_UPDATE = new ClockEvent()
-	
+
 	static CUSTOMIZATION_LOAD = new CustomizationEvent()
 	static CUSTOMIZATION_LOADED = new CustomizationEvent()
-	
+
 	static CUSTOMIZATION_CHANGE = new ChangeEvent()
 	static CUSTOMIZATION_CHANGE_SAVE = new ChangeEvent()
 	static CUSTOMIZATION_CHANGE_SAVED = new CustomizationEvent()
-	
+
 	static BACKGROUND_LOAD = new BackgroundEvent()
 	static BACKGROUND_LOADED = new BackgroundEvent()
 	static BACKGROUND_REMOVE_ALL = new EmptyEvent()
@@ -300,9 +309,69 @@ const SWManager = new class {
 	}
 }
 
+/* Titlebar --- Content */
+/*    \            /    */
+/*     \   fun    /     */
+/*      \        /      */
+/*       Frontend       */
+
+export const MessagingHub = new class {
+	/** @type {Map<HTMLElement, object>} */
+	windowToChannels = new Map()
+
+
+	/** @param {MessageEvent} event
+	/** @param {MessagePort} sendPort */
+	commandResponder({ data }, sendPort) {
+		console.log(data)
+		switch(data) {
+
+		}
+	}
+	/** @param {OpeningData} openingData */
+	addLink({ window: appWindow, titlebar, app }) {
+		const titlebarChannel = new MessageChannel()
+		const contentChannel = new MessageChannel()
+
+		const newLink = { content: contentChannel, titlebar: titlebarChannel }
+		MessagingHub.windowToChannels.set(appWindow, newLink)
+
+		newLink.content.port1.addEventListener("message", (event) => { MessagingHub.commandResponder(event, newLink.content.send) })
+
+		newLink.titlebar.port1.start()
+		newLink.content.port1.start()
+	}
+	/** @param {CloseData} closeData */
+	removeLink({ closed }) { MessagingHub.windowToChannels.delete(closed) }
+	/** @param {ReadyData} readyData */
+	sendContentMessageChannel({ data: iframe, message }) {
+		const appWindow = iframe.closest("[app]")
+		const contentWindow = iframe.contentWindow
+		const messageChannel = MessagingHub.windowToChannels.get(appWindow).content
+
+		contentWindow.postMessage(message, "*", [ messageChannel.port2 ])
+	}
+	/** @param {ReadyData} readyData */
+	sendTitlebarMessageChannel({ data: iframe, message }) {
+		const appWindow = iframe.closest("[app]")
+		const titlebarWindow = iframe.contentWindow
+		const messageChannel = MessagingHub.windowToChannels.get(appWindow).titlebar
+
+		titlebarWindow.postMessage(message, "*", [ messageChannel.port2 ])
+	}
+
+	constructor() {
+		WebdeskEvent.WINDOW_OPENING.on(this.addLink)
+		WebdeskEvent.WINDOW_CLOSE.on(this.removeLink)
+
+		WebdeskEvent.CONTENT_READY.on(this.sendContentMessageChannel)
+		WebdeskEvent.TITLEBAR_READY.on(this.sendTitlebarMessageChannel)
+	}
+}
+
 fetch("/api/_/getManifests").then(async (response) => {
 	ApplicationManifests = await response.json()
-	WebdeskEvent.MANIFESTS_READY.emit(ApplicationManifests)
+	WebdeskEvent.MANIFESTS_READY.emit({ data: ApplicationManifests })
 
 	if (newUser) { setTimeout(() => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" }) }, 50) }
 })

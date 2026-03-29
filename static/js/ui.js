@@ -223,7 +223,6 @@ async function updateCustomizationToDB({ css, value }) {
 
 /** @param {import("./core").ChangeData} changeData */
 function previewCustomization({ css, value }) {
-	console.log(css, value)
 	document.documentElement.style.setProperty(css, value)
 }
 
