@@ -5,6 +5,8 @@
 
 let cache
 
+const initialized = init()
+
 async function init(event) {
 	const currentAssetsHashRequest = await fetch("/api/_/assetsHash")
 	const assetsHash = await currentAssetsHashRequest.text()
@@ -30,16 +32,16 @@ async function interceptor(event) {
 
 	if (cached) { return cached }
 
-	const serverResponse = await fetch(event.request)
-	if (event.request.method === "GET" && requestURL.pathname !== "/api/_/assetsHash") {
-		if (serverResponse.ok) {
-			cache.put(event.request, serverResponse.clone())
-		} else { /* Error */ }
-	}
+	let serverResponse
+	try { serverResponse = await fetch(event.request) }
+	catch (error) { serverResponse = new Response(`${requestURL.pathname}: ${error.stack}`, { status: 500 }) }
+
+	if (requestURL.pathname === "/api/_/assetsHash") { return serverResponse }
+	else if (event.request.method === "GET" && serverResponse.ok) { cache.put(event.request, serverResponse.clone()) }
 
 	return serverResponse
 }
 
 self.addEventListener("install", self.skipWaiting)
-self.addEventListener("activate", (event) => { event.waitUntil(init()) })
+self.addEventListener("activate", (event) => { event.waitUntil(initialized) })
 self.addEventListener("fetch", (event) => { event.respondWith(interceptor(event)) })
