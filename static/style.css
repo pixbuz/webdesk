@@ -59,7 +59,7 @@ body {
 	gap: 4px 8px;
 }
 
-.AppDock {
+.Dock {
 	justify-content: center;
 	will-change: translate;
 	flex-flow: row nowrap;
@@ -75,7 +75,7 @@ body {
 	z-index: 30;
 }
 
-.AppDock .Open {
+.Dock .Open {
 	justify-content: start;
 	flex-flow: row nowrap;
 	scrollbar-width: thin;
@@ -87,7 +87,7 @@ body {
 	flex: 1;
 }
 
-.AppDock .Open::-webkit-scrollbar {
+.Dock .Open::-webkit-scrollbar {
 	height: 4px;
 }
 
@@ -112,7 +112,7 @@ body {
 	display: none;
 }
 
-.AppDock .Clock {
+.Dock .Clock {
 	flex-flow: column nowrap;
 	justify-content: center;
 	align-content: center;
@@ -122,12 +122,12 @@ body {
 	height: 100%;
 }
 
-.AppDock .Clock p {
+.Dock .Clock p {
 	font-size: 75%;
 }
 
-.AppDock .Clock .Time,
-.AppDock .Clock .Date {
+.Dock .Clock .Time,
+.Dock .Clock .Date {
 	justify-content: center;
 	align-content: start;
 	display: flex;
@@ -135,8 +135,8 @@ body {
 	width: 100%;
 }
 
-.AppDock .Clock .Time:not(.showSeconds) :nth-last-child(1),
-.AppDock .Clock .Time:not(.showSeconds) :nth-last-child(2) {
+.Dock .Clock .Time:not(.showSeconds) :nth-last-child(1),
+.Dock .Clock .Time:not(.showSeconds) :nth-last-child(2) {
 	display: none;
 }
 
@@ -284,14 +284,14 @@ body {
 
 /* ----- Color customization ----- */
 
-.AppDock {
-	border: var(--appdock-appearance-border-style) var(--appdock-color-border) var(--appdock-appearance-border-width);
-	background: var(--appdock-color-background);
-	color: var(--appdock-color-text);
+.Dock {
+	border: var(--dock-appearance-border-style) var(--dock-color-border) var(--dock-appearance-border-width);
+	background: var(--dock-color-background);
+	color: var(--dock-color-text);
 }
 
-.AppDock .Clock p {
-	background: var(--appdock-color-text);
+.Dock .Clock p {
+	background: var(--dock-color-text);
 	background-clip: text;
 	color: transparent;
 }
@@ -354,7 +354,7 @@ body {
 	}
 }
 
-@keyframes AppDock-maximised-up {
+@keyframes Dock-maximised-up {
 	from {
 		opacity: 1;
 		translate: 0 200%;
@@ -365,7 +365,7 @@ body {
 	}
 }
 
-@keyframes AppDock-maximised-down {
+@keyframes Dock-maximised-down {
 	from {
 		opacity: 1;
 		translate: 0 0;

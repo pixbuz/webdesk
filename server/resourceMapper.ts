@@ -270,7 +270,7 @@ export const resources = new class {
 		log.debug(`Assets hash changed: ${resources.hash}`)
 	}
 	private logRegistred(message: string, endpoints: string[]) {
-		endpoints.forEach((endpoint) => { log.info(`${message} "${endpoint}"`) })
+		endpoints.forEach((endpoint) => { log.debug(`${message} "${endpoint}"`) })
 	}
 	private registerResources({ assets, origins, commands }: { assets: Record<string, string | Uint8Array>, origins: Record<string, string>, commands: Record<string, unknown> }) {
 		const assetCount = Object.keys(assets).length

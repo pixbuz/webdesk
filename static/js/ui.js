@@ -1,6 +1,6 @@
 // TODO: Improve backgrounds upload with a frontend element/thing informing about skips cuz duplicates
 
-import { WebdeskEvent, webdeskDB } from "./core"
+import { WebdeskEvent, webdeskDB, StyleSheets } from "./core"
 
 const defaultWindowsCustomization = new class {
 	color = {
@@ -69,7 +69,7 @@ const defaultLaunchersCustomization = new class {
 	}
 }
 
-const defaultAppDockCustomization = new class {
+const defaultDockCustomization = new class {
 	color = {
 		background: "#4C566A",
 		border: "#434C5E",
@@ -125,7 +125,7 @@ let saveID = 1
 async function newUserCustomizationInit() {
 	const theme = {
 		windows: defaultWindowsCustomization,
-		appdock: defaultAppDockCustomization,
+		dock: defaultDockCustomization,
 		launchers: defaultLaunchersCustomization,
 	}
 
@@ -158,30 +158,34 @@ function computeCustomizationVars(customizationObject, prefix) {
 }
 
 /** @param {import("./core").CustomizationData} customizationData */
-async function loadCustomization(customizationData) {
-	if (!customizationData.object) { return }
-	else if (!customizationData.force && customizationData.id == currentBackgroundID) { return }
+async function loadCustomization({ id, css, object, force }) {
+	if (!object) { return }
+	else if (!force && id == currentBackgroundID) { return }
 
-	localStorage.setItem("customization-id", currentCustomizationID = customizationData.id)
+	localStorage.setItem("customization-id", currentCustomizationID = id)
 
-	const launchers = computeCustomizationVars(customizationData.object.launchers, "launchers").join(" ")
-	const windows = computeCustomizationVars(customizationData.object.windows, "windows").join(" ")
-	const appdock = computeCustomizationVars(customizationData.object.appdock, "appdock").join(" ")
+	const launchers = computeCustomizationVars(object.launchers, "launchers").join(" ")
+	const windows = computeCustomizationVars(object.windows, "windows").join(" ")
+	const dock = computeCustomizationVars(object.dock, "dock").join(" ")
 
-	document.documentElement.style.cssText = `${launchers}${windows}${appdock}`
+	StyleSheets.launchers.replace(`:root {${launchers}}`)
+	StyleSheets.windows.replace(`:root {${windows}}`)
+	StyleSheets.dock.replace(`:root {${dock}}`)
 
-	WebdeskEvent.CUSTOMIZATION_LOADED.emit({ id: currentCustomizationID, css: document.documentElement.style.cssText, object: customizationData.object })
+	document.adoptedStyleSheets = Object.values(StyleSheets)
+
+	WebdeskEvent.CUSTOMIZATION_LOADED.emit({ id: currentCustomizationID, css: `${launchers}${windows}${dock}`, object: object })
 }
 
 /** @param {import("./core").BackgroundData} backgroundData */
-async function loadBackground(backgroundData) {
-	if (!backgroundData.background) { return }
-	else if (!backgroundData.force && backgroundData.id == currentBackgroundID) { return }
+async function loadBackground({ id, background, force }) {
+	if (!background) { return }
+	else if (!force && id == currentBackgroundID) { return }
 
-	localStorage.setItem("background-id", currentBackgroundID = backgroundData.id)
-	backgroundElement.innerHTML = backgroundData.background
+	localStorage.setItem("background-id", currentBackgroundID = id)
+	backgroundElement.innerHTML = background
 
-	WebdeskEvent.BACKGROUND_LOADED.emit({ id: currentBackgroundID, background: backgroundData.background })
+	WebdeskEvent.BACKGROUND_LOADED.emit({ id: currentBackgroundID, background: background })
 }
 
 /** @param {import("./core").EmptyData} uploadData */
@@ -198,8 +202,8 @@ async function uploadBackgroundToDB(uploadData) {
 }
 
 /** @param {import("./core").ChangeData} changeData */
-async function updateCustomizationToDB(changeData) {
-	const customizationVar = changeData.css.substring(2)
+async function updateCustomizationToDB({ css, value }) {
+	const customizationVar = css.substring(2)
 	const varTree = customizationVar.split("-")
 	const targetKey = varTree.pop()
 
@@ -207,20 +211,20 @@ async function updateCustomizationToDB(changeData) {
 
 	for (const leaf of varTree) { indexer = indexer[leaf] }
 
-	indexer[targetKey] = changeData.value
+	indexer[targetKey] = value
 	await webdeskDB.set("_customizations", currentCustomizationID, currentCustomizationObject)
 
 	const launchers = computeCustomizationVars(currentCustomizationID.launchers, "launchers").join(" ")
 	const windows = computeCustomizationVars(currentCustomizationID.windows, "windows").join(" ")
-	const appdock = computeCustomizationVars(currentCustomizationID.appdock, "appdock").join(" ")
+	const dock = computeCustomizationVars(currentCustomizationID.dock, "dock").join(" ")
 
-	WebdeskEvent.CUSTOMIZATION_CHANGE_SAVED.emit({ id: currentCustomizationID, css: `${launchers}${windows}${appdock}`, object: currentCustomizationObject })
+	WebdeskEvent.CUSTOMIZATION_CHANGE_SAVED.emit({ id: currentCustomizationID, css: `${launchers}${windows}${dock}`, object: currentCustomizationObject })
 }
 
 /** @param {import("./core").ChangeData} changeData */
-function previewCustomization(changeData) {
-	console.log(changeData)
-	document.documentElement.style.setProperty(changeData.css, changeData.value)
+function previewCustomization({ css, value }) {
+	console.log(css, value)
+	document.documentElement.style.setProperty(css, value)
 }
 
 async function emptyBackgroundsDatabase() {
@@ -236,8 +240,6 @@ async function init() {
 	WebdeskEvent.CUSTOMIZATION_CHANGE_SAVE.on(updateCustomizationToDB)
 	WebdeskEvent.CUSTOMIZATION_CHANGE.on(previewCustomization)
 	WebdeskEvent.CUSTOMIZATION_LOAD.on(loadCustomization)
-
-	console.log(WebdeskEvent.CUSTOMIZATION_CHANGE.callbacks)
 
 	WebdeskEvent.BACKGROUND_REMOVE_ALL.on(emptyBackgroundsDatabase)
 	WebdeskEvent.BACKGROUND_UPLOAD.on(uploadBackgroundToDB)

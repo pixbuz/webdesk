@@ -1,51 +1,53 @@
-// TODO: Make a better system for window to icon and icon to window for the appdock
+// TODO: Make a better system for window to icon and icon to window for the dock
 
 import { time, WebdeskEvent, ApplicationManifests } from "./core"
 
-const element = document.querySelector(".AppDock")
+const element = document.querySelector(".Dock")
 const clock = element.querySelector(".Clock")
 const open = element.querySelector(".Open")
 
 const windowToIcon = new WeakMap()
 const iconToWindow = new WeakMap()
 
+let focusedIcon
+
 const maximised = {
 	/** @param {import("./core").TargetData} targetData */
-	add(targetData) {
-		const icon = open.querySelector(`[icon=${targetData.app}]`)
+	add({ target, app }) {
+		const icon = open.querySelector(`[icon=${app}]`)
 		if (icon) { icon.classList.add("maximised") }
 	},
 	/** @param {import("./core").TargetData} targetData */
-	remove(targetData) {
-		const icon = open.querySelector(`[icon=${targetData.app}]`)
+	remove({ target, app }) {
+		const icon = open.querySelector(`[icon=${app}]`)
 		if (icon) { icon.classList.remove("maximised") }
 	}
 }
 
 const minimised = {
 	/** @param {import("./core").TargetData} targetData */
-	add(targetData) {
-		const icon = open.querySelector(`[icon=${targetData.app}]`)
+	add({ target, app }) {
+		const icon = open.querySelector(`[icon=${app}]`)
 		if (icon) { icon.classList.add("minimised") }
 	},
 	/** @param {import("./core").TargetData} targetData */
-	remove(targetData) {
-		const icon = open.querySelector(`[icon=${targetData.app}]`)
+	remove({ target, app }) {
+		const icon = open.querySelector(`[icon=${app}]`)
 		if (icon) { icon.classList.remove("minimised") }
 	}
 }
 
-/** @param {import("./core").OpenData} openData */
-function add(openData) {
-	const manifest = ApplicationManifests[openData.app]
+/** @param {import("./core").TargetData} targetData */
+function add({ target, app }) {
+	const manifest = ApplicationManifests[app]
 	if (manifest.service) { return }
 
 	const icon = document.createElement("button")
 	const image = document.createElement("img")
 	const name = document.createElement("p")
 
-	windowToIcon.set(openData.target, icon)
-	iconToWindow.set(icon, openData.target)
+	windowToIcon.set(target, icon)
+	iconToWindow.set(icon, target)
 
 	icon.append(name, image)
 	icon.classList.add("focus")
@@ -53,40 +55,45 @@ function add(openData) {
 	open.append(icon)
 
 	icon.addEventListener("click", (event) => { WebdeskEvent.ICON_CLICK.emit({ target: event.target.closest("[icon]") }) })
-	icon.setAttribute("icon", openData.app)
-	image.src = `apps/${openData.app}/${manifest.icon}`
-	name.innerText = openData.app
+	icon.setAttribute("icon", app)
+	image.src = `apps/${app}/${manifest.icon}`
+	name.innerText = app
 }
 
 /** @param {import("./core").CloseData} closeData */
-function updateClosedWindow(closeData) {
-	const icon = windowToIcon.get(closeData.closed)
+function updateClosedWindow({ closed, open }) {
+	const icon = windowToIcon.get(closed)
 
 	if (icon) {
-		windowToIcon.delete(closeData.closed)
+		windowToIcon.delete(closed)
 		icon.remove()
 	}
 }
 
 /** @param {import("./core").TargetData} targetData */
-function focusLinkedWindow(targetData) {
+function focusLinkedWindow({ target, app }) {
 	const window = iconToWindow.get(targetData.target)
 
 	window.classList.remove("minimised")
 }
 
 /** @param {import("./core").FocusData} focusData */
-function focus(focusData) {
-	const oldFocus = windowToIcon.get(focusData.old)
-	const newFocus = windowToIcon.get(focusData.new)
+function focus({ lost, gain }) {
+	const newFocusIcon = windowToIcon.get(lost)
 
-	if (oldFocus) { oldFocus.classList.remove("focus") }
-	if (newFocus) { newFocus.classList.add("focus") }
+	if (focusedIcon) {
+		focusedIcon.classList.remove("focus")
+		focusedIcon = undefined
+	}
+	if (newFocusIcon) {
+		newFocusIcon.classList.add("focus")
+		focusedIcon = newFocusIcon
+	}
 }
 
-/** @param {import("./core").ChangeData} clockData */
-function updateClockElement(clockData) {
-	for (const piece of clockData.update) {
+/** @param {import("./core").ClockData} clockData */
+function updateClockElement({ update }) {
+	for (const piece of update) {
 		switch(piece) {
 			case "seconds":
 			case "minutes":

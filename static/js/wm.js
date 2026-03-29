@@ -14,8 +14,7 @@ const WMTitlebarFactory = new class {
 	titlebarVars
 
 	/** @param {import("./core").TitlebarData} titlebarData */
-	async setup(titlebarData) {
-		const { titlebar, app } = titlebarData
+	async setup({ titlebar, app }) {
 		const path = ApplicationManifests[app].titlebar
 		const manifest = ApplicationManifests[app]
 		const channel = new MessageChannel()
@@ -45,42 +44,44 @@ const WMTitlebarFactory = new class {
 		WebdeskEvent.WINDOW_UPDATED_FOCUS.on(WMTitlebarFactory.relayFocusChange)
 	}
 	/** @param {import("./core").FocusData} focusData */
-	relayFocusChange(focusData) {
-		const newFocusedTitlebar = focusData.new.querySelector(".titlebar")
-		const newTitlebarPort = WMTitlebarFactory.comPorts.get(newFocusedTitlebar)
-		newTitlebarPort.postMessage({ command: "focus", data: true })
+	relayFocusChange({ lost, gain }) {
+		if (gain) {
+			const newFocusedTitlebar = gain.querySelector(".titlebar")
+			const newTitlebarPort = WMTitlebarFactory.comPorts.get(newFocusedTitlebar)
+			newTitlebarPort.postMessage({ command: "focus", data: true })
+		}
 
-		if (focusData.old) {
-			const oldFocusedTitlebar = focusData.old.querySelector(".titlebar")
+		if (lost) {
+			const oldFocusedTitlebar = lost.querySelector(".titlebar")
 			const oldTitlebarPort = WMTitlebarFactory.comPorts.get(oldFocusedTitlebar)
 			oldTitlebarPort.postMessage({ command: "focus", data: false })
 		}
 	}
 	/** @param {import("./core").TargetData} targetData */
-	close(targetData) {
-		if (targetData.app == "settings") { SettingsManager.closeWindow() }
-		else { targetData.target.remove() }
+	close({ target, app }) {
+		if (app == "settings") { SettingsManager.closeWindow() }
+		else { target.remove() }
 
-		WebdeskEvent.WINDOW_CLOSE.emit({ closed: targetData.target, open: WMFactory.open })
+		WebdeskEvent.WINDOW_CLOSE.emit({ closed: target, open: WMFactory.open })
 	}
 	/** @param {import("./core").TargetData} targetData */
-	maximise(targetData) {
-		if (targetData.target.classList.contains("maximised")) {
-			targetData.target.classList.remove("maximised")
-			WebdeskEvent.WINDOW_MAXIMISE_END.emit(targetData)
+	maximise({ target, app }) {
+		if (target.classList.contains("maximised")) {
+			target.classList.remove("maximised")
+			WebdeskEvent.WINDOW_MAXIMISE_END.emit({ target, app })
 		} else {
-			targetData.target.classList.add("maximised")
-			WebdeskEvent.WINDOW_MAXIMISE.emit(targetData)
+			target.classList.add("maximised")
+			WebdeskEvent.WINDOW_MAXIMISE.emit({ target, app })
 		}
 	}
 	/** @param {import("./core").TargetData} targetData */
-	minimise(targetData) {
-		if (targetData.target.classList.contains("minimised")) {
-			targetData.target.classList.remove("minimised")
-			WebdeskEvent.WINDOW_MINIMISE_END.emit(targetData)
+	minimise({ target, app }) {
+		if (target.classList.contains("minimised")) {
+			target.classList.remove("minimised")
+			WebdeskEvent.WINDOW_MINIMISE_END.emit({ target, app })
 		} else {
-			targetData.target.classList.add("minimised")
-			WebdeskEvent.WINDOW_MINIMISE.emit(targetData)
+			target.classList.add("minimised")
+			WebdeskEvent.WINDOW_MINIMISE.emit({ target, app })
 		}
 	}
 	messageInterpreter(titlebar, port, messageEvent) {
@@ -105,8 +106,8 @@ const WMTitlebarFactory = new class {
 		}
 	}
 	/** @param {import("./core").CustomizationData} customizationData */
-	setUpVars(customizationData) {
-		WMTitlebarFactory.titlebarVars = customizationData.css
+	setUpVars({ id, css, object, force }) {
+		WMTitlebarFactory.titlebarVars = css
 			.split("; ")
 			.filter((cssVar) => { return cssVar.startsWith("--windows-") && cssVar.includes("titlebar") })
 			.join("; ")
@@ -124,8 +125,8 @@ const WMFactory = new class {
 	open = [ ]
 
 	/** @param {import("./core").LauncherData} launcherData */
-	async skeletonizeWindow(launcherData) {
-		const manifest = ApplicationManifests[launcherData.app]
+	async skeletonizeWindow({ app }) {
+		const manifest = ApplicationManifests[app]
 
 		const windowWrapper = document.createElement("article"),
 			contentWrapper = document.createElement("section"),
@@ -133,7 +134,7 @@ const WMFactory = new class {
 			content = document.createElement("iframe"),
 			titlebar = document.createElement("iframe")
 
-		WebdeskEvent.TITLEBAR_SETUP.emit({ titlebar: titlebar, app: launcherData.app })
+		WebdeskEvent.TITLEBAR_SETUP.emit({ titlebar: titlebar, app: app })
 
 		titlebar.classList.add("titlebar")
 		titlebarWrapper.append(titlebar)
@@ -142,19 +143,19 @@ const WMFactory = new class {
 		content.classList.add("content")
 		content.setAttribute("allowfullscreen", false)
 		content.setAttribute("sandbox", `allow-scripts`)
-		content.setAttribute("title", `"${launcherData.app}"'s application content`)
-		content.src = `/apps/${launcherData.app}/${manifest.index}`
+		content.setAttribute("title", `"${app}"'s application content`)
+		content.src = `/apps/${app}/${manifest.index}`
 
 		contentWrapper.append(content)
 		contentWrapper.classList.add("contentWrapper")
 
-		windowWrapper.setAttribute("app", launcherData.app)
+		windowWrapper.setAttribute("app", app)
 		windowWrapper.append(titlebarWrapper, contentWrapper)
 
 		WMFactory.space.appendChild(windowWrapper)
 		WMFactory.open.push(windowWrapper)
 
-		WebdeskEvent.WINDOW_UPDATED_FOCUS.on((launcherData) => { WMFocuser.updateZIndex(launcherData, windowWrapper) })
+		WebdeskEvent.WINDOW_UPDATED_FOCUS.on(() => { WMFocuser.updateZIndex({ app }, windowWrapper) })
 
 		windowWrapper.addEventListener("pointerdown", (event) => {
 			windowWrapper.setPointerCapture(event.pointerId)
@@ -178,7 +179,7 @@ const WMFactory = new class {
 
 		window.addEventListener("resize", () => { WMMover.updatePositionIfCollision({ target: windowWrapper }) })
 
-		WebdeskEvent.WINDOW_OPEN.emit({ target: windowWrapper, app: launcherData.app })
+		WebdeskEvent.WINDOW_OPEN.emit({ target: windowWrapper, app: app })
 	}
 
 	constructor() {
@@ -190,32 +191,32 @@ const WMFocuser = new class {
 	focusedWindow = null
 
 	/** @param {import("./core").TargetData} targetData */
-	focusWindow(targetData) {
-		if (targetData.target != WMFocuser.focusedWindow || !WMFocuser.focusedWindow) {
+	focusWindow({ target, app }) {
+		if (target != WMFocuser.focusedWindow || !WMFocuser.focusedWindow) {
 			if (WMFocuser.focusedWindow) { WMFocuser.focusedWindow.classList.remove("focus") }
 
-			WebdeskEvent.WINDOW_UPDATED_FOCUS.emit({ old: WMFocuser.focusedWindow, new: targetData.target })
+			WebdeskEvent.WINDOW_UPDATED_FOCUS.emit({ old: WMFocuser.focusedWindow, new: target })
 
-			WMFocuser.focusedWindow = targetData.target
+			WMFocuser.focusedWindow = target
 			WMFocuser.focusedWindow.classList.add("focus")
 		}
 	}
 	/** @param {import("./core").FocusData} focusData */
-	updateZIndex(focusData, targetWindow) {
+	updateZIndex({ lost, gain }, targetWindow) {
 		const zIndex = parseInt(targetWindow.style.zIndex)
 
-		if (focusData.new === targetWindow) { targetWindow.style.zIndex = 29 }
+		if (gain === targetWindow) { targetWindow.style.zIndex = 29 }
 		else if (zIndex > 20) { targetWindow.style.zIndex = zIndex - 1 }
 	}
 	/** @param {import("./core").CloseData} closeData */
-	shiftFocus(closeData) {
-		const targetWindow = closeData.open.sort((a, b) => {
+	shiftFocus({ closed, open }) {
+		const targetWindow = open.sort((a, b) => {
 			if (a.style.zIndex > b.style.zIndex) { return a }
 		}).at(0)
 
 		if (targetWindow) {
 			targetWindow.classList.add("focus")
-			WebdeskEvent.WINDOW_UPDATED_FOCUS.emit({ old: WMFocuser.focusedWindow, new: targetWindow })
+			WebdeskEvent.WINDOW_UPDATED_FOCUS.emit({ lost: WMFocuser.focusedWindow, gain: targetWindow })
 		}
 
 		WMFocuser.focusedWindow = targetWindow
@@ -235,39 +236,39 @@ const WMMover = new class {
 	inMove = false
 
 	/** @param {import("./core").InteractionData} interactionData */
-	init(interactionData) {
-		interactionData.target.classList.add("moving")
-		const box = interactionData.target.getBoundingClientRect()
+	init({ target, x, y }) {
+		target.classList.add("moving")
+		const box = target.getBoundingClientRect()
 
-		WMMover.anchor = { x: interactionData.x - box.left, y: interactionData.y - box.top }
+		WMMover.anchor = { x: (x - box.left), y: (y - box.top) }
 		WMMover.inMove = true
 	}
-	/** @param {import("./core").OpenData} openData */
-	centerWindow(openData) {
-		const box = openData.target.getBoundingClientRect()
+	/** @param {import("./core").TargetData} targetData */
+	centerWindow({ target, app }) {
+		const box = target.getBoundingClientRect()
 
-		openData.target.style.left = Math.round((window.innerWidth - box.width) / 2) + "px"
-		openData.target.style.top = Math.round((window.innerHeight - box.height) / 2) + "px"
+		target.style.left = Math.round((window.innerWidth - box.width) / 2) + "px"
+		target.style.top = Math.round((window.innerHeight - box.height) / 2) + "px"
 	}
 	/** @param {import("./core").InteractionData} interactionData */
-	followCursor(interactionData) {
-		interactionData.target.style.left = (interactionData.x - WMMover.anchor.x) + "px"
-		interactionData.target.style.top = (interactionData.y - WMMover.anchor.y) + "px"
+	followCursor({ target, x, y }) {
+		target.style.left = (x - WMMover.anchor.x) + "px"
+		target.style.top = (y - WMMover.anchor.y) + "px"
 	}
 	/** @param {import("./core").InteractionData} interactionData */
-	updatePositionIfCollision(interactionData) {
-		const box = interactionData.target.getBoundingClientRect()
+	updatePositionIfCollision({ target, x, y }) {
+		const box = target.getBoundingClientRect()
 
 		box.x = Math.min( Math.max(0, box.left), window.innerWidth - box.width )
 		box.y = Math.min( Math.max(0, box.top), window.innerHeight - box.height )
 
-		interactionData.target.style.left = Math.round(box.x) + "px"
-		interactionData.target.style.top = Math.round(box.y) + "px"
+		target.style.left = Math.round(box.x) + "px"
+		target.style.top = Math.round(box.y) + "px"
 	}
 	/** @param {import("./core").InteractionData} interactionData */
-	reset(interactionData) {
+	reset({ target, x, y }) {
 		WMMover.inMove = false
-		interactionData.target.classList.remove("moving")
+		target.classList.remove("moving")
 	}
 
 	constructor() {
@@ -291,38 +292,38 @@ const WMResizer = new class {
 	inResize = false
 
 	/** @param {import("./core").InteractionData} interactionData */
-	init(interactionData) {
-		WMResizer.startContentBox = interactionData.target.querySelector(".contentWrapper").getBoundingClientRect()
+	init({ target, x, y }) {
+		WMResizer.startContentBox = target.querySelector(".contentWrapper").getBoundingClientRect()
 		WMResizer.inResize = true
-		WMResizer.anchor.x = interactionData.x
-		WMResizer.anchor.y = interactionData.y
+		WMResizer.anchor.x = x
+		WMResizer.anchor.y = y
 
-		const box = WMResizer.startWindowBox = interactionData.target.getBoundingClientRect()
+		const box = WMResizer.startWindowBox = target.getBoundingClientRect()
 
 		const edges = WMResizer.edges = {
-			top: interactionData.y - box.top <= WMResizer.resizeMargin,
-			right: box.right - interactionData.x <= WMResizer.resizeMargin,
-			bottom: box.bottom - interactionData.y <= WMResizer.resizeMargin,
-			left: interactionData.x - box.left <= WMResizer.resizeMargin,
+			top: y - box.top <= WMResizer.resizeMargin,
+			right: box.right - x <= WMResizer.resizeMargin,
+			bottom: box.bottom - y <= WMResizer.resizeMargin,
+			left: x - box.left <= WMResizer.resizeMargin,
 		}
 
-		if (interactionData.target.classList.contains("maximised")) { interactionData.target.classList.remove("maximised") }
+		if (target.classList.contains("maximised")) { target.classList.remove("maximised") }
 
-		if (edges.top && edges.left || edges.bottom && edges.right) { interactionData.target.classList.add("XY1", "resizing") }
-		else if (edges.top && edges.right || edges.bottom && edges.left) { interactionData.target.classList.add("XY2", "resizing") }
-		else if (edges.left || edges.right) { interactionData.target.classList.add("X", "resizing") }
-		else if (edges.top || edges.bottom) { interactionData.target.classList.add("Y", "resizing") }
+		if (edges.top && edges.left || edges.bottom && edges.right) { target.classList.add("XY1", "resizing") }
+		else if (edges.top && edges.right || edges.bottom && edges.left) { target.classList.add("XY2", "resizing") }
+		else if (edges.left || edges.right) { target.classList.add("X", "resizing") }
+		else if (edges.top || edges.bottom) { target.classList.add("Y", "resizing") }
 	}
 	/** @param {import("./core").InteractionData} interactionData */
-	followCursor(interactionData) {
-		const content = interactionData.target.querySelector(".contentWrapper")
+	followCursor({ target, x, y }) {
+		const content = target.querySelector(".contentWrapper")
 		const { edges, anchor, startWindowBox, startContentBox } = WMResizer
 
 		let { left, top } = startWindowBox
 		let { width, height } = startContentBox
 
-		const deltaX = interactionData.x - anchor.x
-		const deltaY = interactionData.y - anchor.y
+		const deltaX = x - anchor.x
+		const deltaY = y - anchor.y
 
 		if (edges.left) {
 			width -= deltaX
@@ -334,15 +335,15 @@ const WMResizer = new class {
 			top += deltaY
 		} else if (edges.bottom) { height += deltaY }
 
-		interactionData.target.style.left = `${Math.round(left)}px`
-		interactionData.target.style.top = `${Math.round(top)}px`
+		target.style.left = `${Math.round(left)}px`
+		target.style.top = `${Math.round(top)}px`
 		content.style.height = `${Math.round(height)}px`
 		content.style.width = `${Math.round(width)}px`
 	}
-	/** @param {import("./core").InteractionData} interactionDataq */
-	reset(interactionData) {
+	/** @param {import("./core").InteractionData} interactionData */
+	reset({ target, x, y }) {
 		WMResizer.inResize = false
-		interactionData.target.classList.remove("X", "Y", "XY1", "XY2", "resizing")
+		target.classList.remove("X", "Y", "XY1", "XY2", "resizing")
 	}
 
 	constructor() {

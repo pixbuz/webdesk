@@ -28,7 +28,7 @@ const Windows = new class {
 	}
 }
 
-const AppDock = new class {
+const Dock = new class {
 	constructor() {
 		
 	}

@@ -1,6 +1,7 @@
 // NOTE: Generator functions tho?
 
 // TODO: Settings titlebar
+// TODO: Error handling for database things
 // TODO: Make ApplicationManifests into a object/class?
 // TODO: Messaging system between titlebar, content and front end script (triumvirate)
 
@@ -118,15 +119,12 @@ export const webdeskDB = new class {
  * @property {string} app */
 
 /** @typedef {Object} TargetData
- * @property {HTMLElement} target */
-
-/** @typedef {Object} FocusData
- * @property {HTMLElement} old
- * @property {HTMLElement} new */
-
-/** @typedef {Object} OpenData
  * @property {HTMLElement} target
  * @property {string} app */
+
+/** @typedef {Object} FocusData
+ * @property {HTMLElement} lost
+ * @property {HTMLElement} gain */
 
 /** @typedef {Object} CloseData
  * @property {HTMLElement} closed
@@ -142,13 +140,13 @@ export const webdeskDB = new class {
 
 /** @typedef {Object} BackgroundData
  * @property {number} id
+ * @property {boolean} force
  * @property {string} background */
 
 /** @typedef {Object} InteractionData
  * @property {HTMLElement} target
  * @property {number} x
- * @property {number} y
- * @property {boolean} force */
+ * @property {number} y */
 
 /** @typedef {Object} CustomizationData
  * @property {number} id
@@ -179,7 +177,6 @@ class WebdeskEventBase {
 /** @extends {WebdeskEventBase<LauncherData>} */ class LauncherEvent extends WebdeskEventBase {}
 /** @extends {WebdeskEventBase<TitlebarData>} */ class TitlebarEvent extends WebdeskEventBase {}
 /** @extends {WebdeskEventBase<InteractionData>} */ class InteractionEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<OpenData>} */ class OpenEvent extends WebdeskEventBase {}
 /** @extends {WebdeskEventBase<CloseData>} */ class CloseEvent extends WebdeskEventBase {}
 /** @extends {WebdeskEventBase<FocusData>} */ class FocusEvent extends WebdeskEventBase {}
 /** @extends {WebdeskEventBase<TargetData>} */ class TargetEvent extends WebdeskEventBase {}
@@ -201,7 +198,7 @@ export class WebdeskEvent {
 	static WINDOW_RESIZE = new InteractionEvent()
 	static WINDOW_RESIZE_END = new InteractionEvent()
 	
-	static WINDOW_OPEN = new OpenEvent()
+	static WINDOW_OPEN = new TargetEvent()
 	static WINDOW_CLOSE = new CloseEvent()
 	static WINDOW_UPDATED_FOCUS = new FocusEvent()
 	
@@ -277,6 +274,14 @@ export const time = new class {
 		}, 1000 - this.init.getMilliseconds())
 	}
 }
+
+export const StyleSheets = {
+	launchers: new CSSStyleSheet(),
+	windows: new CSSStyleSheet(),
+	dock: new CSSStyleSheet()
+}
+
+document.adoptedStyleSheets = Object.values(StyleSheets)
 
 const SWManager = new class {
 	loadInformation() {
