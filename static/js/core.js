@@ -9,6 +9,8 @@
 
 let newUser = false
 export let ApplicationManifests
+// Hopefully this won't be need in the future
+export const hostname = "localhost"
 
 export const webdeskDB = new class {
 	version = 1
@@ -364,7 +366,7 @@ export const MessagingHub = new class {
 	}
 }
 
-fetch("/api/_/getManifests").then(async (response) => {
+fetch("/api/getManifests").then(async (response) => {
 	ApplicationManifests = await response.json()
 	WebdeskEvent.MANIFESTS_READY.emit({ data: ApplicationManifests })
 

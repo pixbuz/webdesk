@@ -1,4 +1,4 @@
-import { WebdeskEvent } from "./core"
+import { WebdeskEvent, hostname } from "./core"
 
 const space = document.querySelector(".Launcher.Space")
 
@@ -8,7 +8,7 @@ function addLauncher(appName, manifest) {
 		icon = document.createElement("img")
 
 	icon.classList.add("icon")
-	icon.src = `/apps/${appName}/${manifest.icon}`
+	icon.src = `http://${appName}.${hostname}/icon`
 	icon.setAttribute("fetchpriority", "high")
 	icon.setAttribute("alt", `Application "${appName}"'s icon`)
 

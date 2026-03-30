@@ -3,30 +3,7 @@
 
 import { log } from "./log.ts"
 import { config } from "../server.config.ts"
-import { resources } from "./resourceMapper.ts"
-import { Route } from "./newMapper.ts"
-
-class ErrorResponse extends Response {
-	static notValidResponse(requestURL: string, type: string) {
-		log.info(`"${requestURL}" isn't a valid ${type}`)
-		return new ErrorResponse(`Recived ${type} request: ${requestURL}\n${" ".repeat(17 + type.length)}^ isn't a valid ${type}`)
-	}
-
-	static commandExeption(error: unknown) {
-		log.printStack((error as Error).stack)
-		return new ErrorResponse((error as Error).stack, 500)
-	}
-
-	constructor(message: string | undefined, code: number = 400) {
-		super(message, { status: code, headers: { "content-type": "text/plain" } })
-	}
-}
-
-class WebdeskResponse extends Response {
-	constructor(body: any, mime: string = "text/plain") {
-		super(body as BodyInit, { status: 200, headers: { "content-type": `${mime}, charset=UTF-8` } })
-	}
-}
+import { Route, WebdeskRoute } from "./newMapper.ts"
 
 const options = config.ssl ? {
 	cert: config.cert,
@@ -42,25 +19,25 @@ const options = config.ssl ? {
 
 const _server = Deno.serve({
 	...options,
-	onListen({ hostname, port }) { setupRouter(hostname, port) }
+	onListen({ hostname, port }) {
+		config.ssl ? log.info("Server using TSL/SSL") : log.warn("Server running unsecured")
+		log.info(`Server listening on ${config.ssl ? "https:" : "http:"}//${hostname}:${port}`)
+	}
 })
 
-async function setupRouter(hostname: string, port: number) {
-	config.ssl ? log.info("Setting up SSL") : log.warn("Running the server unsecured")
-	log.info(`Server listening on ${config.ssl ? "https:" : "http:"}//${hostname}:${port}`)
-
-	for await (const app of Deno.readDir("apps")) {
-		const route = Route.create(app.name)
-	}
-}
+for await (const app of Deno.readDir("apps")) { Route.create(app.name) }
+let webdesk = WebdeskRoute.create()!
 
 function requestHandler(browserRequest: Request, _connInfo: Deno.ServeHandlerInfo<Deno.NetAddr>): Response {
 	const requestURL: URL = new URL(browserRequest.url)
-	const subOrigin: string = requestURL.hostname.split(".").at(0)
-	const requestTree: string[] = requestURL.pathname.substring(1).split("/")
+	const subOriginName: string = requestURL.hostname.substring(0, requestURL.hostname.lastIndexOf("."))
+	const subOrigin: Route | undefined = Route.registred[subOriginName]
 
-	if (requestTree[0] == "api") { return apiReplier(browserRequest) }
-	else { return assetsReplier(requestURL) }
+	log.info(`${subOriginName !== "" ? `Suborigin "${subOriginName}" r`: "R"}ecived request for "${requestURL.pathname}"`)
+
+	if (subOriginName === "") { return webdesk.respond(browserRequest) }
+	else if (subOrigin) { return subOrigin.respond(browserRequest) }
+	else { return new Response() }
 }
 
 function assetsReplier(request: URL): Response {

@@ -7,7 +7,7 @@
 // IDEA: Conjure a system for passive highest z-index resolve for windows focus shift
 // IDEA: Quick window switching with focusWindow on WebdeskEvent.WINDOW_MOVE instead of WebdeskEvent.WINDOW_MOVE_START
 
-import { WebdeskEvent, ApplicationManifests, MessagingHub } from "./core"
+import { WebdeskEvent, ApplicationManifests, MessagingHub, hostname } from "./core"
 
 const WMTitlebarFactory = new class {
 	titlebarVars
@@ -22,14 +22,13 @@ const WMTitlebarFactory = new class {
 		titlebar.setAttribute("sandbox", "allow-scripts")
 		titlebar.setAttribute("title", `"${app}"'s application titlebar`)
 
-		if (path == "") { titlebar.src = "/api/_/titlebar" }
-		else { titlebar.src = `/apps/${app}/${path}` }
+		if (path == "") { titlebar.src = "/titlebar" }
+		else { titlebar.src = `http://${app}.${hostname}/titlebar` }
 
 		const initMessage = { command: "init", data: {
 			style: WMTitlebarFactory.titlebarVars,
-			icon: `/apps/${app}/${manifest.icon}`,
 			service: manifest.service,
-			title: app,
+			app: app,
 		}}
 
 		comChannel.port1.addEventListener("message", (messageEvent) => { WMTitlebarFactory.messageInterpreter(messageEvent, appWindow) })

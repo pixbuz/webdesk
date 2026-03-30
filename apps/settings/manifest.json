@@ -1,11 +1,10 @@
 {
-	"icon": "icon.svg",
 	"index": "index.html",
+	"style": "style.css",
+	"script": "settings.js",
+	"icon": "icon.svg",
+
 	"description": "Customize Webdesk",
 	"titlebar": "",
-	"service": true,
-
-	"routes": {
-		"style.css": "style"
-	}
+	"service": true
 }

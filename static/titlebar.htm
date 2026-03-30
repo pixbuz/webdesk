@@ -101,12 +101,12 @@ function updateVar(details) {
 	document.documentElement.style.setProperty(details.css, details.value)
 }
 
-function init({ title, style, icon, service }) {
-	document.querySelector(".title").innerText = title
+function init({ app, style, icon, service }) {
+	document.querySelector(".title").innerText = app
 	document.documentElement.setAttribute("style", style)
 
 	if (service) { document.querySelector(".icon").remove() }
-	else { document.querySelector(".icon").src = icon }
+	else { document.querySelector(".icon").src = `http://${app}.localhost/icon` }
 
 	// IDEA: using right mouse click moves but doesn't update the window focus
 	document.body.addEventListener("pointerdown", (event) => {
