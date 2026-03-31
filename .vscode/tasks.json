@@ -1,0 +1,25 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Server - Windows",
+			"type": "shell",
+			"command": "cd; cd Desktop/webdesk; deno run -A server/main.ts",
+			"isBackground": true,
+			"problemMatcher": {
+				"pattern": {
+					"regexp": "."
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": ".*",
+					"endsPattern": ".*"
+				}
+			},
+			"presentation": {
+				"reveal": "always",
+				"panel": "new"
+			}
+		}
+	]
+}

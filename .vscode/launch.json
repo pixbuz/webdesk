@@ -7,7 +7,11 @@
 			"name": "Debug Webdesk",
 			"url": "http://localhost:80",
 			"webRoot": "${workspaceFolder}",
-			"userDataDir": "${workspaceFolder}/.chrome-profile"
+			"userDataDir": "${workspaceFolder}/.chrome-profile",
+			"preLaunchTask": "Run Server - Windows",
+			"runtimeArgs": [
+				"--auto-open-devtools-for-tabs"
+			]
 		}
 	]
 }
