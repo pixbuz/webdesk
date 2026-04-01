@@ -4,11 +4,23 @@
 		{
 			"type": "chrome",
 			"request": "launch",
-			"name": "Debug Webdesk",
+			"name": "Debug Webdesk - Windows",
 			"url": "http://localhost:80",
 			"webRoot": "${workspaceFolder}",
 			"userDataDir": "${workspaceFolder}/.chrome-profile",
 			"preLaunchTask": "Run Server - Windows",
+			"runtimeArgs": [
+				"--auto-open-devtools-for-tabs"
+			]
+		},
+		{
+			"type": "chrome",
+			"request": "launch",
+			"name": "Debug Webdesk - Debian",
+			"url": "http://localhost:80",
+			"webRoot": "${workspaceFolder}",
+			"userDataDir": "${workspaceFolder}/.chrome-profile",
+			"preLaunchTask": "Run Server - Debian",
 			"runtimeArgs": [
 				"--auto-open-devtools-for-tabs"
 			]

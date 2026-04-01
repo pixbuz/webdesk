@@ -20,6 +20,26 @@
 				"reveal": "always",
 				"panel": "new"
 			}
+		},
+		{
+			"label": "Run Server - Debian",
+			"type": "shell",
+			"command": "cd /home/$USER/webdesk; sudo /home/$USER/.deno/bin/deno run -A server/main.ts",
+			"isBackground": true,
+			"problemMatcher": {
+				"pattern": {
+					"regexp": "."
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": ".*",
+					"endsPattern": ".*"
+				}
+			},
+			"presentation": {
+				"reveal": "always",
+				"panel": "new"
+			}
 		}
 	]
 }
