@@ -43,7 +43,11 @@ class SmartResponse extends Response {
 		if (body === undefined) { content = ""; code = 400 }
 		else { content = body as BodyInit; code = 200 }
 
-		super(content, { status: code, headers: { "content-type": mime } })
+		super(content, { status: code, headers: {
+			"content-type": mime,
+			"Access-Control-Allow-Origin": "*",
+			"Access-Control-Allow-Methods": "GET, OPTIONS",
+		} })
 	}
 }
 
@@ -81,80 +85,71 @@ export class WebdeskManifest {
 
 export class WebdeskRoute {
 	private static initialized: boolean = false
-	private watcherIgnoreFileEvent: boolean = false
 
 	public static create() {
 		if (WebdeskRoute.initialized) { return }
 		else { return new WebdeskRoute() }
 	}
 
-	private async watcher() {
-		log.debug(`Webdesk watcher started`)
-		for await (const { kind, paths, flag } of Deno.watchFs(`${config.staticFolder}`, { recursive: true })) {
-			if (this.watcherIgnoreFileEvent) { continue }
-			this.watcherIgnoreFileEvent = true
+	private async watcherEndpointManipulator(origin: string, kind: string) {
+		log.debug(`A ${kind} file event happend to Webdesk's file ${origin}"`)
 
-			if (flag === "rescan") {
-				log.debug(`Noticed something (other) happened, refreshing the watcher`)
-				this.watcher()
+		const path = getWebdeskRelativePath(origin)
+		let fileEndpoint
+
+		switch(path) {
+			case "index.htm": { fileEndpoint = "/"; break }
+			case "style.css": { fileEndpoint = "/style"; break }
+			case "manifest.json": { fileEndpoint = "/manifest"; break }
+			case "titlebar.htm": { fileEndpoint = "/titlebar"; break }
+
+			case "js/launchers.js": { fileEndpoint = "/launchers"; break }
+			case "js/core.js": { fileEndpoint = "/core"; break }
+			case "js/dock.js": { fileEndpoint = "/dock"; break }
+			case "js/ui.js": { fileEndpoint = "/ui"; break }
+			case "js/wm.js": { fileEndpoint = "/wm"; break }
+			case "js/sw.js": { fileEndpoint = "/sw"; break }
+
+			default: { return }
+		}
+
+		try {
+			const stats = await Deno.stat(origin)
+			if (stats.isDirectory) { return log.debug(`"${config.staticFolder}/${path}" is a folder, skipping`) }
+			else if (stats.isSymlink) { return log.debug(`"${config.staticFolder}/${path}" is a system link, skipping`) }
+		} catch(error) { log.debug(`Error while getting ${origin} stats: ${(error as Error).message}`) }
+
+		switch(kind) {
+			case "modify": {
+				log.warn(`Webdesk's file at ${fileEndpoint} was modified! Updating endpoint`)
+				return this.updateAsset(fileEndpoint, path)
+			}
+			case "remove": {
+				log.warn(`File at ${path} was deleted! Removing endpoint (${fileEndpoint})`)
+				delete this.files[fileEndpoint]
+				delete this.origins[fileEndpoint]
 				return
 			}
+			case "create": {
+				log.warn(`File at ${path} was created! Adding endpoint (${path})`)
 
-			this.watcherEndpointManipulator(paths, kind)
-
-			setTimeout(() => { this.watcherIgnoreFileEvent = false }, 100)
+				this.updateAsset(fileEndpoint, path)
+				return
+			}
 		}
 	}
 
-	private watcherEndpointManipulator(paths: string[], kind: string) {
-		log.debug(`A "${kind}" file event happend to Webdesk's files: "${paths.join(`", "`)}"`)
+	private async updateAsset(endpoint: string, relPath: string) {
+		const basePath = `${config.staticFolder}/`
+		this.origins[endpoint] = relPath
 
-		paths.forEach(async (origin: string) => {
-			const path = this.getRelativePath(origin)
-			const fileEndpoint = this.origins[path]
-
-			try {
-				const stats = await Deno.stat(origin)
-				if (stats.isDirectory) { return log.debug(`"${config.staticFolder}/${path}" is a folder, skipping`) }
-				else if (stats.isSymlink) { return log.debug(`"${config.staticFolder}/${path}" is a system link, skipping`) }
-			} catch(error) { log.debug(`Error while getting ${origin} stats: ${(error as Error).message}`) }
-
-			switch(kind) {
-				case "modify": {
-					log.warn(`Webdesk's file at ${path} was modified! Updating endpoint`)
-					return this.updateAsset(fileEndpoint, origin)
-				}
-				case "remove": {
-					log.warn(`File at ${path} was deleted! Removing endpoint (${fileEndpoint})`)
-					delete this.files[fileEndpoint]
-					delete this.origins[fileEndpoint]
-					return
-				}
-				case "create": {
-					log.warn(`File at ${path} was created! Adding endpoint (${path})`)
-
-					this.updateAsset(path, origin)
-					return
-				}
-			}
-		})
-	}
-
-	private getRelativePath(origin: string) {
-		const baseRemove = cwd.length + config.staticFolder.length
-
-		if (config.platform === 0) { return origin.substring(baseRemove + 1).replaceAll("\\", "/") }
-		else { return origin.substring(baseRemove + 3) }
-	}
-
-	private async updateAsset(endpoint: string, origin: string) {
 		try {
-			this.files[endpoint] = await Deno.readFile(this.origins[endpoint] = origin)
-			const extension = origin.substring(origin.lastIndexOf(".") + 1)
-			
+			const extension = relPath.substring(relPath.lastIndexOf(".") + 1)
+
+			this.files[endpoint] = await Deno.readFile(`${basePath}/${relPath}`)
 			this.mimes[endpoint] = MIMES[extension]
 		}
-		catch (error) { log.error(`Failed to register Webdesks's ${endpoint}: ${(error as Error).message}`) }
+		catch (error) { log.error(`Failed to register Webdesk's ${endpoint}: ${(error as Error).message}`) }
 	}
 
 	public readonly mimes: Record<string, string> = { }
@@ -176,24 +171,25 @@ export class WebdeskRoute {
 	}
 
 	private constructor() {
-		this.updateAsset("/", `${config.staticFolder}/index.htm`)
-		this.updateAsset("/style", `${config.staticFolder}/style.css`)
-		this.updateAsset("/manifest", `${config.staticFolder}/manifest.json`)
-		this.updateAsset("/titlebar", `${config.staticFolder}/titlebar.htm`)
+		this.updateAsset("/", `index.htm`)
+		this.updateAsset("/style", `style.css`)
+		this.updateAsset("/manifest", `manifest.json`)
+		this.updateAsset("/titlebar", `titlebar.htm`)
 
-		this.updateAsset("/launchers", `${config.staticFolder}/js/launchers.js`)
-		this.updateAsset("/core", `${config.staticFolder}/js/core.js`)
-		this.updateAsset("/dock", `${config.staticFolder}/js/dock.js`)
-		this.updateAsset("/ui", `${config.staticFolder}/js/ui.js`)
-		this.updateAsset("/wm", `${config.staticFolder}/js/wm.js`)
-		this.updateAsset("/sw", `${config.staticFolder}/js/sw.js`)
+		this.updateAsset("/launchers", `js/launchers.js`)
+		this.updateAsset("/core", `js/core.js`)
+		this.updateAsset("/dock", `js/dock.js`)
+		this.updateAsset("/ui", `js/ui.js`)
+		this.updateAsset("/wm", `js/wm.js`)
+		this.updateAsset("/sw", `js/sw.js`)
 
 		this.commands = {
 			// "/api/_/assetsHash": Route.getAssetsHash,
 			"/api/getManifests": Route.getManifests,
 		}
 
-		this.watcher()
+		log.debug(`Webdesk watcher starting`)
+		new UpdateWatcher(config.staticFolder, this.watcherEndpointManipulator.bind(this))
 	}
 }
 
@@ -223,109 +219,81 @@ export class Route {
 	private appName: string = ""
 	private ignore: string[] = [ ]
 	private routes: Record<string, string> = { }
-	private watcherIgnoreFileEvent: boolean = false
 
-	private async watcher() {
-		log.debug(`Application ${this.appName} watcher started`)
-		for await (const { kind, paths, flag } of Deno.watchFs(`${config.appFolder}/${this.appName}`, { recursive: true })) {
-			if (this.watcherIgnoreFileEvent) { continue }
-			this.watcherIgnoreFileEvent = true
+	private async watcherEndpointManipulator(origin: string, kind: string) {
+		log.debug(`A ${kind} file event happend to ${this.appName}'s "${origin}"`)
 
-			if (flag === "rescan") {
-				log.debug(`Noticed something (other) happened, refreshing the watcher`)
-				this.watcher()
+		const path = getApplicationRelativePath(origin)
+		const fileEndpoint = this.watcherLookup[path]
+
+		try {
+			const stats = await Deno.stat(origin)
+			if (this.ignore.includes(path)) { return log.debug(`File "${this.appName}/${path}" is ignored`) }
+			else if (stats.isDirectory) { return log.debug(`"${this.appName}/${path}" is a folder, skipping`) }
+			else if (stats.isSymlink) { return log.debug(`"${this.appName}/${path}" is a system link, skipping`) }
+		} catch(error) { log.debug(`Error while getting ${origin} stats: ${(error as Error).message}`) }
+
+		switch(kind) {
+			case "modify": {
+				log.info(`Updating ${this.appName}'s at ${fileEndpoint} (modified)`)
+				return this.updateAsset(fileEndpoint, path)
+			}
+			case "remove": {
+				log.info(`Removing ${this.appName}'s at ${fileEndpoint} (removed)`)
+				delete this.files[fileEndpoint]
+				delete this.origins[fileEndpoint]
 				return
 			}
+			case "create": {
+				const endpoint = this.routes[path] || path
+				log.info(`Creating ${this.appName}'s at ${endpoint} (created)`)
 
-			this.watcherEndpointManipulator(paths, kind)
-
-			setTimeout(() => { this.watcherIgnoreFileEvent = false }, 100)
-		}
-	}
-
-	private watcherEndpointManipulator(paths: string[], kind: string) {
-		log.debug(`A "${kind}" file event happend to "${this.appName}"'s files: "${paths.join(`", "`)}"`)
-
-		paths.forEach(async (origin: string) => {
-			const path = this.getRelativePath(origin)
-			const fileEndpoint = this.origins[path]
-
-			try {
-				const stats = await Deno.stat(origin)
-				if (this.ignore.includes(path)) { return log.debug(`File "${this.appName}/${path}" is ignored`) }
-				else if (stats.isDirectory) { return log.debug(`"${this.appName}/${path}" is a folder, skipping`) }
-				else if (stats.isSymlink) { return log.debug(`"${this.appName}/${path}" is a system link, skipping`) }
-			} catch(error) { log.debug(`Error while getting ${origin} stats: ${(error as Error).message}`) }
-
-			switch(kind) {
-				case "modify": {
-					log.info(`"${this.appName}"'s file at ${path} was modified! Updating endpoint`)
-					return this.updateAsset(fileEndpoint, origin)
-				}
-				case "remove": {
-					log.info(`File at ${path} was deleted! Removing endpoint (${fileEndpoint})`)
-					delete this.files[fileEndpoint]
-					delete this.origins[fileEndpoint]
-					return
-				}
-				case "create": {
-					const endpoint = this.routes[path] || path
-					log.info(`File at ${path} was created! Adding endpoint (${endpoint})`)
-
-					this.updateAsset(endpoint, origin)
-					return
-				}
+				return this.updateAsset(endpoint, path)
 			}
-		})
+		}
 	}
 
 	private async registerFolderAssets(path: string = "") {
 		const baseFiles = [ this.manifest.index, this.manifest.icon, this.manifest.script, this.manifest.style, "manifest.json" ]
-
 		for await (const entry of Deno.readDir(`${config.appFolder}/${this.appName}${path}`)) {
 			if (baseFiles.includes(`${path}${entry.name}`)) { continue }
-			else if (this.ignore.includes(`${path}${entry.name}`) || entry.isSymlink) {
-				log.debug(`Skipped indexing of "${this.appName}"'s "${entry.name}" as per manifest (from "${config.appFolder}/${this.appName}${path}")`)
+			else if (this.ignore.includes(`${path}${entry.name}`)) {
+				log.debug(`Skipped indexing of application ${this.appName}'s "${entry.name}" per manifest`)
 				continue
 			}
+			else if (entry.isSymlink) { log.debug(`Skipped indexing of application ${this.appName}'s "${entry.name}", is system link`) }
 			else if (entry.isDirectory) { this.registerFolderAssets(`${path}/${entry.name}`) }
-			else {
+			else /* if (entry.isFile) */ {
 				const endpoint = this.routes[`${path}${entry.name}`] || `${path}/${entry.name}`
-
-				this.updateAsset(endpoint, `${config.appFolder}/${this.appName}${path}/${entry.name}`)
+				this.updateAsset(endpoint, `${path}/${entry.name}`)
 			}
 		}
 	}
 
 	private registerMainAssets() {
-		const basePath = `${config.appFolder}/${this.appName}`
-
-		this.updateAsset("/", `${basePath}/${this.manifest.index}`)
-		this.updateAsset("/js", `${basePath}/${this.manifest.script}`)
-		this.updateAsset("/icon", `${basePath}/${this.manifest.icon}`)
-		this.updateAsset("/style", `${basePath}/${this.manifest.style}`)
+		this.updateAsset("/", this.manifest.index)
+		this.updateAsset("/js", this.manifest.script)
+		this.updateAsset("/icon", this.manifest.icon)
+		this.updateAsset("/style", this.manifest.style)
 	}
 
-	private getRelativePath(origin: string) {
-		const baseRemove = cwd.length + config.appFolder.length + this.appName.length + 2
+	private async updateAsset(endpoint: string, relPath: string) {
+		const basePath = `${config.appFolder}/${this.appName}/`
+		this.origins[endpoint] = relPath
+		this.watcherLookup[relPath] = endpoint
 
-		if (config.platform === 0) { return origin.substring(baseRemove + 1).replaceAll("\\", "/") }
-		else { return origin.substring(baseRemove + 3) }
-	}
-
-	private async updateAsset(endpoint: string, origin: string) {
 		try {
-			this.files[endpoint] = await Deno.readFile(this.origins[endpoint] = origin)
-			const extension = origin.substring(origin.lastIndexOf(".") + 1)
+			const extension = relPath.substring(relPath.lastIndexOf(".") + 1)
 
+			this.files[endpoint] = await Deno.readFile(`${basePath}${relPath}`)
 			this.mimes[endpoint] = MIMES[extension]
-		}
-		catch (error) { log.warn(`Failed to register "${this.appName}"'s ${endpoint}: ${(error as Error).message}`) }
+		} catch (error) { log.warn(`Failed to register "${this.appName}"'s ${endpoint}: ${(error as Error).message}`) }
 	}
 
 	public readonly manifest: WebdeskManifest
 	public readonly mimes: Record<string, string> = { }
 	public readonly origins: Record<string, string> = { }
+	public readonly watcherLookup: Record<string, string> = { }
 	public readonly commands: Record<string, (req: Request) => (CommandOutput | Response)> = { }
 	public readonly files: Record<string, Uint8Array | string> = { }
 
@@ -354,6 +322,54 @@ export class Route {
 
 		this.registerFolderAssets()
 		this.registerMainAssets()
-		this.watcher()
+
+		log.debug(`Application ${this.appName} watcher starting`)
+		new UpdateWatcher(`${config.appFolder}/${appName}`, this.watcherEndpointManipulator.bind(this))
 	}
+}
+
+class UpdateWatcher {
+	private watcherIgnoreFileEvent: boolean = false
+
+	async start(folder: string, callback: (path: string, kind: string) => void) {
+		for await (const { kind, paths, flag } of Deno.watchFs(folder, { recursive: true })) {
+			if (this.watcherIgnoreFileEvent) { continue }
+			this.watcherIgnoreFileEvent = true
+
+			if (flag === "rescan") {
+				log.debug(`Noticed something (other) happened, refreshing the watcher`)
+				this.start(folder, callback)
+				return
+			}
+
+			for (const path of paths) { callback(path, kind) }
+
+			setTimeout(() => { this.watcherIgnoreFileEvent = false }, 100)
+		}
+	}
+
+	constructor(folder: string, callback: (path: string, kind: string) => void) {
+		this.start(folder, callback)
+	}
+}
+
+function getApplicationRelativePath(origin: string): string {
+	let relPath: string = origin
+
+	if (Deno.build.os === "windows") { relPath = relPath.replaceAll("\\", "/") }
+
+	relPath = relPath.substring(relPath.indexOf(config.appFolder) + config.appFolder.length + 1)
+	relPath = relPath.substring(relPath.indexOf("/") + 1)
+
+	return relPath
+}
+
+function getWebdeskRelativePath(origin: string): string {
+	let relPath: string = origin
+
+	if (Deno.build.os === "windows") { relPath = relPath.replaceAll("\\", "/") }
+
+	relPath = relPath.substring(relPath.indexOf(config.staticFolder) + config.staticFolder.length + 1)
+
+	return relPath
 }

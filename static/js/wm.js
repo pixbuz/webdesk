@@ -7,7 +7,7 @@
 // IDEA: Conjure a system for passive highest z-index resolve for windows focus shift
 // IDEA: Quick window switching with focusWindow on WebdeskEvent.WINDOW_MOVE instead of WebdeskEvent.WINDOW_MOVE_START
 
-import { WebdeskEvent, ApplicationManifests, MessagingHub, hostname } from "./core"
+import { WebdeskEvent, ApplicationManifests, MessagingHub, hostname, protocol } from "./core"
 
 const WMTitlebarFactory = new class {
 	titlebarVars
@@ -23,7 +23,7 @@ const WMTitlebarFactory = new class {
 		titlebar.setAttribute("title", `"${app}"'s application titlebar`)
 
 		if (path == "") { titlebar.src = "/titlebar" }
-		else { titlebar.src = `http://${app}.${hostname}/titlebar` }
+		else { titlebar.src = `${protocol}://${app}.${hostname}/titlebar` }
 
 		const initMessage = { command: "init", data: {
 			style: WMTitlebarFactory.titlebarVars,
@@ -134,7 +134,7 @@ const WMFactory = new class {
 		content.setAttribute("allowfullscreen", false)
 		content.setAttribute("sandbox", `allow-scripts`)
 		content.setAttribute("title", `"${app}"'s application content`)
-		content.src = `/apps/${app}/${manifest.index}`
+		content.src = `${protocol}://${app}.${hostname}/`
 		content.addEventListener("load", () => { WebdeskEvent.CONTENT_READY.emit({ data: content }) }, { once: true })
 
 		contentWrapper.append(content)
@@ -356,9 +356,6 @@ const SettingsManager = new class {
 
 		SettingsManager.window.style.display = "block"
 		SettingsManager.icon.style.display = "block"
-
-		WebdeskEvent.WINDOW_OPEN.emit({ target: SettingsManager.window, app: "settings" })
-		WebdeskEvent.WINDOW_UPDATED_FOCUS.on((focusData) => { WMFactory.updateZIndex(focusData, SettingsManager.window) })
 	}
 	closeWindow() {
 		SettingsManager.window.style.display = "none"
@@ -403,12 +400,10 @@ const SettingsManager = new class {
 	}
 
 	constructor() {
-		this.launcher.addEventListener("click", this.openWindow)
+		this.launcher.addEventListener("click", (event) => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "settings" }) })
 		this.icon.style.display = "none"
 
 		WebdeskEvent.MANIFESTS_READY.on()
-		setTimeout(this.setupWindow, 900)
-		setTimeout(this.openWindow, 1000)
 		this.icon.addEventListener("click", (event) => { this.window.classList.remove("minimised") })
 	}
 }

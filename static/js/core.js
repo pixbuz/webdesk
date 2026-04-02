@@ -11,6 +11,7 @@ let newUser = false
 export let ApplicationManifests
 // Hopefully this won't be need in the future
 export const hostname = "localhost"
+export const protocol = "http"
 
 export const webdeskDB = new class {
 	version = 1
@@ -319,21 +320,26 @@ export const MessagingHub = new class {
 
 	/** @param {MessageEvent<object>} event
 	/** @param {MessagePort} sendPort */
-	commandResponder({ command, data }, sendPort) {
+	commandResponder({ data: { command, data } }, { content: contentChannel, titlebar: titlebarChannel }) {
 		console.log(command, data)
-		switch(command) {
 
+		switch(command) {
+			case "event.emit": { contentChannel.port1.postMessage({ command: "event.emit", data: "ok" }); return WebdeskEvent[data.type].emit(data.payload) }
 		}
 	}
+	// Passive webdesk event propagation inside iframes
+	// webdeskDB bridge
+	// send customization vars into content iframe
 	/** @param {OpeningData} openingData */
 	addLink({ window: appWindow, titlebar, app }) {
 		const titlebarChannel = new MessageChannel()
 		const contentChannel = new MessageChannel()
+		const privateChannel = new MessageChannel()
 
-		const newLink = { content: contentChannel, titlebar: titlebarChannel }
+		const newLink = { content: contentChannel, titlebar: titlebarChannel, private: privateChannel }
 		MessagingHub.windowToChannels.set(appWindow, newLink)
 
-		newLink.content.port1.addEventListener("message", (event) => { MessagingHub.commandResponder(event, newLink.content.send) })
+		newLink.content.port1.addEventListener("message", (event) => { MessagingHub.commandResponder(event, newLink) })
 
 		newLink.titlebar.port1.start()
 		newLink.content.port1.start()
@@ -341,28 +347,32 @@ export const MessagingHub = new class {
 	/** @param {CloseData} closeData */
 	removeLink({ closed }) { MessagingHub.windowToChannels.delete(closed) }
 	/** @param {ReadyData} readyData */
-	sendContentMessageChannel({ data: iframe, message }) {
-		const appWindow = iframe.closest("[app]")
-		const contentWindow = iframe.contentWindow
-		const messageChannel = MessagingHub.windowToChannels.get(appWindow).content
+	sendContentPorts({ data: iframe, message }) {
+		const appWindow = iframe.closest("[app]"),
+		target = iframe.contentWindow,
+		link = MessagingHub.windowToChannels.get(appWindow),
+		{ port2: contentPort } = link.content,
+		{ port1: privatePort } = link.private
 
-		contentWindow.postMessage(message, "*", [ messageChannel.port2 ])
+		target.postMessage(message, "*", [ contentPort, privatePort ])
 	}
 	/** @param {ReadyData} readyData */
-	sendTitlebarMessageChannel({ data: iframe, message }) {
-		const appWindow = iframe.closest("[app]")
-		const titlebarWindow = iframe.contentWindow
-		const messageChannel = MessagingHub.windowToChannels.get(appWindow).titlebar
+	sendTitlebarPorts({ data: iframe, message }) {
+		const appWindow = iframe.closest("[app]"),
+		target = iframe.contentWindow,
+		link = MessagingHub.windowToChannels.get(appWindow),
+		{ port2: titlebarPort } = link.titlebar,
+		{ port2: privatePort } = link.private
 
-		titlebarWindow.postMessage(message, "*", [ messageChannel.port2 ])
+		target.postMessage(message, "*", [ titlebarPort, privatePort ])
 	}
 
 	constructor() {
 		WebdeskEvent.WINDOW_OPENING.on(this.addLink)
 		WebdeskEvent.WINDOW_CLOSE.on(this.removeLink)
 
-		WebdeskEvent.CONTENT_READY.on(this.sendContentMessageChannel)
-		WebdeskEvent.TITLEBAR_READY.on(this.sendTitlebarMessageChannel)
+		WebdeskEvent.CONTENT_READY.on(this.sendContentPorts)
+		WebdeskEvent.TITLEBAR_READY.on(this.sendTitlebarPorts)
 	}
 }
 
@@ -370,5 +380,5 @@ fetch("/api/getManifests").then(async (response) => {
 	ApplicationManifests = await response.json()
 	WebdeskEvent.MANIFESTS_READY.emit({ data: ApplicationManifests })
 
-	if (newUser) { setTimeout(() => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" }) }, 50) }
+	if (newUser) { setTimeout(() => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" }) }, 25) }
 })

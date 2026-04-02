@@ -4,21 +4,45 @@
 
 const mainElement = document.querySelector("main")
 let currentSubSection = mainElement.children[0]
-let port
 
-window.addEventListener("message", com, { once: true })
+const Messager = new class {
+	#ready
+	#port
+	#titlebar
 
-function com({ data: message, ports }) {
-	if (!port) {
-		port = ports[0]
-		port.start()
-		port.addEventListener("message", com)
+	#initPort({ ports }) {
+		Messager.#port = ports[0]
+		Messager.#titlebar = ports[1] 
+
+		Messager.#port.start()
+		Messager.#titlebar.start()
+
+		Messager.#port.addEventListener("message", Messager.#recieve)
+		Messager.#titlebar.addEventListener("message", Messager.#recieve)
 	}
 
-	console.log(data)
+	#recieve({ data: { command, data } }) {
+		console.log(command, data)
 
-	switch(message.command) {
+		switch(command) {
 
+		}
+	}
+
+	async send(message) {
+		await Messager.#ready
+		Messager.#port.postMessage(message)
+	}
+
+	async sendTitlebar(message) {
+		await Messager.#ready
+		Messager.#titlebar.postMessage(message)
+	}
+
+	constructor() {
+		this.#ready = new Promise((resolve, reject) => {
+			window.addEventListener("message", (event) => { resolve(this.#initPort(event)) }, { once: true })
+		})
 	}
 }
 
@@ -58,7 +82,7 @@ const Applications = new class {
 const Colors = new class {
 	section = mainElement.querySelector(`[colors]`)
 	sectionButton = document.querySelector(`.sectionOpener[colors]`)
-	customID = parseInt(localStorage.getItem("customization-id") || 0)
+	// customID = parseInt(localStorage.getItem("customization-id") || 0)
 
 	updateInput(event) {
 		if (event.type == "input") {
@@ -197,7 +221,7 @@ const Background = new class {
 
 		this.previewsWrapper.style = "none"
 
-		WebdeskEvent.BACKGROUND_UPLOADED.on(this.previewFactory)
+		Messager.send({ command: "test"})
 	}
 }
 
@@ -224,3 +248,5 @@ let subSection = mainElement.querySelector(`div[animations]`)
 currentSubSection.style.display = "none"
 subSection.style.display = "flex"
 currentSubSection = subSection
+
+Messager.send({ command: "test"})
