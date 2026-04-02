@@ -34,7 +34,7 @@ body {
 	overflow: hidden;
 	font-weight: 500;
 	color: black;
-	display: flex;
+	display: none;
 	height: 2vmin;
 	padding: 1px;
 	width: 100%;
@@ -42,6 +42,10 @@ body {
 	gap: 4px;
 	left: 0;
 	top: 0;
+}
+
+.NoConnection:has(.visible) {
+	display: flex;
 }
 
 .NoConnection svg {

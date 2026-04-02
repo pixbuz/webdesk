@@ -16,7 +16,12 @@ const SWManager = new class {
 		})
 	}
 
+	com(event) {
+		if (event.data === "offline") { offlineMessageElement.classList.add("visible") }
+	}
+
 	constructor() {
+		navigator.serviceWorker.addEventListener("message", this.com)
 		navigator.serviceWorker.register("/sw")
 			.then((registration) => { registration.active.postMessage("checkHashes") })
 			.catch((error) => { console.error(error) })
@@ -37,11 +42,15 @@ function removeHTMLElements(object) {
 	return serialized
 }
 
-fetch("/api/getManifests").then(async (response) => {
+fetch("/api/getManifests")
+.then(async (response) => {
 	ApplicationManifests = await response.json()
 	WebdeskEvent.MANIFESTS_READY.emit({ data: ApplicationManifests })
 
 	if (newUser) { setTimeout(() => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" }) }, 25) }
+})
+.catch(async (error) => {
+	console.log(error)
 })
 
 export let ApplicationManifests

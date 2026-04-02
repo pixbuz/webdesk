@@ -2,6 +2,9 @@
 // TODO: Improve read image error logic
 // TODO: Improve Background loading, rn it blocks the whole site
 
+// navigator.serviceWorker.register("/sw")
+// .then((registration) => { registration.active.postMessage("checkHashes") })
+
 const mainElement = document.querySelector("main")
 let currentSubSection = mainElement.children[0]
 

@@ -85,11 +85,14 @@ export class WebdeskManifest {
 
 export class WebdeskRoute {
 	private static initialized: boolean = false
+	private static sw: Uint8Array
 
 	public static create() {
 		if (WebdeskRoute.initialized) { return }
 		else { return new WebdeskRoute() }
 	}
+
+	public static getSW() { return WebdeskRoute.sw }
 
 	private readonly hashEncoder = new TextEncoder()
 	private hash: string = "0".repeat(40)
@@ -210,6 +213,8 @@ export class WebdeskRoute {
 			"/api/getManifests": Route.getManifests,
 		}
 
+		WebdeskRoute.sw = Deno.readFileSync(`${config.staticFolder}/js/sw.js`)
+
 		log.debug(`Webdesk watcher starting`)
 		new UpdateWatcher(config.staticFolder, this.watcherEndpointManipulator.bind(this))
 	}
@@ -298,6 +303,16 @@ export class Route {
 		this.updateAsset("/js", this.manifest.script)
 		this.updateAsset("/icon", this.manifest.icon)
 		this.updateAsset("/style", this.manifest.style)
+
+		this.addSW()
+	}
+
+	private addSW() {
+		this.origins["/sw"] = "/sw.js"
+		this.files["/sw"] = WebdeskRoute.getSW()
+		this.mimes["/sw"] = MIMES.js
+
+		this.generateHash()
 	}
 
 	private async updateAsset(endpoint: string, relPath: string) {
