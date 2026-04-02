@@ -24,6 +24,41 @@ body {
 	display: flex;
 }
 
+.NoConnection {
+	pointer-events: none !important;
+	backdrop-filter: blur(99px);
+	justify-content: center;
+	flex-flow: row nowrap;
+	align-items: center;
+	position: absolute;
+	overflow: hidden;
+	font-weight: 500;
+	color: black;
+	display: flex;
+	height: 2vmin;
+	padding: 1px;
+	width: 100%;
+	z-index: 9;
+	gap: 4px;
+	left: 0;
+	top: 0;
+}
+
+.NoConnection svg {
+	stroke-linejoin: round;
+	stroke-linecap: round;
+	stroke: currentColor;
+	stroke-width: 2;
+	aspect-ratio: 1;
+	height: 100%;
+	fill: none;
+}
+
+.NoConnection .Accent {
+	stroke: red;
+	color: red;
+}
+
 .Background,
 .Space {
 	pointer-events: none;

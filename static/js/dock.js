@@ -1,6 +1,6 @@
 // TODO: Make a better system for window to icon and icon to window for the dock
 
-import { time, WebdeskEvent, ApplicationManifests } from "./core"
+import { time, WebdeskEvent, ApplicationManifests, hostname, protocol } from "./core"
 
 const element = document.querySelector(".Dock")
 const open = element.querySelector(".Open")
@@ -66,7 +66,7 @@ function add({ target, app }) {
 
 	icon.addEventListener("click", (event) => { WebdeskEvent.ICON_CLICK.emit({ target: event.target.closest("[icon]") }) })
 	icon.setAttribute("icon", app)
-	image.src = `apps/${app}/${manifest.icon}`
+	image.src = `${protocol}://${app}.${hostname}/icon`
 	name.innerText = app
 }
 

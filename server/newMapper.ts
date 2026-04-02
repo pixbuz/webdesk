@@ -3,7 +3,7 @@
 import { log } from "./log.ts"
 import { config } from "../server.config.ts"
 
-const MIMES: Readonly<Record<string, string>> = Object.freeze({
+const MIMES = Object.freeze({
 	"html": "text/html",
 	"htm": "text/html",
 	"css": "text/css",
@@ -91,11 +91,14 @@ export class WebdeskRoute {
 		else { return new WebdeskRoute() }
 	}
 
+	private readonly hashEncoder = new TextEncoder()
+	private hash: string = "0".repeat(40)
+
 	private async watcherEndpointManipulator(origin: string, kind: string) {
 		log.debug(`A ${kind} file event happend to Webdesk's file ${origin}"`)
 
 		const path = getWebdeskRelativePath(origin)
-		let fileEndpoint
+		let fileEndpoint: string
 
 		switch(path) {
 			case "index.htm": { fileEndpoint = "/"; break }
@@ -148,14 +151,33 @@ export class WebdeskRoute {
 
 			this.files[endpoint] = await Deno.readFile(`${basePath}/${relPath}`)
 			this.mimes[endpoint] = MIMES[extension]
+			
+			this.generateHash()
 		}
 		catch (error) { log.error(`Failed to register Webdesk's ${endpoint}: ${(error as Error).message}`) }
 	}
 
+	private async generateHash() {
+		const data = this.hashEncoder.encode(JSON.stringify(this.files))
+		const hashArray = new Uint8Array (await crypto.subtle.digest("SHA-1", data))
+		const hashText = Array.from(hashArray).map((byte) => { return byte.toString(16).padStart(2, "0") }).join("")
+
+		log.debug(`New assets hash for Webdesk (ends in ${hashText.slice(-4)})`)
+
+		this.hash = hashText
+	}
+
+	private returnHashes() {
+		const appHashes = Route.getAppsHash()
+		Object.assign(appHashes, { webdesk: this.hash })
+
+		return { data: JSON.stringify(appHashes), type: MIMES.json }
+	}
+
 	public readonly mimes: Record<string, string> = { }
 	public readonly origins: Record<string, string> = { }
-	public readonly commands: Record<string, (req: Request) => (CommandOutput | Response)> = { }
 	public readonly files: Record<string, Uint8Array | string> = { }
+	public readonly commands: Record<string, (req: Request) => (CommandOutput | Response)> = { }
 
 	public respond(request: Request): Response {
 		const pathname = new URL(request.url).pathname
@@ -184,7 +206,7 @@ export class WebdeskRoute {
 		this.updateAsset("/sw", `js/sw.js`)
 
 		this.commands = {
-			// "/api/_/assetsHash": Route.getAssetsHash,
+			"/api/appHashes": this.returnHashes.bind(this),
 			"/api/getManifests": Route.getManifests,
 		}
 
@@ -195,8 +217,13 @@ export class WebdeskRoute {
 
 export class Route {
 	private static manifests: Record<string, WebdeskManifest> = { }
+	private static hashes: Record<string, string> = { }
 
 	public static readonly registred: Record<string, Route> = { }
+
+	public static getAppsHash() { return Route.hashes }
+
+	public static getManifests(_request: Request) { return { data: JSON.stringify(Route.manifests), type: MIMES.json } }
 
 	public static async create(appName: string): Promise<void> {
 		let manifestObject: WebdeskManifest
@@ -210,10 +237,6 @@ export class Route {
 		}
 
 		Route.registred[appName] = new Route(appName, manifestObject)
-	}
-
-	public static getManifests(_request: Request) {
-		return { data: JSON.stringify(Route.manifests), type: MIMES.json }
 	}
 
 	private appName: string = ""
@@ -287,15 +310,29 @@ export class Route {
 
 			this.files[endpoint] = await Deno.readFile(`${basePath}${relPath}`)
 			this.mimes[endpoint] = MIMES[extension]
+
+			this.generateHash()
 		} catch (error) { log.warn(`Failed to register "${this.appName}"'s ${endpoint}: ${(error as Error).message}`) }
 	}
+
+	private async generateHash() {
+		const data = this.hashEncoder.encode(JSON.stringify(this.files))
+		const hashArray = new Uint8Array (await crypto.subtle.digest("SHA-1", data))
+		const hashText = Array.from(hashArray).map((byte) => { return byte.toString(16).padStart(2, "0") }).join("")
+
+		log.debug(`New assets hash for ${this.appName} (ends in ${hashText.slice(-4)})`)
+
+		Route.hashes[this.appName] = hashText
+	}
+
+	private readonly hashEncoder = new TextEncoder()
 
 	public readonly manifest: WebdeskManifest
 	public readonly mimes: Record<string, string> = { }
 	public readonly origins: Record<string, string> = { }
 	public readonly watcherLookup: Record<string, string> = { }
-	public readonly commands: Record<string, (req: Request) => (CommandOutput | Response)> = { }
 	public readonly files: Record<string, Uint8Array | string> = { }
+	public readonly commands: Record<string, (req: Request) => (CommandOutput | Response)> = { }
 
 	public respond(request: Request): Response {
 		const pathname = new URL(request.url).pathname

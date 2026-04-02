@@ -1,17 +1,53 @@
 // NOTE: Generator functions tho?
-// NOTE: Dumping all messages from all windows is easy but unsecure
 
 // TODO: Settings titlebar
 // TODO: Error handling for database things
 // TODO: Make ApplicationManifests into a object/class?
-// TODO: Message bridge to access IndexDB and Localstorage from windows
-// TODO: Messaging system between titlebar, content and front end script (triumvirate)
+
+const offlineMessageElement = document.querySelector("#offline")
+const SWManager = new class {
+	loadInformation() {
+		navigator.storage.estimate().then(({ usage, quota }) => {
+			const usedMB = (usage / 1024 ** 2).toFixed(2)
+			const totalMB = (quota / 1024 ** 2).toFixed(2)
+			const percentUsed = ((usage / quota) * 100).toFixed(2)
+
+			console.log(`Using ${usedMB} MB out of ${totalMB} MB (${percentUsed}%)`)
+		})
+	}
+
+	constructor() {
+		navigator.serviceWorker.register("/sw")
+			.then((registration) => { registration.active.postMessage("checkHashes") })
+			.catch((error) => { console.error(error) })
+	}
+}
 
 let newUser = false
+
+function removeHTMLElements(object) {
+	const serialized = {}
+	const serializedEntries = Object.entries(object).map(([ name, data ]) => {
+		if (data instanceof HTMLElement) {
+			return { [name]: "HTMLElement" }
+		} else { return { [name]: data } }
+	})
+
+	Object.assign(serialized, ...serializedEntries)
+	return serialized
+}
+
+fetch("/api/getManifests").then(async (response) => {
+	ApplicationManifests = await response.json()
+	WebdeskEvent.MANIFESTS_READY.emit({ data: ApplicationManifests })
+
+	if (newUser) { setTimeout(() => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" }) }, 25) }
+})
+
 export let ApplicationManifests
-// Hopefully this won't be need in the future
-export const hostname = "localhost"
+export const hostname = "localhost" // Hopefully this won't be needed in the future
 export const protocol = "http"
+console.log(window.location.href) // 👀
 
 export const webdeskDB = new class {
 	version = 1
@@ -303,35 +339,10 @@ export const StyleSheets = {
 
 document.adoptedStyleSheets = Object.values(StyleSheets)
 
-const SWManager = new class {
-	loadInformation() {
-		navigator.storage.estimate().then(({ usage, quota }) => {
-			const usedMB = (usage / 1024 ** 2).toFixed(2)
-			const totalMB = (quota / 1024 ** 2).toFixed(2)
-			const percentUsed = ((usage / quota) * 100).toFixed(2)
-
-			console.log(`Using ${usedMB} MB out of ${totalMB} MB (${percentUsed}%)`)
-		})
-	}
-
-	constructor() {
-		navigator.serviceWorker.register("/sw")
-			.catch((error) => { console.error(error) })
-	}
-}
-
-/* Titlebar --- Content */
-/*    \            /    */
-/*     \   fun    /     */
-/*      \        /      */
-/*       Frontend       */
-
 export const MessagingHub = new class {
 	/** @type {Map<HTMLElement, object>} */
 	windowToChannels = new Map()
 
-	/** @param {MessageEvent<object>} event
-	/** @param {MessagePort} sendPort */
 	async #commandResponder({ data: { command, data } }, { content: contentChannel, titlebar: titlebarChannel }) {
 		switch(command) {
 			case "emit.event": {
@@ -433,22 +444,3 @@ export const MessagingHub = new class {
 		WebdeskEvent.TITLEBAR_READY.on(this.#sendTitlebarPorts)
 	}
 }
-
-function removeHTMLElements(object) {
-	const serialized = {}
-	const serializedEntries = Object.entries(object).map(([ name, data ]) => {
-		if (data instanceof HTMLElement) {
-			return { [name]: "HTMLElement" }
-		} else { return { [name]: data } }
-	})
-
-	Object.assign(serialized, ...serializedEntries)
-	return serialized
-}
-
-fetch("/api/getManifests").then(async (response) => {
-	ApplicationManifests = await response.json()
-	WebdeskEvent.MANIFESTS_READY.emit({ data: ApplicationManifests })
-
-	if (newUser) { setTimeout(() => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" }) }, 25) }
-})
