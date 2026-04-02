@@ -167,16 +167,19 @@ export const webdeskDB = new class {
 /** @template T */
 class WebdeskEventBase {
 	/** @type {((data: T) => void)[]} */
-	callbacks = [ ]
+	#callbacks = [ ]
 
 	/** @param {Partial<T>} data */
-	emit(data = {}) { this.callbacks.forEach((callback) => { callback(data) }) }
+	emit(data = {}) {
+		WebdeskEvent.emitToIframes(this, data)
+		this.#callbacks.forEach((callback) => { callback(data) })
+	}
 
 	/** @param {...((data: T) => void)} newCallbacks */
-	on(...newCallbacks) { this.callbacks.push(...newCallbacks) }
+	on(...newCallbacks) { this.#callbacks.push(...newCallbacks) }
 
 	/** @param {...((data: T) => void)} callback */
-	off(callback) { this.callbacks = this.callbacks.filter((registredCallback) => { registredCallback !== callback }) }
+	off(callback) { this.#callbacks = this.#callbacks.filter((registredCallback) => { registredCallback !== callback }) }
 
 	constructor() { }
 }
@@ -236,6 +239,15 @@ export class WebdeskEvent {
 
 	static BACKGROUND_UPLOAD = new EmptyEvent()
 	static BACKGROUND_UPLOADED = new BackgroundEvent()
+	
+	static emitToIframes(thisArg, data) {
+		const names = Object.keys(WebdeskEvent)
+		const types = Object.values(WebdeskEvent)
+
+		const nameIndex = types.indexOf(thisArg)
+
+		MessagingHub.propagateEvent(names[nameIndex], data)
+	}
 }
 
 export const time = new class {
@@ -320,34 +332,80 @@ export const MessagingHub = new class {
 
 	/** @param {MessageEvent<object>} event
 	/** @param {MessagePort} sendPort */
-	commandResponder({ data: { command, data } }, { content: contentChannel, titlebar: titlebarChannel }) {
-		console.log(command, data)
-
+	async #commandResponder({ data: { command, data } }, { content: contentChannel, titlebar: titlebarChannel }) {
 		switch(command) {
-			case "event.emit": { contentChannel.port1.postMessage({ command: "event.emit", data: "ok" }); return WebdeskEvent[data.type].emit(data.payload) }
+			case "emit.event": {
+				WebdeskEvent[data.type].emit(data.payload)
+
+				return
+			}
+			case "get.localstorage": {
+				const { key } = data
+				const value = localStorage.getItem(key)
+
+				contentChannel.port1.postMessage({ command, data: { value } })
+
+				return
+			}
+			case "get.db": {
+				const { table, key } = data
+				const value = await webdeskDB.get(table, key)
+
+				contentChannel.port1.postMessage({ command, data: { value } })
+
+				return
+			}
+			case "getAll.db": {
+				const { table } = data
+				const value = await webdeskDB.getAll(table)
+
+				contentChannel.port1.postMessage({ command, data: { value } })
+
+				return
+			}
+			case "get.style": {
+				const { target } = data
+				let style = null
+
+				switch(target) {
+					case "launchers": { style = StyleSheets.launchers.cssRules[0].cssText; break }
+					case "windows": { style = StyleSheets.windows.cssRules[0].cssText; break }
+					case "dock": { style = StyleSheets.dock.cssRules[0].cssText; break }
+					case "all": { style = { launchers: StyleSheets.launchers.cssRules[0].cssText, windows: StyleSheets.windows.cssRules[0].cssText, dock: StyleSheets.dock.cssRules[0].cssText }; break }
+				}
+
+				contentChannel.port1.postMessage({ command, data: { style } })
+
+				return
+			}
+			default: { contentChannel.port1.postMessage({ command, data: { } }) }
 		}
 	}
-	// Passive webdesk event propagation inside iframes
-	// webdeskDB bridge
-	// send customization vars into content iframe
 	/** @param {OpeningData} openingData */
-	addLink({ window: appWindow, titlebar, app }) {
-		const titlebarChannel = new MessageChannel()
-		const contentChannel = new MessageChannel()
-		const privateChannel = new MessageChannel()
+	#addLink({ window: appWindow, titlebar, app }) {
+		const titlebarChannel = new MessageChannel(),
+		contentChannel = new MessageChannel(),
+		privateChannel = new MessageChannel()
 
 		const newLink = { content: contentChannel, titlebar: titlebarChannel, private: privateChannel }
 		MessagingHub.windowToChannels.set(appWindow, newLink)
 
-		newLink.content.port1.addEventListener("message", (event) => { MessagingHub.commandResponder(event, newLink) })
+		newLink.content.port1.addEventListener("message", (event) => { MessagingHub.#commandResponder(event, newLink) })
 
 		newLink.titlebar.port1.start()
 		newLink.content.port1.start()
 	}
 	/** @param {CloseData} closeData */
-	removeLink({ closed }) { MessagingHub.windowToChannels.delete(closed) }
+	#removeLink({ closed }) { MessagingHub.windowToChannels.delete(closed) }
+	propagateEvent(name, data) {
+		const sendData = removeHTMLElements(data)
+		MessagingHub.windowToChannels.forEach((link) => {
+			link.content.port1.postMessage({ command: "event", data: { type: name, data: sendData }})
+			link.titlebar.port1.postMessage({ command: "event", data: { type: name, data: sendData }})
+		})
+	}
 	/** @param {ReadyData} readyData */
-	sendContentPorts({ data: iframe, message }) {
+	#sendContentPorts({ data: iframe, message }) {
 		const appWindow = iframe.closest("[app]"),
 		target = iframe.contentWindow,
 		link = MessagingHub.windowToChannels.get(appWindow),
@@ -357,7 +415,7 @@ export const MessagingHub = new class {
 		target.postMessage(message, "*", [ contentPort, privatePort ])
 	}
 	/** @param {ReadyData} readyData */
-	sendTitlebarPorts({ data: iframe, message }) {
+	#sendTitlebarPorts({ data: iframe, message }) {
 		const appWindow = iframe.closest("[app]"),
 		target = iframe.contentWindow,
 		link = MessagingHub.windowToChannels.get(appWindow),
@@ -368,12 +426,24 @@ export const MessagingHub = new class {
 	}
 
 	constructor() {
-		WebdeskEvent.WINDOW_OPENING.on(this.addLink)
-		WebdeskEvent.WINDOW_CLOSE.on(this.removeLink)
+		WebdeskEvent.WINDOW_OPENING.on(this.#addLink)
+		WebdeskEvent.WINDOW_CLOSE.on(this.#removeLink)
 
-		WebdeskEvent.CONTENT_READY.on(this.sendContentPorts)
-		WebdeskEvent.TITLEBAR_READY.on(this.sendTitlebarPorts)
+		WebdeskEvent.CONTENT_READY.on(this.#sendContentPorts)
+		WebdeskEvent.TITLEBAR_READY.on(this.#sendTitlebarPorts)
 	}
+}
+
+function removeHTMLElements(object) {
+	const serialized = {}
+	const serializedEntries = Object.entries(object).map(([ name, data ]) => {
+		if (data instanceof HTMLElement) {
+			return { [name]: "HTMLElement" }
+		} else { return { [name]: data } }
+	})
+
+	Object.assign(serialized, ...serializedEntries)
+	return serialized
 }
 
 fetch("/api/getManifests").then(async (response) => {

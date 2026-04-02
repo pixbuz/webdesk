@@ -35,7 +35,7 @@ const WMTitlebarFactory = new class {
 
 		titlebar.addEventListener("load", () => { WebdeskEvent.TITLEBAR_READY.emit({ data: titlebar, message: initMessage }) }, { once: true })
 
-		WebdeskEvent.CUSTOMIZATION_CHANGE.on((titlebarData) => { comChannel.send.postMessage({ command: "css", data: titlebarData }) })
+		WebdeskEvent.CUSTOMIZATION_CHANGE.on((titlebarData) => { comChannel.port1.postMessage({ command: "css", data: titlebarData }) })
 		WebdeskEvent.WINDOW_UPDATED_FOCUS.on(WMTitlebarFactory.relayFocusChange)
 	}
 	/** @param {import("./core").FocusData} focusData */

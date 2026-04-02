@@ -9,10 +9,21 @@ const Messager = new class {
 	#ready
 	#port
 	#titlebar
+	#pending = new Map()
+
+	#recieve({ data: { command, data } }) {
+		if (Messager.#pending.has(command)) {
+			const { resolve, timeout } = Messager.#pending.get(command)
+			clearTimeout(timeout)
+			Messager.#pending.delete(command)
+
+			return resolve(data)
+		} else { /* WebdeskEvent.on logic */ }
+	}
 
 	#initPort({ ports }) {
 		Messager.#port = ports[0]
-		Messager.#titlebar = ports[1] 
+		Messager.#titlebar = ports[1]
 
 		Messager.#port.start()
 		Messager.#titlebar.start()
@@ -21,22 +32,18 @@ const Messager = new class {
 		Messager.#titlebar.addEventListener("message", Messager.#recieve)
 	}
 
-	#recieve({ data: { command, data } }) {
-		console.log(command, data)
-
-		switch(command) {
-
-		}
-	}
-
-	async send(message) {
+	async send(command, data, toTitlebar = false) {
 		await Messager.#ready
-		Messager.#port.postMessage(message)
-	}
+		let target = Messager.#port
 
-	async sendTitlebar(message) {
-		await Messager.#ready
-		Messager.#titlebar.postMessage(message)
+		if (toTitlebar) { target = Messager.#titlebar }
+
+		return new Promise((resolve, reject) => {
+			const timeout = setTimeout(reject, 30000)
+
+			Messager.#pending.set(command, { resolve, timeout })
+			target.postMessage({ command, data })
+		})
 	}
 
 	constructor() {
@@ -82,34 +89,43 @@ const Applications = new class {
 const Colors = new class {
 	section = mainElement.querySelector(`[colors]`)
 	sectionButton = document.querySelector(`.sectionOpener[colors]`)
-	// customID = parseInt(localStorage.getItem("customization-id") || 0)
+	customID = 0
 
 	updateInput(event) {
 		if (event.type == "input") {
 			const cssVar = event.target.name
 			const newColor = event.target.value
 
-			WebdeskEvent.CUSTOMIZATION_CHANGE.emit({ css: cssVar, value: newColor })
+			Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE", payload: { css: cssVar, value: newColor } })
 		} else if (event.type == "change") {
 			const cssVar = event.target.name
 			const newColor = event.target.value
 
-			WebdeskEvent.CUSTOMIZATION_CHANGE_SAVE.emit({ css: cssVar, value: newColor })
+			Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE_SAVE", payload: { css: cssVar, value: newColor } })
 		}
 	}
 	async init() {
-		const customizationVars = window.parent.document.documentElement.style.cssText.split("; ")
-		const launchersStyleVars = StyleSheets.launchers.cssRules[0]
-		const windowsStyleVars = StyleSheets.windows.cssRules[0]
-		const dockStyleVars = StyleSheets.dock.cssRules[0]
+		const { style: { launchers: launchersTextStyle, windows: windowsTextStyle, dock: dockTextStyle } } = await Messager.send("get.style", { target: "all" })
+
+		const launchersStyleSheet = new CSSStyleSheet(),
+		windowsStyleSheet = new CSSStyleSheet(),
+		dockStyleSheet = new CSSStyleSheet()
+		
+		await launchersStyleSheet.replace(launchersTextStyle)
+		await windowsStyleSheet.replace(windowsTextStyle)
+		await dockStyleSheet.replace(dockTextStyle)
+
+		const launchersStyle = launchersStyleSheet.cssRules[0],
+		windowsStyle = windowsStyleSheet.cssRules[0],
+		dockStyle = dockStyleSheet.cssRules[0]
 
 		for (const input of Colors.section.querySelectorAll("input")) {
 			const cssVar = input.name
 			let value
 
-			if (cssVar.startsWith("--dock")) { value = dockStyleVars.style.getPropertyValue(cssVar) }
-			else if (cssVar.startsWith("--windows")) { value = windowsStyleVars.style.getPropertyValue(cssVar) }
-			else if (cssVar.startsWith("--launchers")) { value = launchersStyleVars.style.getPropertyValue(cssVar) }
+			if (cssVar.startsWith("--dock")) { value = dockStyle.style.getPropertyValue(cssVar) }
+			else if (cssVar.startsWith("--windows")) { value = windowsStyle.style.getPropertyValue(cssVar) }
+			else if (cssVar.startsWith("--launchers")) { value = launchersStyle.style.getPropertyValue(cssVar) }
 
 			input.value = value
 		}
@@ -122,6 +138,8 @@ const Colors = new class {
 			input.addEventListener("change", this.updateInput.bind(this))
 			input.addEventListener("input", this.updateInput.bind(this))
 		}
+
+		Messager.send("get.localstorage", { key: "customization-id" }).then((event) => { Colors.customID = event.value })
 	}
 }
 
@@ -141,7 +159,7 @@ const Background = new class {
 			else if (file.type == "image/svg+xml") { background = await Background.processSVG(file.text()) }
 			else { background = await Background.readImage(file) }
 
-			WebdeskEvent.BACKGROUND_UPLOAD.emit({ background: background })
+			Messager.send("emit.event", { type: "BACKGROUND_UPLOAD", payload: { background } })
 		}
 	}
 	readImage(file) {
@@ -162,7 +180,7 @@ const Background = new class {
 		else { return text }
 	}
 	async showAllBackgroundsPreviews() {
-		const backgrounds = await webdeskDB.getAll("_backgrounds")
+		const { value: backgrounds } = await Messager.send("getAll.db", { table: "_backgrounds" })
 		const fragment = document.createDocumentFragment()
 
 		backgrounds
@@ -192,13 +210,13 @@ const Background = new class {
 	}
 	async loadBackground(event) {
 		const backgroundID = parseInt(event.target.getAttribute("bgID"))
-		const backgroundContent = await webdeskDB.get("_backgrounds", backgroundID)
+		const { value: backgroundContent } = await Messager.send("get.db", { table: "_backgrounds", key: backgroundID })
 
-		WebdeskEvent.BACKGROUND_LOAD.emit({ id: backgroundID, background: backgroundContent })
+		Messager.send("emit.event", { type: "BACKGROUND_LOAD", payload: { id: backgroundID, background: backgroundContent } })
 	}
 	removeAllBackgrounds() {
 		Background.previewsWrapper.style = "none"
-		WebdeskEvent.BACKGROUND_REMOVE_ALL.emit({})
+		Messager.send("emit.event", { type: "BACKGROUND_REMOVE_ALL", payload: {  } })
 
 		const previews = Array.from(Background.previewsWrapper.children)
 
@@ -220,8 +238,6 @@ const Background = new class {
 		this.sectionButton.addEventListener("click", this.init, { once: true })
 
 		this.previewsWrapper.style = "none"
-
-		Messager.send({ command: "test"})
 	}
 }
 
@@ -248,5 +264,3 @@ let subSection = mainElement.querySelector(`div[animations]`)
 currentSubSection.style.display = "none"
 subSection.style.display = "flex"
 currentSubSection = subSection
-
-Messager.send({ command: "test"})
