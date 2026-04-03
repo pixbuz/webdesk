@@ -5,6 +5,5 @@
 	"icon": "icon.svg",
 
 	"description": "Customize Webdesk",
-	"titlebar": "",
-	"service": true
+	"titlebar": ""
 }

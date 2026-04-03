@@ -1,9 +1,7 @@
 // TODO: Improve focusWindow logic
-// TODO: Pass variables to content iframes
 // TODO: Make centerWindow toggle-able from settings
 
 // IDEA: Make a UPDATE Z INDEX event for cleaner (event driven) logic
-// IDEA: Windows get added to the window space after the iframes loaded
 // IDEA: Conjure a system for passive highest z-index resolve for windows focus shift
 // IDEA: Quick window switching with focusWindow on WebdeskEvent.WINDOW_MOVE instead of WebdeskEvent.WINDOW_MOVE_START
 
@@ -40,19 +38,18 @@ const WMTitlebarFactory = new class {
 	}
 	/** @param {import("./core").FocusData} focusData */
 	relayFocusChange({ lost, gain }) {
-		if (gain) {
+		if (gain && MessagingHub.windowToChannels.get(gain)) {
 			const messageChannel = MessagingHub.windowToChannels.get(gain).titlebar
 			messageChannel.port1.postMessage({ command: "focus", data: true })
 		}
-		if (lost) {
+		if (lost && MessagingHub.windowToChannels.get(lost)) {
 			const messageChannel = MessagingHub.windowToChannels.get(lost).titlebar
 			messageChannel.port1.postMessage({ command: "focus", data: false })
 		}
 	}
 	/** @param {import("./core").TargetData} targetData */
 	close({ target, app }) {
-		if (app == "settings") { SettingsManager.closeWindow() }
-		else { target.remove() }
+		target.remove()
 
 		WebdeskEvent.WINDOW_CLOSE.emit({ closed: target, open: WMFactory.open })
 	}
@@ -124,6 +121,13 @@ const WMFactory = new class {
 			content = document.createElement("iframe"),
 			titlebar = document.createElement("iframe")
 
+		windowWrapper.classList.add("opening")
+		WMFactory.space.append(windowWrapper)
+
+		const titlebarLoaded = new Promise((resolve) => { titlebar.addEventListener("load", resolve, { once: true }) })
+		const contentLoaded = new Promise((resolve) => { content.addEventListener("load", resolve, { once: true }) })
+		Promise.all([titlebarLoaded, contentLoaded]).then(() => { WebdeskEvent.WINDOW_OPEN.emit({ target: windowWrapper, app: app }) })
+		
 		WebdeskEvent.WINDOW_OPENING.emit({ window: windowWrapper, titlebar: titlebar, app })
 
 		titlebar.classList.add("titlebar")
@@ -142,9 +146,6 @@ const WMFactory = new class {
 
 		windowWrapper.setAttribute("app", app)
 		windowWrapper.append(titlebarWrapper, contentWrapper)
-
-		WMFactory.space.appendChild(windowWrapper)
-		WMFactory.open.push(windowWrapper)
 
 		WebdeskEvent.WINDOW_UPDATED_FOCUS.on((focusData) => { WMFactory.updateZIndex(focusData, windowWrapper) })
 
@@ -169,8 +170,11 @@ const WMFactory = new class {
 		})
 
 		window.addEventListener("resize", () => { WMMover.updatePositionIfCollision({ target: windowWrapper }) })
-
-		WebdeskEvent.WINDOW_OPEN.emit({ target: windowWrapper, app: app })
+	}
+	/** @param {import("./core").OpeningData} openingData */
+	addWindowToSpace({ target, app }) {
+		target.classList.remove("opening")
+		WMFactory.open.push(target)
 	}
 	/** @param {import("./core").FocusData} focusData */
 	updateZIndex({ lost, gain }, target) {
@@ -182,6 +186,7 @@ const WMFactory = new class {
 
 	constructor() {
 		WebdeskEvent.LAUNCHER_CLICK.on(this.skeletonizeWindow)
+		WebdeskEvent.WINDOW_OPEN.on(this.addWindowToSpace)
 	}
 }
 
@@ -340,70 +345,5 @@ const WMResizer = new class {
 		WebdeskEvent.WINDOW_RESIZE_START.on(this.init)
 		WebdeskEvent.WINDOW_RESIZE.on(this.followCursor)
 		WebdeskEvent.WINDOW_RESIZE_END.on(this.reset)
-	}
-}
-
-const SettingsManager = new class {
-	launcher = document.querySelector(`[launcher="settings"]`)
-	window = document.querySelector(`[app="settings"]`)
-	icon = document.querySelector(`[icon="settings"]`)
-
-	opened = false
-
-	openWindow() {
-		if (SettingsManager.opened) { return }
-		SettingsManager.opened = true
-
-		SettingsManager.window.style.display = "block"
-		SettingsManager.icon.style.display = "block"
-	}
-	closeWindow() {
-		SettingsManager.window.style.display = "none"
-		SettingsManager.icon.style.display = "none"
-		SettingsManager.opened = false
-
-		SettingsManager.window.querySelector(".contentWrapper").style.cssText = ""
-
-		SettingsManager.window.classList.remove("maximised")
-		SettingsManager.window.classList.remove("minimised")
-	}
-	/** @param {import("./core").ReadyData} readyData */
-	setupWindow() {
-		// debug: needs { data } on top
-		SettingsManager.window.style.display = "none"
-
-		/* with custom titlebar it's useless -> */ WebdeskEvent.WINDOW_OPENING.emit({
-			window: SettingsManager.window,
-			titlebar: SettingsManager.window.querySelector(".titlebar"),
-			app: "settings"
-		})
-
-		SettingsManager.window.addEventListener("pointerdown", (event) => {
-			SettingsManager.window.setPointerCapture(event.pointerId)
-
-			WebdeskEvent.WINDOW_RESIZE_START.emit({ target: SettingsManager.window, x: event.x, y: event.y })
-		})
-
-		SettingsManager.window.addEventListener("pointermove", (event) => {
-			if (WMResizer.inResize) {
-				WebdeskEvent.WINDOW_RESIZE.emit({ target: SettingsManager.window, x: event.x, y: event.y })
-			}
-		})
-
-		SettingsManager.window.addEventListener("pointerup", (event) => {
-			SettingsManager.window.releasePointerCapture(event.pointerId)
-
-			if (WMResizer.inResize) {
-				WebdeskEvent.WINDOW_RESIZE_END.emit({ target: SettingsManager.window, x: event.x, y: event.y })
-			}
-		})
-	}
-
-	constructor() {
-		this.launcher.addEventListener("click", (event) => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "settings" }) })
-		this.icon.style.display = "none"
-
-		WebdeskEvent.MANIFESTS_READY.on()
-		this.icon.addEventListener("click", (event) => { this.window.classList.remove("minimised") })
 	}
 }

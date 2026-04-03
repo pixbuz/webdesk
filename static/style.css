@@ -207,6 +207,11 @@ body {
 	position: absolute;
 }
 
+[app].opening {
+	opacity: 0;
+	transition: none;
+}
+
 [app]::before {
 	border-radius: calc(var(--windows-appearance-border) + var(--windows-appearance-padding));
 	inset: var(--windows-appearance-border);

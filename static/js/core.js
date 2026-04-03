@@ -76,14 +76,15 @@ const SWManager = new class {
 	}
 }
 
-function removeHTMLElements(object) {
-	const serialized = {}
-	const serializedEntries = Object.entries(object).map(([ name, data ]) => {
-		if (data instanceof HTMLElement) { return { [name]: "HTMLElement" } }
-		else { return { [name]: data } }
-	})
-
-	Object.assign(serialized, ...serializedEntries)
+function removeHTMLElements(leaf) {
+	if (!leaf) { return }
+	const serialized = { }
+	for (const [ key, value ] of Object.entries(leaf)) {
+		if (Array.isArray(value)) { serialized[key] = value.map((element) => { if (element instanceof HTMLElement) { return "HTMLElement" } else { return element } })}
+		else if (Object.prototype.toString.call(value) === "[object Object]") { serialized[key] = removeHTMLElements(serialized[key]) }
+		else if (value instanceof HTMLElement) { serialized[key] = "HTMLElement" }
+		else { serialized[key] = value }
+	}
 	return serialized
 }
 
@@ -392,13 +393,6 @@ export const MessagingHub = new class {
 	}
 	/** @param {CloseData} closeData */
 	#removeLink({ closed }) { MessagingHub.windowToChannels.delete(closed) }
-	propagateEvent(name, data) {
-		const sendData = removeHTMLElements(data)
-		MessagingHub.windowToChannels.forEach((link) => {
-			link.content.port1.postMessage({ command: "event", data: { type: name, data: sendData }})
-			link.titlebar.port1.postMessage({ command: "event", data: { type: name, data: sendData }})
-		})
-	}
 	/** @param {ReadyData} readyData */
 	#sendContentPorts({ data: iframe, message }) {
 		const appWindow = iframe.closest("[app]"),
@@ -418,6 +412,14 @@ export const MessagingHub = new class {
 		{ port2: privatePort } = link.private
 
 		target.postMessage(message, "*", [ titlebarPort, privatePort ])
+	}
+
+	propagateEvent(name, data) {
+		const sendData = removeHTMLElements(data)
+		MessagingHub.windowToChannels.forEach((link) => {
+			link.content.port1.postMessage({ command: "event", data: { type: name, data: sendData }})
+			link.titlebar.port1.postMessage({ command: "event", data: { type: name, data: sendData }})
+		})
 	}
 
 	constructor() {
