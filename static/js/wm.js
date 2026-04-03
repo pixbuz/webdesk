@@ -5,7 +5,7 @@
 // IDEA: Conjure a system for passive highest z-index resolve for windows focus shift
 // IDEA: Quick window switching with focusWindow on WebdeskEvent.WINDOW_MOVE instead of WebdeskEvent.WINDOW_MOVE_START
 
-import { WebdeskEvent, ApplicationManifests, MessagingHub } from "./core"
+import { WebdeskEvent, ApplicationManifests, MessagingHub, StyleSheets } from "./core"
 
 const WMTitlebarFactory = new class {
 	titlebarVars
@@ -50,7 +50,6 @@ const WMTitlebarFactory = new class {
 	/** @param {import("./core").TargetData} targetData */
 	close({ target, app }) {
 		target.remove()
-
 		WebdeskEvent.WINDOW_CLOSE.emit({ closed: target, open: WMFactory.open })
 	}
 	/** @param {import("./core").TargetData} targetData */
@@ -109,6 +108,7 @@ const WMTitlebarFactory = new class {
 
 const WMFactory = new class {
 	space = document.querySelector(".Window.Space")
+	centerOffsets = [ ]
 	open = [ ]
 
 	/** @param {import("./core").LauncherData} launcherData */
@@ -183,10 +183,22 @@ const WMFactory = new class {
 
 		if (gain == target) { target.style.zIndex = 29 }
 	}
+	/** @param {import("./core").OpeningData} openingData */
+	centerWindow({ window: target, titlebar }) {
+		target.style.left = WMFactory.centerOffsets[0]
+		target.style.top = WMFactory.centerOffsets[1]
+	}
+	/** @param {import("./core").CustomizationData} data */
+	setVars({ id, css, object, force }) {
+		WMFactory.centerOffsets[0] = `calc(50% - ${object.windows.appearance.width}/2)`
+		WMFactory.centerOffsets[1] = `calc(50% - ${object.windows.appearance.height}/2)`
+	}
 
 	constructor() {
+		WebdeskEvent.WINDOW_OPENING.on(this.centerWindow)
 		WebdeskEvent.LAUNCHER_CLICK.on(this.skeletonizeWindow)
 		WebdeskEvent.WINDOW_OPEN.on(this.addWindowToSpace)
+		WebdeskEvent.CUSTOMIZATION_LOADED.on(this.setVars)
 	}
 }
 
@@ -238,13 +250,6 @@ const WMMover = new class {
 		WMMover.anchor = { x: (x - box.left), y: (y - box.top) }
 		WMMover.inMove = true
 	}
-	/** @param {import("./core").TargetData} targetData */
-	centerWindow({ target, app }) {
-		const box = target.getBoundingClientRect()
-
-		target.style.left = Math.round((window.innerWidth - box.width) / 2) + "px"
-		target.style.top = Math.round((window.innerHeight - box.height) / 2) + "px"
-	}
 	/** @param {import("./core").InteractionData} interactionData */
 	followCursor({ target, x, y }) {
 		target.style.left = (x - WMMover.anchor.x) + "px"
@@ -267,8 +272,6 @@ const WMMover = new class {
 	}
 
 	constructor() {
-		WebdeskEvent.WINDOW_OPEN.on(this.centerWindow)
-
 		WebdeskEvent.WINDOW_MOVE_START.on(this.init)
 		WebdeskEvent.WINDOW_MOVE.on(this.followCursor)
 		WebdeskEvent.WINDOW_MOVE_END.on(this.reset)

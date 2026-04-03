@@ -361,6 +361,23 @@ body {
 }
 
 /* ----- Keyframes animations ----- */
+/*
+	Done - Open
+	- Close
+	- Minimise - to
+	- Minimise - from
+	- Maximise - to
+	- Maximise - from
+	- Appdock Up
+	- Appdock Down
+*/
+
+[app]:not(.opening) { animation: open 1s linear; }
+
+@keyframes open {
+	from { scale: 0 }
+	to { scale: 1 }
+}
 
 @keyframes Window-minimising-moving {
 	to {
