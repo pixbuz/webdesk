@@ -4,6 +4,52 @@
 // TODO: Error handling for database things
 // TODO: Make ApplicationManifests into a object/class?
 
+/** @typedef {Object} EmptyData */
+/** @typedef {Object} ClockData
+ * @property {string[]} update */
+/** @typedef {Object} LauncherData
+ * @property {string} app */
+/** @typedef {Object} TargetData
+ * @property {HTMLElement} target
+ * @property {string} app */
+/** @typedef {Object} ReadyData
+ * @property {object} message
+ * @property {any} data */
+/** @typedef {Object} FocusData
+ * @property {HTMLElement} lost
+ * @property {HTMLElement} gain */
+/** @typedef {Object} CloseData
+ * @property {HTMLElement} closed
+ * @property {HTMLElement[]} open */
+/** @typedef {Object} ChangeData
+ * @property {string} css
+ * @property {string} value */
+/** @typedef {Object} OpeningData
+ * @property {HTMLElement} titlebar
+ * @property {HTMLElement} window
+ * @property {any} app */
+/** @typedef {Object} BackgroundData
+ * @property {number} id
+ * @property {boolean} force
+ * @property {string} background */
+/** @typedef {Object} InteractionData
+ * @property {HTMLElement} target
+ * @property {number} x
+ * @property {number} y */
+/** @typedef {Object} CustomizationData
+ * @property {number} id
+ * @property {string} css
+ * @property {Object} object
+ * @property {boolean} force */
+
+fetch("/api/getManifests").then(async (response) => {
+	ApplicationManifests = await response.json()
+	WebdeskEvent.MANIFESTS_READY.emit({ data: ApplicationManifests })
+
+	if (newUser) { setTimeout(() => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" }) }, 25) }
+}).catch((error) => { console.log(error) })
+
+let newUser = false
 const offlineMessageElement = document.querySelector("#offline")
 const SWManager = new class {
 	loadInformation() {
@@ -23,41 +69,58 @@ const SWManager = new class {
 	constructor() {
 		navigator.serviceWorker.addEventListener("message", this.com)
 		navigator.serviceWorker.register("/sw")
-			.then((registration) => { registration.active.postMessage("checkHashes") })
+			.then((registration) => {
+				if (registration.active) { registration.active.postMessage("checkHashes") }
+			})
 			.catch((error) => { console.error(error) })
 	}
 }
 
-let newUser = false
-
 function removeHTMLElements(object) {
 	const serialized = {}
 	const serializedEntries = Object.entries(object).map(([ name, data ]) => {
-		if (data instanceof HTMLElement) {
-			return { [name]: "HTMLElement" }
-		} else { return { [name]: data } }
+		if (data instanceof HTMLElement) { return { [name]: "HTMLElement" } }
+		else { return { [name]: data } }
 	})
 
 	Object.assign(serialized, ...serializedEntries)
 	return serialized
 }
 
-fetch("/api/getManifests")
-.then(async (response) => {
-	ApplicationManifests = await response.json()
-	WebdeskEvent.MANIFESTS_READY.emit({ data: ApplicationManifests })
+/** @template T */
+class WebdeskEventBase {
+	/** @type {((data: T) => void)[]} */
+	#callbacks = [ ]
 
-	if (newUser) { setTimeout(() => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" }) }, 25) }
-})
-.catch(async (error) => {
-	console.log(error)
-})
+	/** @param {Partial<T>} data */
+	emit(data = {}) {
+		WebdeskEvent.emitToIframes(this, data)
+		this.#callbacks.forEach((callback) => { callback(data) })
+	}
+
+	/** @param {...((data: T) => void)} newCallbacks */
+	on(...newCallbacks) { this.#callbacks.push(...newCallbacks) }
+
+	/** @param {...((data: T) => void)} callback */
+	off(callback) { this.#callbacks = this.#callbacks.filter((registredCallback) => { registredCallback !== callback }) }
+
+	constructor() { }
+}
+
+/** @extends {WebdeskEventBase<EmptyData>} */ class EmptyEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<LauncherData>} */ class LauncherEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<OpeningData>} */ class OpeningEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<InteractionData>} */ class InteractionEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<CloseData>} */ class CloseEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<FocusData>} */ class FocusEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<TargetData>} */ class TargetEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<ClockData>} */ class ClockEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<CustomizationData>} */ class CustomizationEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<ChangeData>} */ class ChangeEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<BackgroundData>} */ class BackgroundEvent extends WebdeskEventBase {}
+/** @extends {WebdeskEventBase<ReadyData>} */ class ReadyEvent extends WebdeskEventBase {}
 
 export let ApplicationManifests
-export const hostname = "localhost" // Hopefully this won't be needed in the future
-export const protocol = "http"
-console.log(window.location.href) // 👀
-
 export const webdeskDB = new class {
 	version = 1
 	// Helper for the main functions for interacting with the database
@@ -159,89 +222,6 @@ export const webdeskDB = new class {
 		this.updateLock = Promise.resolve()
 	}
 }
-
-/** @typedef {Object} EmptyData */
-
-/** @typedef {Object} ClockData
- * @property {string[]} update */
-
-/** @typedef {Object} LauncherData
- * @property {string} app */
-
-/** @typedef {Object} TargetData
- * @property {HTMLElement} target
- * @property {string} app */
-
-/** @typedef {Object} ReadyData
- * @property {object} message
- * @property {any} data */
-
-/** @typedef {Object} FocusData
- * @property {HTMLElement} lost
- * @property {HTMLElement} gain */
-
-/** @typedef {Object} CloseData
- * @property {HTMLElement} closed
- * @property {HTMLElement[]} open */
-
-/** @typedef {Object} ChangeData
- * @property {string} css
- * @property {string} value */
-
-/** @typedef {Object} OpeningData
- * @property {HTMLElement} titlebar
- * @property {HTMLElement} window
- * @property {any} app */
-
-/** @typedef {Object} BackgroundData
- * @property {number} id
- * @property {boolean} force
- * @property {string} background */
-
-/** @typedef {Object} InteractionData
- * @property {HTMLElement} target
- * @property {number} x
- * @property {number} y */
-
-/** @typedef {Object} CustomizationData
- * @property {number} id
- * @property {string} css
- * @property {Object} object
- * @property {boolean} force */
-
-/** @template T */
-class WebdeskEventBase {
-	/** @type {((data: T) => void)[]} */
-	#callbacks = [ ]
-
-	/** @param {Partial<T>} data */
-	emit(data = {}) {
-		WebdeskEvent.emitToIframes(this, data)
-		this.#callbacks.forEach((callback) => { callback(data) })
-	}
-
-	/** @param {...((data: T) => void)} newCallbacks */
-	on(...newCallbacks) { this.#callbacks.push(...newCallbacks) }
-
-	/** @param {...((data: T) => void)} callback */
-	off(callback) { this.#callbacks = this.#callbacks.filter((registredCallback) => { registredCallback !== callback }) }
-
-	constructor() { }
-}
-
-/** @extends {WebdeskEventBase<EmptyData>} */ class EmptyEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<LauncherData>} */ class LauncherEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<OpeningData>} */ class OpeningEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<InteractionData>} */ class InteractionEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<CloseData>} */ class CloseEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<FocusData>} */ class FocusEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<TargetData>} */ class TargetEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<ClockData>} */ class ClockEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<CustomizationData>} */ class CustomizationEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<ChangeData>} */ class ChangeEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<BackgroundData>} */ class BackgroundEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<ReadyData>} */ class ReadyEvent extends WebdeskEventBase {}
-
 export class WebdeskEvent {
 	static MANIFESTS_READY = new ReadyEvent()
 	static LAUNCHER_CLICK = new LauncherEvent()
@@ -294,7 +274,6 @@ export class WebdeskEvent {
 		MessagingHub.propagateEvent(names[nameIndex], data)
 	}
 }
-
 export const time = new class {
 	init = new Date()
 	seconds = this.init.getSeconds()
@@ -339,15 +318,11 @@ export const time = new class {
 		}, 1000 - this.init.getMilliseconds())
 	}
 }
-
 export const StyleSheets = {
 	launchers: new CSSStyleSheet(),
 	windows: new CSSStyleSheet(),
 	dock: new CSSStyleSheet()
 }
-
-document.adoptedStyleSheets = Object.values(StyleSheets)
-
 export const MessagingHub = new class {
 	/** @type {Map<HTMLElement, object>} */
 	windowToChannels = new Map()
@@ -453,3 +428,5 @@ export const MessagingHub = new class {
 		WebdeskEvent.TITLEBAR_READY.on(this.#sendTitlebarPorts)
 	}
 }
+
+document.adoptedStyleSheets = Object.values(StyleSheets)

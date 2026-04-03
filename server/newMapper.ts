@@ -35,16 +35,12 @@ const MIMES = Object.freeze({
 })
 
 class SmartResponse extends Response {
-	constructor(body?: any, mime: string = "text/plain") {
-		let content: BodyInit, code: number
-
-		if (body === undefined) { content = ""; code = 400 }
-		else { content = body as BodyInit; code = 200 }
-
-		super(content, { status: code, headers: {
-			"content-type": mime,
-			"Access-Control-Allow-Origin": "*",
+	constructor(origin: string | null, body?: any, mime?: string) {
+		super(body, { status: (body ? 200 : 400), headers: {
+			"content-type": (mime || "text/plain"),
+			"Access-Control-Allow-Origin": (origin || "*"),
 			"Access-Control-Allow-Methods": "GET, OPTIONS",
+			"Access-Control-Allow-Credentials": "true",
 		} })
 	}
 }
@@ -184,10 +180,10 @@ export class WebdeskRoute {
 			const result = this.commands[pathname](request)
 
 			if (result instanceof Response) { return result }
-			else { return new SmartResponse(result.data, result.type) }
+			else { return new SmartResponse(request.headers.get("origin"), result.data, result.type) }
 		}
-		else if (this.files[pathname]) { return new SmartResponse(this.files[pathname], this.mimes[pathname]) }
-		else { return new SmartResponse() }
+		else if (this.files[pathname]) { return new SmartResponse(request.headers.get("origin"), this.files[pathname], this.mimes[pathname]) }
+		else { return new SmartResponse(request.headers.get("origin")) }
 	}
 
 	private constructor() {
@@ -354,10 +350,10 @@ export class Route {
 			const result = this.commands[pathname](request)
 
 			if (result instanceof Response) { return result }
-			else { return new SmartResponse(result.data, result.type) }
+			else { return new SmartResponse(request.headers.get("origin"), result.data, result.type) }
 		}
-		else if (this.files[pathname]) { return new SmartResponse(this.files[pathname], this.mimes[pathname]) }
-		else { return new SmartResponse() }
+		else if (this.files[pathname]) { return new SmartResponse(request.headers.get("origin"), this.files[pathname], this.mimes[pathname]) }
+		else { return new SmartResponse(request.headers.get("origin")) }
 	}
 
 	private constructor(appName: string, manifest: WebdeskManifest) {

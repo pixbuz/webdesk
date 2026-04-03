@@ -33,7 +33,7 @@ class Cashier {
 			log(`${this.#appName} old hash doesn't match current, emptying cache`)
 			for (const name of assets) { this.#cache.delete(name) }
 			log(`${this.#appName} cache emptied`)
-			this.prefetchSubOrigin()
+			// this.prefetchSubOrigin()
 		}
 
 		cache.put("hash", new Response(null, { headers: { "hash": this.#hash }}))
@@ -41,8 +41,6 @@ class Cashier {
 	async prefetchSubOrigin() {
 		if (offline) { return }
 		else if (this.#appName === "webdesk") { return }
-
-		console.log(self.location)
 
 		log(`${this.#appName} caching /`)
 		await this.#cache.put("/", await fetch(`${self.location.protocol}//${this.#appName}.${hostname}/`))
@@ -63,7 +61,7 @@ class Cashier {
 			return cacheLookup
 		} else { log(`${this.#appName} cache miss for ${pathname}`) }
 
-		const serverFetch = await fetch(request)
+		const serverFetch = await fetch(request, { mode: "cors" })
 		await this.#cache.put(request, serverFetch.clone())
 		log(`${this.#appName} ${pathname} is now in cache`)
 		return serverFetch
@@ -99,11 +97,13 @@ async function interceptor(event) {
 	const requestURL = new URL(event.request.url)
 	const origin = requestURL.hostname.toLocaleLowerCase()
 	const subOrigin = origin.substring(0, origin.indexOf(hostname) - 1).toLocaleLowerCase()
+	
+	const cashierName = subOrigin === "" ? "webdesk" : subOrigin
+	const cashier = Cashier.cashiers[cashierName]
 
-	if (subOrigin === "") { return Cashier.cashiers["webdesk"].respond(event.request, requestURL.pathname) }
-	else if (Cashier.registred.includes(subOrigin)) { return Cashier.cashiers[subOrigin].respond(event.request, requestURL.pathname) }
+	if (cashier) { return cashier.respond(event.request, requestURL.pathname) }
 	else if (!offline) { return await fetch(event.request) }
-	else { return new Response("something went very wrong") }
+	else { return new Response("System offline and app not cached", { status: 503 }) }
 }
 
 /** @param {MessageEvent} event */

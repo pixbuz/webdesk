@@ -124,7 +124,7 @@ div > .hr {
 
 [colors] .Dock,
 [colors] .Launchers {
-	flex-flow: column nowrap;
+	flex-flow: row nowrap;
 	display: flex;
 	gap: 4px;
 }

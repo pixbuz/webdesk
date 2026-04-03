@@ -33,7 +33,7 @@ body {
 	position: absolute;
 	overflow: hidden;
 	font-weight: 500;
-	color: black;
+	color: gray;
 	display: none;
 	height: 2vmin;
 	padding: 1px;
@@ -56,11 +56,6 @@ body {
 	aspect-ratio: 1;
 	height: 100%;
 	fill: none;
-}
-
-.NoConnection .Accent {
-	stroke: red;
-	color: red;
 }
 
 .Background,
