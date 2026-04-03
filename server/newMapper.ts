@@ -4,37 +4,35 @@ import { log } from "./log.ts"
 import { config } from "../server.config.ts"
 
 const MIMES = Object.freeze({
-	"html": "text/html",
-	"htm": "text/html",
-	"css": "text/css",
-	"js": "text/javascript",
-	"txt": "text/plain",
-	"xml": "text/xml",
+	html: "text/html",
+	htm: "text/html",
+	css: "text/css",
+	js: "text/javascript",
+	txt: "text/plain",
+	xml: "text/xml",
 
-	"jpg": "image/jpeg",
-	"jpeg": "image/jpeg",
-	"png": "image/png",
-	"gif": "image/gif",
-	"svg": "image/svg+xml",
-	"ico": "image/x-icon",
-	"webp": "image/webp",
+	jpg: "image/jpeg",
+	jpeg: "image/jpeg",
+	png: "image/png",
+	gif: "image/gif",
+	svg: "image/svg+xml",
+	ico: "image/x-icon",
+	webp: "image/webp",
 
-	"woff": "font/woff",
-	"woff2": "font/woff2",
-	"ttf": "font/ttf",
-	"otf": "font/otf",
+	woff: "font/woff",
+	woff2: "font/woff2",
+	ttf: "font/ttf",
+	otf: "font/otf",
 
-	"json": "application/json",
-	"pdf": "application/pdf",
-	"zip": "application/zip",
-	"bin": "application/octet-stream",
+	json: "application/json",
+	pdf: "application/pdf",
+	zip: "application/zip",
+	bin: "application/octet-stream",
 
-	"mp3": "audio/mpeg",
-	"mp4": "video/mp4",
-	"wav": "audio/wav",
+	mp3: "audio/mpeg",
+	mp4: "video/mp4",
+	wav: "audio/wav",
 })
-
-const cwd = Deno.cwd()
 
 class SmartResponse extends Response {
 	constructor(body?: any, mime: string = "text/plain") {
@@ -146,15 +144,12 @@ export class WebdeskRoute {
 	}
 
 	private async updateAsset(endpoint: string, relPath: string) {
-		const basePath = `${config.staticFolder}/`
 		this.origins[endpoint] = relPath
-
+		const basePath = `${config.staticFolder}/`
 		try {
 			const extension = relPath.substring(relPath.lastIndexOf(".") + 1)
-
 			this.files[endpoint] = await Deno.readFile(`${basePath}/${relPath}`)
-			this.mimes[endpoint] = MIMES[extension]
-			
+			this.mimes[endpoint] = MIMES[extension as keyof typeof MIMES]
 			this.generateHash()
 		}
 		catch (error) { log.error(`Failed to register Webdesk's ${endpoint}: ${(error as Error).message}`) }
@@ -198,8 +193,9 @@ export class WebdeskRoute {
 	private constructor() {
 		this.updateAsset("/", `index.htm`)
 		this.updateAsset("/style", `style.css`)
-		this.updateAsset("/manifest", `manifest.json`)
 		this.updateAsset("/titlebar", `titlebar.htm`)
+		this.updateAsset("/manifest", `manifest.json`)
+		this.updateAsset("/favicon.ico", `webdesk.svg`)
 
 		this.updateAsset("/launchers", `js/launchers.js`)
 		this.updateAsset("/core", `js/core.js`)
@@ -207,6 +203,7 @@ export class WebdeskRoute {
 		this.updateAsset("/ui", `js/ui.js`)
 		this.updateAsset("/wm", `js/wm.js`)
 		this.updateAsset("/sw", `js/sw.js`)
+		
 
 		this.commands = {
 			"/api/appHashes": this.returnHashes.bind(this),
@@ -304,7 +301,8 @@ export class Route {
 		this.updateAsset("/icon", this.manifest.icon)
 		this.updateAsset("/style", this.manifest.style)
 
-		this.addSW()
+		// NOTE: Outside the scope of version 1
+		// this.addSW()
 	}
 
 	private addSW() {
@@ -324,7 +322,7 @@ export class Route {
 			const extension = relPath.substring(relPath.lastIndexOf(".") + 1)
 
 			this.files[endpoint] = await Deno.readFile(`${basePath}${relPath}`)
-			this.mimes[endpoint] = MIMES[extension]
+			this.mimes[endpoint] = MIMES[extension as keyof typeof MIMES]
 
 			this.generateHash()
 		} catch (error) { log.warn(`Failed to register "${this.appName}"'s ${endpoint}: ${(error as Error).message}`) }
