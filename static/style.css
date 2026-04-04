@@ -202,14 +202,7 @@ body {
 
 	padding: calc(var(--windows-appearance-border) + var(--windows-appearance-padding));
 	border-radius: calc(var(--windows-appearance-border) * 2 + var(--windows-appearance-padding));
-	min-height: 12.5vmin;
-	min-width: 12.5vmin;
 	position: absolute;
-}
-
-[app].opening {
-	opacity: 0;
-	transition: none;
 }
 
 [app]::before {
@@ -232,17 +225,14 @@ body {
 
 [app].focus::after { opacity: 100%; }
 
-[app].maximised {
-	animation: Window-maximising-moving 100ms linear forwards;
+[app].loading {
+	opacity: 0;
+	transition: none;
 }
 
 [app].maximised::before {
 	border-radius: 0;
 	inset: 0;
-}
-
-[app].minimised {
-	animation: Window-minimising-moving 1000ms linear forwards;
 }
 
 [app] .titlebarWrapper {
@@ -277,17 +267,6 @@ body {
 	border-radius: 4px;
 	user-select: none;
 	overflow: hidden;
-}
-
-[app].maximised .contentWrapper {
-	animation: Window-maximising-resizing 100ms linear forwards;
-
-	max-height: 100svh;
-	max-width: 100svw;
-}
-
-[app].minimised .contentWrapper {
-	animation: Window-minimising-resizing 1000ms linear forwards;
 }
 
 [app].resizing .contentWrapper {
@@ -360,26 +339,54 @@ body {
 	background-repeat: space;
 }
 
-/* ----- Keyframes animations ----- */
-/*
-	Done - Open
-	- Close
-	- Minimise - to
-	- Minimise - from
-	- Maximise - to
-	- Maximise - from
-	- Appdock Up
-	- Appdock Down
-*/
+[app].opening { animation: open 1s linear forwards; }
+[app].closing { animation: close 1s linear forwards; }
 
-[app]:not(.opening) { animation: open 1s linear; }
+[app].minimised { animation: to-minimise-move 1s linear forwards; }
+[app].minimised .contentWrapper { animation: to-minimise-size 1s linear forwards;
+	min-height: 0;
+	min-width: 0;
+}
+
+[app].from-minimised { animation: from-minimise-move 1s linear forwards; }
+[app].from-minimised .contentWrapper { animation: from-minimise-size 1s linear forwards; }
+
+[app].maximised { animation: to-maximise-move 1s linear forwards; }
+[app].maximised .contentWrapper { animation: to-maximise-size 1s linear forwards;
+	max-height: 100svh;
+	max-width: 100svw;
+}
+
+[app].from-maximised { animation: from-maximise-move 1s linear forwards; }
+[app].from-maximised .contentWrapper { animation: from-maximise-size 1s linear forwards;
+	max-height: 100svh;
+	max-width: 100svw;
+}
+
+.Dock.up {
+	transition: translate 1s linear,
+		opacity 1s linear;
+	translate: 0 0;
+	opacity: 1;
+}
+.Dock {
+	transition: translate 1s linear,
+		opacity 1s linear;
+	translate: 0 16px;
+	opacity: 0;
+}
 
 @keyframes open {
 	from { scale: 0 }
 	to { scale: 1 }
 }
 
-@keyframes Window-minimising-moving {
+@keyframes close {
+	from { scale: 1 }
+	to { scale: 0 }
+}
+
+@keyframes to-minimise-move {
 	to {
 		opacity: 0;
 		translate: -50% -50%;
@@ -388,21 +395,30 @@ body {
 	}
 }
 
-@keyframes Window-minimising-resizing {
+@keyframes to-minimise-size {
 	to {
 		height: 0;
 		width: 0;
 	}
 }
 
-@keyframes Window-maximising-resizing {
-	to {
-		height: 100svh;
-		width: 100svw;
+@keyframes from-minimise-move {
+	from {
+		opacity: 0;
+		translate: -50% -50%;
+		left: 50%;
+		top: 150%;
 	}
 }
 
-@keyframes Window-maximising-moving {
+@keyframes from-minimise-size {
+	from {
+		height: 0;
+		width: 0;
+	}
+}
+
+@keyframes to-maximise-move {
 	to {
 		padding: 4px 0 0 0;
 		left: 0;
@@ -410,24 +426,36 @@ body {
 	}
 }
 
-@keyframes Dock-maximised-up {
-	from {
-		opacity: 1;
-		translate: 0 200%;
-	}
+@keyframes to-maximise-size {
 	to {
-		opacity: 1;
-		translate: 0 0;
+		height: 100svh;
+		width: 100svw;
 	}
 }
 
-@keyframes Dock-maximised-down {
+@keyframes from-maximise-move {
 	from {
-		opacity: 1;
-		translate: 0 0;
+		padding: 4px 0 0 0;
+		left: 0;
+		top: 0;
 	}
-	to {
-		opacity: 1;
-		translate: 0 200%;
+}
+
+@keyframes from-maximise-size {
+	from {
+		height: 100svh;
+		width: 100svw;
 	}
+}
+
+@keyframes dock-up {
+	from { translate: 0 200%; opacity: 0; }
+	50% { opacity: 0; }
+	to { translate: 0 0; opacity: 1; }
+}
+
+@keyframes dock-down {
+	from { translate: 0 0; opacity: 1; }
+	50% { opacity: 1; }
+	to { translate: 0 200%; opacity: 0; }
 }

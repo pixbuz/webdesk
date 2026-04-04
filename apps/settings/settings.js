@@ -14,14 +14,22 @@ const Messager = new class {
 	#titlebar
 	#pending = new Map()
 
-	#recieve({ data: { command, data } }) {
+	#recieve({ data: { command, payload } }) {
 		if (Messager.#pending.has(command)) {
 			const { resolve, timeout } = Messager.#pending.get(command)
-			clearTimeout(timeout)
 			Messager.#pending.delete(command)
+			clearTimeout(timeout)
 
-			return resolve(data)
-		} else { /* WebdeskEvent.on logic */ }
+			return resolve(payload)
+		} else {
+			if (command === "event") {
+				const { event, data } = payload
+
+				if (event === "BACKGROUND_UPLOADED") {
+					Background.previewFactory(data)
+				}
+			}
+		}
 	}
 
 	#initPort({ ports }) {
@@ -175,7 +183,9 @@ const Background = new class {
 			reader.readAsDataURL(file)
 		})
 	}
-	processImage(encodedImage) { return `<img src="${event.target.result}"/>` }
+	processImage(encodedImage) {
+		return `<img src="${event.target.result}"/>`
+	}
 	async processSVG(svgTextPromise) {
 		const text = await svgTextPromise
 
@@ -196,14 +206,14 @@ const Background = new class {
 
 		Background.previewsWrapper.append(fragment)
 	}
-	previewFactory(details, mode) {
+	previewFactory({ background, id }, mode) {
 		const preview = document.createElement("button")
 
 		preview.classList.add("preview")
 		preview.setAttribute("title", "Set this as the background")
 
-		preview.innerHTML = details.background
-		preview.setAttribute("bgID", details.id)
+		preview.innerHTML = background
+		preview.setAttribute("bgID", id)
 		preview.addEventListener("click", Background.loadBackground)
 
 		switch(mode) {
@@ -219,7 +229,7 @@ const Background = new class {
 	}
 	removeAllBackgrounds() {
 		Background.previewsWrapper.style = "none"
-		Messager.send("emit.event", { type: "BACKGROUND_REMOVE_ALL", payload: {  } })
+		Messager.send("emit.event", { type: "BACKGROUND_REMOVE_ALL", payload: { } })
 
 		const previews = Array.from(Background.previewsWrapper.children)
 

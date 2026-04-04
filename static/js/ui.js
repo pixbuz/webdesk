@@ -98,9 +98,7 @@ const defaultDockCustomization = new class {
 	}
 	behavior = {
 		autoHide: {
-			whenOverlapping: true,
-			always: false,
-			upTime: 5000,
+			mode: "overlap",	// never | overlap | always
 			upDelay: 0,
 			downDelay: 2000,
 		},
@@ -157,7 +155,7 @@ function computeCustomizationVars(customizationObject, prefix) {
 	return varList
 }
 
-/** @param {import("./core").CustomizationData} customizationData */
+/** @param {import("./core").CustomizationData} data */
 async function loadCustomization({ id, css, object, force }) {
 	if (!object) { return }
 	else if (!force && id == currentBackgroundID) { return }
@@ -174,10 +172,12 @@ async function loadCustomization({ id, css, object, force }) {
 
 	document.adoptedStyleSheets = Object.values(StyleSheets)
 
+	currentCustomizationObject = object
+
 	WebdeskEvent.CUSTOMIZATION_LOADED.emit({ id: currentCustomizationID, css: `${launchers}${windows}${dock}`, object: object })
 }
 
-/** @param {import("./core").BackgroundData} backgroundData */
+/** @param {import("./core").BackgroundData} data */
 async function loadBackground({ id, background, force }) {
 	if (!background) { return }
 	else if (!force && id == currentBackgroundID) { return }
@@ -194,6 +194,8 @@ async function uploadBackgroundToDB(uploadData) {
 	if (!uploadData.background) { return }
 	else if (savedBackgrounds.includes(uploadData.background)) { return }
 
+	console.log(uploadData)
+
 	const ID = saveID++
 	webdeskDB.set("_backgrounds", ID, uploadData.background)
 
@@ -201,7 +203,7 @@ async function uploadBackgroundToDB(uploadData) {
 	WebdeskEvent.BACKGROUND_UPLOADED.emit({ id: ID, background: uploadData.background })
 }
 
-/** @param {import("./core").ChangeData} changeData */
+/** @param {import("./core").ChangeData} data */
 async function updateCustomizationToDB({ css, value }) {
 	const customizationVar = css.substring(2)
 	const varTree = customizationVar.split("-")
@@ -221,7 +223,7 @@ async function updateCustomizationToDB({ css, value }) {
 	WebdeskEvent.CUSTOMIZATION_CHANGE_SAVED.emit({ id: currentCustomizationID, css: `${launchers}${windows}${dock}`, object: currentCustomizationObject })
 }
 
-/** @param {import("./core").ChangeData} changeData */
+/** @param {import("./core").ChangeData} data */
 function previewCustomization({ css, value }) {
 	document.documentElement.style.setProperty(css, value)
 }

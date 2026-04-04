@@ -1,4 +1,8 @@
 // TODO: Keep in cache only most requested files using a point system
+// TODO: Base Route and then sub class webdesk and application
+// TODO: ^^^ pls webdesk doing strange stuff
+
+// NOTE: Webdesk as "kernel" app?
 
 import { log } from "./log.ts"
 import { config } from "../server.config.ts"
@@ -98,19 +102,19 @@ export class WebdeskRoute {
 		let fileEndpoint: string
 
 		switch(path) {
-			case "index.htm": { fileEndpoint = "/"; break }
-			case "style.css": { fileEndpoint = "/style"; break }
-			case "manifest.json": { fileEndpoint = "/manifest"; break }
-			case "titlebar.htm": { fileEndpoint = "/titlebar"; break }
+			case "/index.htm": { fileEndpoint = "/"; break }
+			case "/style.css": { fileEndpoint = "/style"; break }
+			case "/manifest.json": { fileEndpoint = "/manifest"; break }
+			case "/titlebar.htm": { fileEndpoint = "/titlebar"; break }
 
-			case "js/launchers.js": { fileEndpoint = "/launchers"; break }
-			case "js/core.js": { fileEndpoint = "/core"; break }
-			case "js/dock.js": { fileEndpoint = "/dock"; break }
-			case "js/ui.js": { fileEndpoint = "/ui"; break }
-			case "js/wm.js": { fileEndpoint = "/wm"; break }
-			case "js/sw.js": { fileEndpoint = "/sw"; break }
+			case "/js/launchers.js": { fileEndpoint = "/launchers"; break }
+			case "/js/core.js": { fileEndpoint = "/core"; break }
+			case "/js/dock.js": { fileEndpoint = "/dock"; break }
+			case "/js/ui.js": { fileEndpoint = "/ui"; break }
+			case "/js/wm.js": { fileEndpoint = "/wm"; break }
+			case "/js/sw.js": { fileEndpoint = "/sw"; break }
 
-			default: { return }
+			default: { return log.warn(`An unknown Webdesk's file ${path} (${origin}) was ${kind}`) }
 		}
 
 		try {
@@ -187,18 +191,18 @@ export class WebdeskRoute {
 	}
 
 	private constructor() {
-		this.updateAsset("/", `index.htm`)
-		this.updateAsset("/style", `style.css`)
-		this.updateAsset("/titlebar", `titlebar.htm`)
-		this.updateAsset("/manifest", `manifest.json`)
-		this.updateAsset("/favicon.ico", `webdesk.svg`)
+		this.updateAsset("/", `/index.htm`)
+		this.updateAsset("/style", `/style.css`)
+		this.updateAsset("/titlebar", `/titlebar.htm`)
+		this.updateAsset("/manifest", `/manifest.json`)
+		this.updateAsset("/favicon.ico", `/webdesk.svg`)
 
-		this.updateAsset("/launchers", `js/launchers.js`)
-		this.updateAsset("/core", `js/core.js`)
-		this.updateAsset("/dock", `js/dock.js`)
-		this.updateAsset("/ui", `js/ui.js`)
-		this.updateAsset("/wm", `js/wm.js`)
-		this.updateAsset("/sw", `js/sw.js`)
+		this.updateAsset("/launchers", `/js/launchers.js`)
+		this.updateAsset("/core", `/js/core.js`)
+		this.updateAsset("/dock", `/js/dock.js`)
+		this.updateAsset("/ui", `/js/ui.js`)
+		this.updateAsset("/wm", `/js/wm.js`)
+		this.updateAsset("/sw", `/js/sw.js`)
 		
 
 		this.commands = {
@@ -220,26 +224,24 @@ export class Route {
 	public static readonly registred: Record<string, Route> = { }
 
 	public static getAppsHash() { return Route.hashes }
-
 	public static getManifests(_request: Request) { return { data: JSON.stringify(Route.manifests), type: MIMES.json } }
 
 	public static async create(appName: string): Promise<void> {
 		let manifestObject: WebdeskManifest
-
 		try {
 			const manifestContents: string = await Deno.readTextFile(`./apps/${appName}/manifest.json`)
 			manifestObject = new WebdeskManifest(JSON.parse(manifestContents))
-		} catch(error) {
-			log.debug(`Atempted to make a route for ${appName}, but ${(error as Error).message}`)
-			return
-		}
-
+		} catch(error) { return log.debug(`Atempted to make a route for ${appName}, but ${(error as Error).message}`) }
 		Route.registred[appName] = new Route(appName, manifestObject)
 	}
 
-	private appName: string = ""
-	private ignore: string[] = [ ]
-	private routes: Record<string, string> = { }
+	private readonly hashEncoder = new TextEncoder()
+
+	private readonly appName: string = ""
+	private readonly ignore: string[] = [ ]
+	private readonly routes: Record<string, string> = { }
+	private readonly origins: Record<string, string> = { }
+	private readonly watcherLookup: Record<string, string> = { }
 
 	private async watcherEndpointManipulator(origin: string, kind: string) {
 		log.debug(`A ${kind} file event happend to ${this.appName}'s "${origin}"`)
@@ -248,6 +250,7 @@ export class Route {
 		const fileEndpoint = this.watcherLookup[path]
 
 		try {
+			// TODO: Improve folder handling
 			const stats = await Deno.stat(origin)
 			if (this.ignore.includes(path)) { return log.debug(`File "${this.appName}/${path}" is ignored`) }
 			else if (stats.isDirectory) { return log.debug(`"${this.appName}/${path}" is a folder, skipping`) }
@@ -268,7 +271,6 @@ export class Route {
 			case "create": {
 				const endpoint = this.routes[path] || path
 				log.info(`Creating ${this.appName}'s at ${endpoint} (created)`)
-
 				return this.updateAsset(endpoint, path)
 			}
 		}
@@ -291,26 +293,8 @@ export class Route {
 		}
 	}
 
-	private registerMainAssets() {
-		this.updateAsset("/", this.manifest.index)
-		this.updateAsset("/js", this.manifest.script)
-		this.updateAsset("/icon", this.manifest.icon)
-		this.updateAsset("/style", this.manifest.style)
-
-		// NOTE: Outside the scope of version 1
-		// this.addSW()
-	}
-
-	private addSW() {
-		this.origins["/sw"] = "/sw.js"
-		this.files["/sw"] = WebdeskRoute.getSW()
-		this.mimes["/sw"] = MIMES.js
-
-		this.generateHash()
-	}
-
 	private async updateAsset(endpoint: string, relPath: string) {
-		const basePath = `${config.appFolder}/${this.appName}/`
+		const basePath = `${config.appFolder}/${this.appName}`
 		this.origins[endpoint] = relPath
 		this.watcherLookup[relPath] = endpoint
 
@@ -321,7 +305,7 @@ export class Route {
 			this.mimes[endpoint] = MIMES[extension as keyof typeof MIMES]
 
 			this.generateHash()
-		} catch (error) { log.warn(`Failed to register "${this.appName}"'s ${endpoint}: ${(error as Error).message}`) }
+		} catch (error) { log.warn(`Failed to register application ${this.appName}'s ${endpoint}: ${(error as Error).message}`) }
 	}
 
 	private async generateHash() {
@@ -334,26 +318,29 @@ export class Route {
 		Route.hashes[this.appName] = hashText
 	}
 
-	private readonly hashEncoder = new TextEncoder()
+	private registerMainAssets() {
+		const { index, icon, script, style } = this.manifest
 
-	public readonly manifest: WebdeskManifest
-	public readonly mimes: Record<string, string> = { }
-	public readonly origins: Record<string, string> = { }
-	public readonly watcherLookup: Record<string, string> = { }
-	public readonly files: Record<string, Uint8Array | string> = { }
-	public readonly commands: Record<string, (req: Request) => (CommandOutput | Response)> = { }
+		if (index) { this.updateAsset("/", index.startsWith("/") ? index : `/${index}`) }
+		else { log.info(`Application ${this.appName} has no index specified`) }
+		if (icon) { this.updateAsset("/icon", icon.startsWith("/") ? icon : `/${icon}`) }
+		else { log.info(`Application ${this.appName} has no icon specified`) }
 
-	public respond(request: Request): Response {
-		const pathname = new URL(request.url).pathname
+		if (script) { this.updateAsset("/js", script.startsWith("/") ? script : `/${script}`) }
+		else { log.debug(`Application ${this.appName} has no script specified`) }
+		if (style) { this.updateAsset("/style", style.startsWith("/") ? style : `/${style}`) }
+		else { log.debug(`Application ${this.appName} has no style specified`) }
 
-		if (this.commands[pathname] && pathname.startsWith("/api")) {
-			const result = this.commands[pathname](request)
+		// NOTE: Outside the scope of version 1
+		// this.addSW()
+	}
 
-			if (result instanceof Response) { return result }
-			else { return new SmartResponse(request.headers.get("origin"), result.data, result.type) }
-		}
-		else if (this.files[pathname]) { return new SmartResponse(request.headers.get("origin"), this.files[pathname], this.mimes[pathname]) }
-		else { return new SmartResponse(request.headers.get("origin")) }
+	private addSW() {
+		this.origins["/sw"] = "/sw.js"
+		this.files["/sw"] = WebdeskRoute.getSW()
+		this.mimes["/sw"] = MIMES.js
+
+		this.generateHash()
 	}
 
 	private constructor(appName: string, manifest: WebdeskManifest) {
@@ -371,6 +358,24 @@ export class Route {
 
 		log.debug(`Application ${this.appName} watcher starting`)
 		new UpdateWatcher(`${config.appFolder}/${appName}`, this.watcherEndpointManipulator.bind(this))
+	}
+
+	public readonly manifest: WebdeskManifest
+	public readonly mimes: Record<string, string> = { }
+	public readonly files: Record<string, Uint8Array | string> = { }
+	public readonly commands: Record<string, (req: Request) => (CommandOutput | Response)> = { }
+
+	public respond(request: Request): Response {
+		const pathname = new URL(request.url).pathname
+
+		if (this.commands[pathname] && pathname.startsWith("/api")) {
+			const result = this.commands[pathname](request)
+
+			if (result instanceof Response) { return result }
+			else { return new SmartResponse(request.headers.get("origin"), result.data, result.type) }
+		}
+		else if (this.files[pathname]) { return new SmartResponse(request.headers.get("origin"), this.files[pathname], this.mimes[pathname]) }
+		else { return new SmartResponse(request.headers.get("origin")) }
 	}
 }
 
@@ -405,7 +410,7 @@ function getApplicationRelativePath(origin: string): string {
 	if (Deno.build.os === "windows") { relPath = relPath.replaceAll("\\", "/") }
 
 	relPath = relPath.substring(relPath.indexOf(config.appFolder) + config.appFolder.length + 1)
-	relPath = relPath.substring(relPath.indexOf("/") + 1)
+	relPath = relPath.substring(relPath.indexOf("/"))
 
 	return relPath
 }
@@ -415,7 +420,7 @@ function getWebdeskRelativePath(origin: string): string {
 
 	if (Deno.build.os === "windows") { relPath = relPath.replaceAll("\\", "/") }
 
-	relPath = relPath.substring(relPath.indexOf(config.staticFolder) + config.staticFolder.length + 1)
+	relPath = relPath.substring(relPath.indexOf(config.staticFolder) + config.staticFolder.length)
 
 	return relPath
 }

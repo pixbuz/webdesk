@@ -10,8 +10,7 @@
 /** @typedef {Object} LauncherData
  * @property {string} app */
 /** @typedef {Object} TargetData
- * @property {HTMLElement} target
- * @property {string} app */
+ * @property {HTMLElement} target */
 /** @typedef {Object} ReadyData
  * @property {object} message
  * @property {any} data */
@@ -46,7 +45,7 @@ fetch("/api/getManifests").then(async (response) => {
 	ApplicationManifests = await response.json()
 	WebdeskEvent.MANIFESTS_READY.emit({ data: ApplicationManifests })
 
-	if (newUser) { setTimeout(() => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" }) }, 25) }
+	if (newUser) { setTimeout(() => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" }) }, 1000) }
 }).catch((error) => { console.log(error) })
 
 let newUser = false
@@ -251,6 +250,8 @@ export class WebdeskEvent {
 	static WINDOW_MINIMISE = new TargetEvent()
 	static WINDOW_MINIMISE_END = new TargetEvent()
 
+	static DOCK_HOVER = new EmptyEvent()
+	static DOCK_HOVER_END = new EmptyEvent()
 	static ICON_CLICK = new TargetEvent()
 	static CLOCK_UPDATE = new ClockEvent()
 
@@ -335,31 +336,25 @@ export const MessagingHub = new class {
 			case "emit.event": {
 				WebdeskEvent[data.type].emit(data.payload)
 
-				return
+				return contentChannel.port1.postMessage({ command, payload: { } })
 			}
 			case "get.localstorage": {
 				const { key } = data
 				const value = localStorage.getItem(key)
 
-				contentChannel.port1.postMessage({ command, data: { value } })
-
-				return
+				return contentChannel.port1.postMessage({ command, payload: { value } })
 			}
 			case "get.db": {
 				const { table, key } = data
 				const value = await webdeskDB.get(table, key)
 
-				contentChannel.port1.postMessage({ command, data: { value } })
-
-				return
+				return contentChannel.port1.postMessage({ command, payload: { value } })
 			}
 			case "getAll.db": {
 				const { table } = data
 				const value = await webdeskDB.getAll(table)
 
-				contentChannel.port1.postMessage({ command, data: { value } })
-
-				return
+				return contentChannel.port1.postMessage({ command, payload: { value } })
 			}
 			case "get.style": {
 				const { target } = data
@@ -372,11 +367,9 @@ export const MessagingHub = new class {
 					case "all": { style = { launchers: StyleSheets.launchers.cssRules[0].cssText, windows: StyleSheets.windows.cssRules[0].cssText, dock: StyleSheets.dock.cssRules[0].cssText }; break }
 				}
 
-				contentChannel.port1.postMessage({ command, data: { style } })
-
-				return
+				return contentChannel.port1.postMessage({ command, payload: { style } })
 			}
-			default: { contentChannel.port1.postMessage({ command, data: { } }) }
+			default: { return contentChannel.port1.postMessage({ command, payload: { } }) }
 		}
 	}
 	/** @param {OpeningData} openingData */
@@ -419,8 +412,8 @@ export const MessagingHub = new class {
 	propagateEvent(name, data) {
 		const sendData = removeHTMLElements(data)
 		MessagingHub.windowToChannels.forEach((link) => {
-			link.content.port1.postMessage({ command: "event", data: { type: name, data: sendData }})
-			link.titlebar.port1.postMessage({ command: "event", data: { type: name, data: sendData }})
+			link.content.port1.postMessage({ command: "event", payload: { event: name, data: sendData }})
+			link.titlebar.port1.postMessage({ command: "event", payload: { event: name, data: sendData }})
 		})
 	}
 

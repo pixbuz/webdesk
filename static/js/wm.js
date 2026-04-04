@@ -5,7 +5,7 @@ import { WebdeskEvent, ApplicationManifests, MessagingHub, StyleSheets } from ".
 const WMTitlebarFactory = new class {
 	titlebarVars
 
-	/** @param {import("./core").OpeningData} openingData */
+	/** @param {import("./core").OpeningData} data */
 	async setup({ window: appWindow, titlebar, app }) {
 		const comChannel = MessagingHub.windowToChannels.get(appWindow).titlebar
 		const path = ApplicationManifests[app].titlebar
@@ -31,7 +31,7 @@ const WMTitlebarFactory = new class {
 		WebdeskEvent.CUSTOMIZATION_CHANGE.on((titlebarData) => { comChannel.port1.postMessage({ command: "css", data: titlebarData }) })
 		WebdeskEvent.WINDOW_UPDATED_FOCUS.on(WMTitlebarFactory.relayFocusChange)
 	}
-	/** @param {import("./core").FocusData} focusData */
+	/** @param {import("./core").FocusData} data */
 	relayFocusChange({ lost, gain }) {
 		if (gain && MessagingHub.windowToChannels.get(gain)) {
 			const messageChannel = MessagingHub.windowToChannels.get(gain).titlebar
@@ -42,34 +42,16 @@ const WMTitlebarFactory = new class {
 			messageChannel.port1.postMessage({ command: "focus", data: false })
 		}
 	}
-	/** @param {import("./core").TargetData} targetData */
-	close({ target, app }) {
-		target.classList.add("closing")
-		WebdeskEvent.WINDOW_CLOSING.emit({ closed: target, open: WMFactory.open })
-	}
-	/** @param {import("./core").TargetData} targetData */
-	maximise({ target, app }) {
-		if (target.classList.contains("maximised")) {
-			target.classList.remove("maximised")
-			WebdeskEvent.WINDOW_MAXIMISE_END.emit({ target, app })
-		} else {
-			target.classList.add("maximised")
-			WebdeskEvent.WINDOW_MAXIMISE.emit({ target, app })
-		}
-	}
-	/** @param {import("./core").TargetData} targetData */
-	minimise({ target, app }) {
-		if (target.classList.contains("minimised")) {
-			target.classList.remove("minimised")
-			WebdeskEvent.WINDOW_MINIMISE_END.emit({ target, app })
-		} else {
-			target.classList.add("minimised")
-			WebdeskEvent.WINDOW_MINIMISE.emit({ target, app })
-		}
+	/** @param {import("./core").TargetData} data */
+	relayMaximise({ target }) {
+		if (target.classList.contains("maximised")) { WebdeskEvent.WINDOW_MAXIMISE_END.emit({ target }) }
+		else { WebdeskEvent.WINDOW_MAXIMISE.emit({ target }) }
 	}
 	/** @param {MessageEvent} messageEvent
 	@param {HTMLElement} appWindow */
 	messageInterpreter({ data: message }, appWindow) {
+		const app = appWindow.getAttribute("app")
+
 		switch(message.command) {
 			case "move-end": {
 				if (WMMover.inMove) { return WebdeskEvent.WINDOW_MOVE_END.emit({ ...message.data, target: appWindow }) }
@@ -81,9 +63,9 @@ const WMTitlebarFactory = new class {
 			}
 			case "move-start": { return WebdeskEvent.WINDOW_MOVE_START.emit({ ...message.data, target: appWindow }) }
 
-			case "close": { return WMTitlebarFactory.close({ target: appWindow, app: appWindow.getAttribute("app") }) }
-			case "minimise": { return WMTitlebarFactory.minimise({ target: appWindow }) }
-			case "maximise": { return WMTitlebarFactory.maximise({ target: appWindow }) }
+			case "close": { return WebdeskEvent.WINDOW_CLOSING.emit({ closed: appWindow, app }) }
+			case "minimise": { return WebdeskEvent.WINDOW_MINIMISE.emit({ target: appWindow, app }) }
+			case "maximise": { return WMTitlebarFactory.relayMaximise({ target: appWindow, app }) }
 		}
 	}
 	/** @param {import("./core").CustomizationData} customizationData */
@@ -102,11 +84,12 @@ const WMTitlebarFactory = new class {
 }
 
 const WMFactory = new class {
+	#animationTimeout = 10000
 	space = document.querySelector(".Window.Space")
 	centerOffsets = [ ]
 	open = [ ]
 
-	/** @param {import("./core").LauncherData} launcherData */
+	/** @param {import("./core").LauncherData} data */
 	async skeletonizeWindow({ app }) {
 		const manifest = ApplicationManifests[app]
 
@@ -116,7 +99,7 @@ const WMFactory = new class {
 			content = document.createElement("iframe"),
 			titlebar = document.createElement("iframe")
 
-		windowWrapper.classList.add("opening")
+		windowWrapper.classList.add("loading")
 		WMFactory.space.append(windowWrapper)
 
 		const titlebarLoaded = new Promise((resolve) => { titlebar.addEventListener("load", resolve, { once: true }) })
@@ -165,19 +148,6 @@ const WMFactory = new class {
 		window.addEventListener("resize", () => { WMMover.updatePositionIfCollision({ target: windowWrapper }) })
 	}
 	/** @param {import("./core").OpeningData} data */
-	addWindowToSpace({ target, app }) {
-		target.classList.remove("opening")
-		WMFactory.open.push(target)
-	}
-	/** @param {import("./core").CloseData} data */
-	removeWindowFromSpace({ closed, open }) {
-		const app = closed.getAttribute("app")
-		setTimeout(() => {
-			closed.remove()
-			WebdeskEvent.WINDOW_CLOSE.emit({ target: closed, app })
-		}, 100) // TODO: Animation durations
-	}
-	/** @param {import("./core").OpeningData} data */
 	centerWindow({ window: target, titlebar }) {
 		target.style.left = WMFactory.centerOffsets[0]
 		target.style.top = WMFactory.centerOffsets[1]
@@ -187,13 +157,58 @@ const WMFactory = new class {
 		WMFactory.centerOffsets[0] = `calc(50% - ${object.windows.appearance.width}/2)`
 		WMFactory.centerOffsets[1] = `calc(50% - ${object.windows.appearance.height}/2)`
 	}
+	/** @param {import("./core").OpeningData} data */
+	addWindowToSpace({ target, app }) {
+		target.classList.remove("loading")
+		target.classList.add("opening")
+
+		WMFactory.animationer(target, "opening", () => { target.classList.remove("opening") })
+		WMFactory.open.push(target)
+	}
+	/** @param {import("./core").CloseData} data */
+	removeWindowFromSpace({ closed, open }) {
+		const app = closed.getAttribute("app")
+		WMFactory.animationer(closed, "closing", () => { closed.remove(); WebdeskEvent.WINDOW_CLOSE.emit({ target: closed, app }) })
+	}
+	/** @param {import("./core").TargetData} data */
+	maximiseAddWindow({ target }) { target.classList.add("maximised") }
+	/** @param {import("./core").TargetData} data */
+	minimiseAddWindow({ target }) { target.classList.remove("maximised"); target.classList.add("minimised") }
+	/** @param {import("./core").TargetData} data */
+	maximiseRemoveWindow({ target }) {
+		target.classList.remove("maximised")
+		WMFactory.animationer(target, "from-maximised", () => { target.classList.remove("from-maximised") })
+	}
+	/** @param {import("./core").TargetData} data */
+	minimiseRemoveWindow({ target }) {
+		target.classList.remove("minimised")
+		WMFactory.animationer(target, "from-minimised", () => { target.classList.remove("from-minimised") })
+	}
+	/** @param {import("./core").TargetData} data */
+	checkAction({ target }) {
+		if (target.classList.contains("minimised")) { WMFactory.minimiseRemoveWindow({ target }) }
+		else { WMFactory.minimiseAddWindow({ target }) }
+	}
+	animationer(target, animationTag, callback) {
+		target.classList.add(animationTag)
+		const failsafe = setTimeout(callback, WMFactory.#animationTimeout)
+		target.addEventListener("animationend", () => { callback(); clearTimeout(failsafe) }, { once: true })
+	}
 
 	constructor() {
 		WebdeskEvent.WINDOW_OPENING.on(this.centerWindow)
-		WebdeskEvent.LAUNCHER_CLICK.on(this.skeletonizeWindow)
 		WebdeskEvent.WINDOW_OPEN.on(this.addWindowToSpace)
-		WebdeskEvent.CUSTOMIZATION_LOADED.on(this.setVars)
+		
 		WebdeskEvent.WINDOW_CLOSING.on(this.removeWindowFromSpace)
+		
+		WebdeskEvent.WINDOW_MINIMISE.on(this.minimiseAddWindow)
+		WebdeskEvent.ICON_CLICK.on(this.checkAction)
+
+		WebdeskEvent.WINDOW_MAXIMISE.on(this.maximiseAddWindow)
+		WebdeskEvent.WINDOW_MAXIMISE_END.on(this.maximiseRemoveWindow)
+
+		WebdeskEvent.CUSTOMIZATION_LOADED.on(this.setVars)
+		WebdeskEvent.LAUNCHER_CLICK.on(this.skeletonizeWindow)
 	}
 }
 
@@ -222,18 +237,20 @@ const WMFocuser = new class {
 	}
 	/** @param {import("./core").CloseData} data */
 	clearHistory({ closed }) {
+		closed.classList.remove("focus")
 		WMFocuser.focusHistory = WMFocuser.focusHistory.filter((appWindow) => { return !(appWindow.classList.contains("closing")) })
 		if (WMFocuser.focusHistory[0]) { WMFocuser.focusHistory[0].classList.add("focus") }
 		WebdeskEvent.WINDOW_UPDATED_FOCUS.emit({ lost: undefined, gain: WMFocuser.focusHistory[0] })
 	}
 
 	constructor() {
-		WebdeskEvent.WINDOW_CLOSE.on(this.clearHistory)
 		WebdeskEvent.WINDOW_UPDATED_FOCUS.on(this.adjustZIndexes)
+		WebdeskEvent.WINDOW_CLOSING.on(this.clearHistory)
 
 		WebdeskEvent.WINDOW_RESIZE_START.on(this.focusWindow)
 		WebdeskEvent.WINDOW_MOVE_START.on(this.focusWindow)
 		WebdeskEvent.WINDOW_OPEN.on(this.focusWindow)
+		WebdeskEvent.ICON_CLICK.on(this.focusWindow)
 	}
 }
 

@@ -1,6 +1,8 @@
 {
 	"icon": "icon.svg",
 	"index": "index.html",
+	"script": "script.js",
+	"style": "style.css",
 	"description": "Random fun app",
 	"modules": [ "stuff/backend.ts" ],
 	"ignore": [ "stuff" ]
