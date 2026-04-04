@@ -1,9 +1,4 @@
-// TODO: Improve focusWindow logic
 // TODO: Make centerWindow toggle-able from settings
-
-// IDEA: Make a UPDATE Z INDEX event for cleaner (event driven) logic
-// IDEA: Conjure a system for passive highest z-index resolve for windows focus shift
-// IDEA: Quick window switching with focusWindow on WebdeskEvent.WINDOW_MOVE instead of WebdeskEvent.WINDOW_MOVE_START
 
 import { WebdeskEvent, ApplicationManifests, MessagingHub, StyleSheets } from "./core"
 
@@ -49,8 +44,8 @@ const WMTitlebarFactory = new class {
 	}
 	/** @param {import("./core").TargetData} targetData */
 	close({ target, app }) {
-		target.remove()
-		WebdeskEvent.WINDOW_CLOSE.emit({ closed: target, open: WMFactory.open })
+		target.classList.add("closing")
+		WebdeskEvent.WINDOW_CLOSING.emit({ closed: target, open: WMFactory.open })
 	}
 	/** @param {import("./core").TargetData} targetData */
 	maximise({ target, app }) {
@@ -147,8 +142,6 @@ const WMFactory = new class {
 		windowWrapper.setAttribute("app", app)
 		windowWrapper.append(titlebarWrapper, contentWrapper)
 
-		WebdeskEvent.WINDOW_UPDATED_FOCUS.on((focusData) => { WMFactory.updateZIndex(focusData, windowWrapper) })
-
 		windowWrapper.addEventListener("pointerdown", (event) => {
 			windowWrapper.setPointerCapture(event.pointerId)
 
@@ -171,19 +164,20 @@ const WMFactory = new class {
 
 		window.addEventListener("resize", () => { WMMover.updatePositionIfCollision({ target: windowWrapper }) })
 	}
-	/** @param {import("./core").OpeningData} openingData */
+	/** @param {import("./core").OpeningData} data */
 	addWindowToSpace({ target, app }) {
 		target.classList.remove("opening")
 		WMFactory.open.push(target)
 	}
-	/** @param {import("./core").FocusData} focusData */
-	updateZIndex({ lost, gain }, target) {
-		const zIndex = parseInt(target.style.zIndex)
-		target.style.zIndex = Math.min(zIndex - 1, 20)
-
-		if (gain == target) { target.style.zIndex = 29 }
+	/** @param {import("./core").CloseData} data */
+	removeWindowFromSpace({ closed, open }) {
+		const app = closed.getAttribute("app")
+		setTimeout(() => {
+			closed.remove()
+			WebdeskEvent.WINDOW_CLOSE.emit({ target: closed, app })
+		}, 100) // TODO: Animation durations
 	}
-	/** @param {import("./core").OpeningData} openingData */
+	/** @param {import("./core").OpeningData} data */
 	centerWindow({ window: target, titlebar }) {
 		target.style.left = WMFactory.centerOffsets[0]
 		target.style.top = WMFactory.centerOffsets[1]
@@ -199,38 +193,43 @@ const WMFactory = new class {
 		WebdeskEvent.LAUNCHER_CLICK.on(this.skeletonizeWindow)
 		WebdeskEvent.WINDOW_OPEN.on(this.addWindowToSpace)
 		WebdeskEvent.CUSTOMIZATION_LOADED.on(this.setVars)
+		WebdeskEvent.WINDOW_CLOSING.on(this.removeWindowFromSpace)
 	}
 }
 
 const WMFocuser = new class {
-	focusedWindow = null
+	focusHistory = [ ]
 
-	focusWindow(mixture) {
-		if (mixture.target != WMFocuser.focusedWindow || !WMFocuser.focusedWindow) {
-			if (WMFocuser.focusedWindow) { WMFocuser.focusedWindow.classList.remove("focus") }
+	// Mixture
+	focusWindow({ target }) {
+		if (target === WMFocuser.focusHistory[0]) { return }
+		const oldFocus = WMFocuser.focusHistory[0]
 
-			WebdeskEvent.WINDOW_UPDATED_FOCUS.emit({ lost: WMFocuser.focusedWindow, gain: mixture.target })
+		if (oldFocus) { oldFocus.classList.remove("focus") }
 
-			WMFocuser.focusedWindow = mixture.target
-			WMFocuser.focusedWindow.classList.add("focus")
+		WMFocuser.focusHistory = WMFocuser.focusHistory.filter((appWindow) => { return appWindow !== target })
+		WMFocuser.focusHistory.unshift(target)
+		target.classList.add("focus")
+
+		WebdeskEvent.WINDOW_UPDATED_FOCUS.emit({ lost: oldFocus, gain: target })
+	}
+	/** @param {import("./core").FocusData} data */
+	adjustZIndexes({ lost, gain }) {
+		for (const appWindowIndex in WMFocuser.focusHistory) {
+			const appWindow = WMFocuser.focusHistory[appWindowIndex]
+			appWindow.style.zIndex = Math.max(20, 29 - appWindowIndex)
 		}
 	}
-	/** @param {import("./core").CloseData} closeData */
-	shiftFocus({ closed, open }) {
-		const targetWindow = open.sort((a, b) => {
-			if (a.style.zIndex > b.style.zIndex) { return a }
-		}).at(0)
-
-		if (targetWindow) {
-			targetWindow.classList.add("focus")
-			WebdeskEvent.WINDOW_UPDATED_FOCUS.emit({ lost: WMFocuser.focusedWindow, gain: targetWindow })
-		}
-
-		WMFocuser.focusedWindow = targetWindow
+	/** @param {import("./core").CloseData} data */
+	clearHistory({ closed }) {
+		WMFocuser.focusHistory = WMFocuser.focusHistory.filter((appWindow) => { return !(appWindow.classList.contains("closing")) })
+		if (WMFocuser.focusHistory[0]) { WMFocuser.focusHistory[0].classList.add("focus") }
+		WebdeskEvent.WINDOW_UPDATED_FOCUS.emit({ lost: undefined, gain: WMFocuser.focusHistory[0] })
 	}
 
 	constructor() {
-		WebdeskEvent.WINDOW_CLOSE.on(this.shiftFocus)
+		WebdeskEvent.WINDOW_CLOSE.on(this.clearHistory)
+		WebdeskEvent.WINDOW_UPDATED_FOCUS.on(this.adjustZIndexes)
 
 		WebdeskEvent.WINDOW_RESIZE_START.on(this.focusWindow)
 		WebdeskEvent.WINDOW_MOVE_START.on(this.focusWindow)
@@ -242,7 +241,7 @@ const WMMover = new class {
 	anchor = { x: null, y: null }
 	inMove = false
 
-	/** @param {import("./core").InteractionData} interactionData */
+	/** @param {import("./core").InteractionData} data */
 	init({ target, x, y }) {
 		target.classList.add("moving")
 		const box = target.getBoundingClientRect()
@@ -250,7 +249,7 @@ const WMMover = new class {
 		WMMover.anchor = { x: (x - box.left), y: (y - box.top) }
 		WMMover.inMove = true
 	}
-	/** @param {import("./core").InteractionData} interactionData */
+	/** @param {import("./core").InteractionData} data */
 	followCursor({ target, x, y }) {
 		target.style.left = (x - WMMover.anchor.x) + "px"
 		target.style.top = (y - WMMover.anchor.y) + "px"

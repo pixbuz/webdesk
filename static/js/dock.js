@@ -113,7 +113,7 @@ WebdeskEvent.ICON_CLICK.on(focusLinkedWindow)
 WebdeskEvent.CLOCK_UPDATE.on(updateClockElement)
 
 WebdeskEvent.WINDOW_OPEN.on(add)
-WebdeskEvent.WINDOW_CLOSE.on(updateClosedWindow)
+WebdeskEvent.WINDOW_CLOSING.on(updateClosedWindow)
 
 WebdeskEvent.WINDOW_MINIMISE.on(minimised.add)
 WebdeskEvent.WINDOW_MINIMISE_END.on(maximised.remove)

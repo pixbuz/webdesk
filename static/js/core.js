@@ -238,10 +238,12 @@ export class WebdeskEvent {
 	static WINDOW_RESIZE = new InteractionEvent()
 	static WINDOW_RESIZE_END = new InteractionEvent()
 
+	static WINDOW_UPDATED_FOCUS = new FocusEvent()
 	static WINDOW_OPENING = new OpeningEvent()
 	static WINDOW_OPEN = new TargetEvent()
-	static WINDOW_CLOSE = new CloseEvent()
-	static WINDOW_UPDATED_FOCUS = new FocusEvent()
+	
+	static WINDOW_CLOSING = new CloseEvent()
+	static WINDOW_CLOSE = new TargetEvent()
 
 	static WINDOW_MAXIMISE = new TargetEvent()
 	static WINDOW_MAXIMISE_END = new TargetEvent()
@@ -424,7 +426,7 @@ export const MessagingHub = new class {
 
 	constructor() {
 		WebdeskEvent.WINDOW_OPENING.on(this.#addLink)
-		WebdeskEvent.WINDOW_CLOSE.on(this.#removeLink)
+		WebdeskEvent.WINDOW_CLOSING.on(this.#removeLink)
 
 		WebdeskEvent.CONTENT_READY.on(this.#sendContentPorts)
 		WebdeskEvent.TITLEBAR_READY.on(this.#sendTitlebarPorts)

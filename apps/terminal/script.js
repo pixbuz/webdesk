@@ -4,7 +4,7 @@ let port
 
 window.addEventListener("message", com, { once: true })
 
-function com({ data: message, ports }) {
+function com({ data: { command, data }, ports }) {
 	if (!port) {
 		port = ports[0]
 		port.start()
@@ -13,7 +13,7 @@ function com({ data: message, ports }) {
 
 	console.log(data)
 
-	switch(message.command) {
+	switch(command) {
 
 	}
 }
