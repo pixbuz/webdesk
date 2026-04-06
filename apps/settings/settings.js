@@ -74,8 +74,27 @@ function show(event) {
 }
 
 const Launchers = new class {
-	constructor() {
+	section = mainElement.querySelector(`[launchers]`)
+	sectionButton = document.querySelector(`.sectionOpener[launchers]`)
+	checkbox = this.section.querySelector("input")
 
+	saveChanges(event) {
+		let value = event.target.checked
+
+		Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE_SAVE", payload: { css: "--launchers-appearance-text", value } })
+	}
+	async init() {
+		const { style: launchersTextStyle } = await Messager.send("get.style", { target: "launchers" })
+		const showText = launchersTextStyle.substring(launchersTextStyle.indexOf("appearance-text") + 15 + 2).split(";").at(0)
+		
+		if (showText === "true") { Launchers.checkbox.setAttribute("checked", "") }
+		else { Launchers.checkbox.removeAttribute("checked") }
+
+	}
+
+	constructor() {
+		this.sectionButton.addEventListener("click", this.init, { once: true })
+		this.checkbox.addEventListener("input", this.saveChanges)
 	}
 }
 
@@ -305,7 +324,7 @@ for (const button of document.querySelectorAll("button.sectionOpener")) {
 }
 
 /* BEBUGGGG BEBUUUUUGGG */
-let subSection = mainElement.querySelector(`div[animations]`)
+let subSection = mainElement.querySelector(`div[launchers]`)
 currentSubSection.style.display = "none"
 subSection.style.display = "flex"
 currentSubSection = subSection

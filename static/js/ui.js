@@ -3,6 +3,18 @@
 
 import { WebdeskEvent, webdeskDB, StyleSheets } from "./core"
 
+const defaultLaunchersCustomization = new class {
+	color = {
+		text: "#2E3440",
+	}
+	appearance = {
+		text: true
+	}
+	behavior = {
+
+	}
+}
+
 const defaultWindowsCustomization = new class {
 	color = {
 		background: "#D8DEE9",
@@ -74,15 +86,6 @@ const defaultWindowsCustomization = new class {
 			speed: "25ms",
 			function: "cubic-bezier(0.4, 0, 1, 1)",
 		},
-	}
-}
-
-const defaultLaunchersCustomization = new class {
-	color = {
-		text: "#2E3440",
-	}
-	appearance = {
-		text: true
 	}
 	behavior = {
 

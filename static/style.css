@@ -194,7 +194,12 @@ body {
 [launcher] .name {
 	text-transform: capitalize;
 	text-align: center;
+	display: none;
 	flex: 1;
+}
+
+[launcher] .name.show {
+	display: inline;
 }
 
 [app] {
