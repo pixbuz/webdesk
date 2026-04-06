@@ -339,39 +339,39 @@ body {
 	background-repeat: space;
 }
 
-[app].opening { animation: open 1s linear forwards; }
-[app].closing { animation: close 1s linear forwards; }
+[app].opening { animation: open var(--windows-animations-open-speed) var(--windows-animations-open-function); }
+[app].closing { animation: close var(--windows-animations-close-speed) var(--windows-animations-close-function); }
 
-[app].minimised { animation: to-minimise-move 1s linear forwards; }
-[app].minimised .contentWrapper { animation: to-minimise-size 1s linear forwards;
+[app].minimised { animation: to-minimise-move var(--windows-animations-to-minimised-speed) var(--windows-animations-to-minimised-function) forwards; }
+[app].minimised .contentWrapper { animation: to-minimise-size var(--windows-animations-to-minimised-speed) var(--windows-animations-to-minimised-function) forwards;
 	min-height: 0;
 	min-width: 0;
 }
 
-[app].from-minimised { animation: from-minimise-move 1s linear forwards; }
-[app].from-minimised .contentWrapper { animation: from-minimise-size 1s linear forwards; }
+[app].from-minimised { animation: from-minimise-move var(--windows-animations-from-minimised-speed) var(--windows-animations-from-minimised-function); }
+[app].from-minimised .contentWrapper { animation: from-minimise-size var(--windows-animations-from-minimised-speed) var(--windows-animations-from-minimised-function); }
 
-[app].maximised { animation: to-maximise-move 1s linear forwards; }
-[app].maximised .contentWrapper { animation: to-maximise-size 1s linear forwards;
+[app].maximised { animation: to-maximise-move var(--windows-animations-to-maximised-speed) var(--windows-animations-to-maximised-function) forwards; }
+[app].maximised .contentWrapper { animation: to-maximise-size var(--windows-animations-to-maximised-speed) var(--windows-animations-to-maximised-function) forwards;
 	max-height: 100svh;
 	max-width: 100svw;
 }
 
-[app].from-maximised { animation: from-maximise-move 1s linear forwards; }
-[app].from-maximised .contentWrapper { animation: from-maximise-size 1s linear forwards;
+[app].from-maximised { animation: from-maximise-move var(--windows-animations-from-maximised-speed) var(--windows-animations-from-maximised-function); }
+[app].from-maximised .contentWrapper { animation: from-maximise-size var(--windows-animations-from-maximised-speed) var(--windows-animations-from-maximised-function);
 	max-height: 100svh;
 	max-width: 100svw;
 }
 
 .Dock.up {
-	transition: translate 1s linear,
-		opacity 1s linear;
+	transition: translate var(--dock-animations-up-speed) var(--dock-animations-up-function),
+		opacity var(--dock-animations-up-speed) var(--dock-animations-up-function);
 	translate: 0 0;
 	opacity: 1;
 }
 .Dock {
-	transition: translate 1s linear,
-		opacity 1s linear;
+	transition: translate var(--dock-animations-down-speed) var(--dock-animations-down-function),
+		opacity var(--dock-animations-down-speed) var(--dock-animations-down-function);
 	translate: 0 16px;
 	opacity: 0;
 }

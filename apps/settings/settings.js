@@ -102,18 +102,17 @@ const Colors = new class {
 	sectionButton = document.querySelector(`.sectionOpener[colors]`)
 	customID = 0
 
+	saveChanges(event) {
+		const cssVar = event.target.name
+		const newColor = event.target.value
+
+		Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE_SAVE", payload: { css: cssVar, value: newColor } })
+	}
 	updateInput(event) {
-		if (event.type == "input") {
-			const cssVar = event.target.name
-			const newColor = event.target.value
+		const cssVar = event.target.name
+		const newColor = event.target.value
 
-			Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE", payload: { css: cssVar, value: newColor } })
-		} else if (event.type == "change") {
-			const cssVar = event.target.name
-			const newColor = event.target.value
-
-			Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE_SAVE", payload: { css: cssVar, value: newColor } })
-		}
+		Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE", payload: { css: cssVar, value: newColor } })
 	}
 	async init() {
 		const { style: { launchers: launchersTextStyle, windows: windowsTextStyle, dock: dockTextStyle } } = await Messager.send("get.style", { target: "all" })
@@ -146,7 +145,7 @@ const Colors = new class {
 		this.sectionButton.addEventListener("click", this.init, { once: true })
 
 		for (const input of this.section.querySelectorAll("input")) {
-			input.addEventListener("change", this.updateInput.bind(this))
+			input.addEventListener("change", this.saveChanges.bind(this))
 			input.addEventListener("input", this.updateInput.bind(this))
 		}
 
@@ -257,14 +256,47 @@ const Background = new class {
 const Animations = new class {
 	section = mainElement.querySelector(`[animations]`)
 	sectionButton = document.querySelector(`.sectionOpener[animations]`)
-	something = this.section
+	inputs = this.section.querySelectorAll("input")
 
-	init() {
+	saveChanges(event) {
+		const cssVar = event.target.name
+		const newSpeed = `${event.target.value}ms`
+
+		Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE_SAVE", payload: { css: cssVar, value: newColor } })
+	}
+	updateInput(event) {
+		const cssVar = event.target.name
+		const newSpeed = `${event.target.value}ms`
+
+		Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE", payload: { css: cssVar, value: newColor } })
+	}
+	async init() {
+		const { style: { windows: windowsTextStyle, dock: dockTextStyle } } = await Messager.send("get.style", { target: "all" })
+
+		const windowsStyleSheet = new CSSStyleSheet(),
+		dockStyleSheet = new CSSStyleSheet()
 		
+		await windowsStyleSheet.replace(windowsTextStyle)
+		await dockStyleSheet.replace(dockTextStyle)
+
+		const windowsStyle = windowsStyleSheet.cssRules[0],
+		dockStyle = dockStyleSheet.cssRules[0]
+
+		for (const input of Animations.inputs) {
+			const cssVar = input.name
+			let value
+
+			if (cssVar.startsWith("--dock")) { value = dockStyle.style.getPropertyValue(cssVar) }
+			else if (cssVar.startsWith("--windows")) { value = windowsStyle.style.getPropertyValue(cssVar) }
+
+			input.value = value.replaceAll("ms", "")
+		}
 	}
 
 	constructor() {
 		this.sectionButton.addEventListener("click", this.init, { once: true })
+		this.inputs.forEach((input) => { input.addEventListener("input", this.updateInput) })
+		this.inputs.forEach((input) => { input.addEventListener("change", this.saveChanges) })
 	}
 }
 

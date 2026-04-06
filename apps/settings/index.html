@@ -73,13 +73,13 @@
 		</nav>
 		<main>
 			<div launchers>
-				
 			</div>
 			<div windows>
 			</div>
 			<div dock>
 			</div>
 			<div apps>
+				<p>Coming in version 2.0!</p>
 			</div>
 			<div colors>
 				<h1>Windows</h1>
@@ -208,10 +208,103 @@
 				<div class="wrapper"></div>
 			</div>
 			<div animations>
-				<p>Animations Enable</p>
-				<input type="checkbox" name="" id="">
-				<p>Animations Speed</p>
-				<input type="text" name="" id="">
+				<!-- <div>
+					<span>Global animation timeout</span>
+					<input type="number" name="global" placeholder="100" min="0">
+					<span>ms</span>
+				</div>
+				<div class="hr"></div> -->
+				<div>
+					<strong>Window Open</strong>
+					<span>animation speed</span>
+					<input type="number" name="--windows-animations-open-speed" placeholder="100" max="10000" min="0">
+					<span>ms</span>
+				</div>
+				<div>
+					<strong>Window Close</strong>
+					<span>animation speed</span>
+					<input type="number" name="--windows-animations-close-speed" placeholder="100" max="10000" min="0">
+					<span>ms</span>
+				</div>
+				<div>
+					<strong>Window to Minimised</strong>
+					<span>animation speed</span>
+					<input type="number" name="--windows-animations-to-minimised-speed" placeholder="100" max="10000" min="0">
+					<span>ms</span>
+				</div>
+				<div>
+					<strong>Window from Minimised</strong>
+					<span>animation speed</span>
+					<input type="number" name="--windows-animations-from-minimised-speed" placeholder="100" max="10000" min="0">
+					<span>ms</span>
+				</div>
+				<div>
+					<strong>Window to Maximised</strong>
+					<span>animation speed</span>
+					<input type="number" name="--windows-animations-from-maximised-speed" placeholder="100" max="10000" min="0">
+					<span>ms</span>
+				</div>
+				<div>
+					<strong>Window from Maximised</strong>
+					<span>animation speed</span>
+					<input type="number" name="--windows-animations-from-maximised-speed" placeholder="100" max="10000" min="0">
+					<span>ms</span>
+				</div>
+				<div>
+					<strong>Dock down</strong>
+					<span>animation speed</span>
+					<input type="number" name="--dock-animations-down-speed" placeholder="100" max="10000" min="0">
+					<span>ms</span>
+				</div>
+				<div>
+					<strong>Dock up</strong>
+					<span>animation speed</span>
+					<input type="number" name="--dock-animations-up-speed" placeholder="100" max="10000" min="0">
+					<span>ms</span>
+				</div>
+
+				<div class="hr"></div>
+
+				<div>
+					<strong>Window Open</strong>
+					<span>timing function</span>
+					<input type="text" name="--windows-animations-open-function" placeholder="100">
+				</div>
+				<div>
+					<strong>Window Close</strong>
+					<span>timing function</span>
+					<input type="text" name="--windows-animations-close-function" placeholder="100">
+				</div>
+				<div>
+					<strong>Window to Minimised</strong>
+					<span>timing function</span>
+					<input type="text" name="--windows-animations-to-minimised-function" placeholder="100">
+				</div>
+				<div>
+					<strong>Window from Minimised</strong>
+					<span>timing function</span>
+					<input type="text" name="--windows-animations-from-minimised-function" placeholder="100">
+				</div>
+				<div>
+					<strong>Window to Maximised</strong>
+					<span>timing function</span>
+					<input type="text" name="--windows-animations-from-maximised-function" placeholder="100">
+				</div>
+				<div>
+					<strong>Window from Maximised</strong>
+					<span>timing function</span>
+					<input type="text" name="--windows-animations-from-maximised-function" placeholder="100">
+				</div>
+				<div>
+					<strong>Dock down</strong>
+					<span>timing function</span>
+					<input type="text" name="--dock-animations-down-function" placeholder="100">
+				</div>
+				<div>
+					<strong>Dock up</strong>
+					<span>timing function</span>
+					<input type="text" name="--dock-animations-up-function" placeholder="100">
+				</div>
 			</div>
 		</main>
 		<script src="/js" type="module"></script>

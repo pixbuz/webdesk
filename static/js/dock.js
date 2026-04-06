@@ -125,7 +125,6 @@ const Stator = new class {
 		else { return true }
 	}
 	dockState(skipWait = false) {
-
 		if (Stator.dockUpCheck()) {
 			clearTimeout(Stator.downTimeout)
 			clearTimeout(Stator.upTimeout)
@@ -156,6 +155,9 @@ const Stator = new class {
 			)
 
 			if (collision) {
+				overlapped = true
+				break
+			} else if (win.classList.contains("maximised")) {
 				overlapped = true
 				break
 			}

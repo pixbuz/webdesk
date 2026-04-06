@@ -211,3 +211,7 @@ div > .hr {
 	max-height: 100%;
 	max-width: 100%;
 }
+
+[animations] {
+	flex-flow: column wrap;
+}

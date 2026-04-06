@@ -1,4 +1,5 @@
 // TODO: Improve backgrounds upload with a frontend element/thing informing about skips cuz duplicates
+// TODO: Deprecate UI and have single elements do their styling
 
 import { WebdeskEvent, webdeskDB, StyleSheets } from "./core"
 
@@ -48,12 +49,31 @@ const defaultWindowsCustomization = new class {
 			mini: null,
 		},
 	}
-	behavior = {
-		moveSmoothing: false,
-		resizeSmoothing: true,
-		maximizeSmoothing: true,
-		minimizeSmoothing: true,
-		closeSmoothing: false,
+	animations = {
+		open: {
+			speed: "50ms",
+			function: "cubic-bezier(0.34, 1.56, 0.64, 1)",
+		},
+		close: {
+			speed: "25ms",
+			function: "cubic-bezier(0.4, 0, 1, 1)",
+		},
+		"to-maximised": {
+			speed: "50ms",
+			function: "cubic-bezier(0.4, 0, 1, 1)",
+		},
+		"from-maximised": {
+			speed: "25ms",
+			function: "cubic-bezier(0.4, 0, 1, 1)",
+		},
+		"to-minimised": {
+			speed: "50ms",
+			function: "cubic-bezier(0.4, 0, 1, 1)",
+		},
+		"from-minimised": {
+			speed: "25ms",
+			function: "cubic-bezier(0.4, 0, 1, 1)",
+		},
 	}
 }
 
@@ -95,6 +115,16 @@ const defaultDockCustomization = new class {
 			width: "none",
 			style: "solid",
 		}
+	}
+	animations = {
+		up: {
+			speed: "25ms",
+			function: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+		},
+		down: {
+			speed: "50ms",
+			function: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+		},
 	}
 	behavior = {
 		autoHide: {
@@ -235,21 +265,27 @@ async function emptyBackgroundsDatabase() {
 }
 
 async function init() {
+	console.log("Initing")
 	if (isNaN(currentCustomizationID)) { await newUserCustomizationInit() }
 	if (isNaN(currentBackgroundID)) { await newUserBackgroundInit() }
 
+	console.log("Checked if new user")
 	WebdeskEvent.CUSTOMIZATION_CHANGE_SAVE.on(updateCustomizationToDB)
 	WebdeskEvent.CUSTOMIZATION_CHANGE.on(previewCustomization)
 	WebdeskEvent.CUSTOMIZATION_LOAD.on(loadCustomization)
 
+	console.log("Added Customization listeners")
 	WebdeskEvent.BACKGROUND_REMOVE_ALL.on(emptyBackgroundsDatabase)
 	WebdeskEvent.BACKGROUND_UPLOAD.on(uploadBackgroundToDB)
 	WebdeskEvent.BACKGROUND_LOAD.on(loadBackground)
 	
+	console.log("Added background Listeners")
 	WebdeskEvent.CUSTOMIZATION_LOAD.emit({ id: currentCustomizationID, css: null, object: currentCustomizationObject = (await webdeskDB.get("_customizations", currentCustomizationID)), force: true })
 	WebdeskEvent.BACKGROUND_LOAD.emit({ id: currentBackgroundID, background: currentBackgroundImage = (await webdeskDB.get("_backgrounds", currentBackgroundID)), force: true })
 
+	console.log("Ran custom and background loads")
 	saveID = (await webdeskDB.getAll("_backgrounds")).length
+	console.log("save ID got")
 }
 
 init()
