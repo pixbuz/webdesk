@@ -1,5 +1,6 @@
 // TODO: Improve backgrounds upload with a frontend element/thing informing about skips cuz duplicates
 // TODO: Deprecate UI and have single elements do their styling
+// TODO: Make the style objects smarter and more detailed
 
 import { WebdeskEvent, webdeskDB, StyleSheets } from "./core"
 

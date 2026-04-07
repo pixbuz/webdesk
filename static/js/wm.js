@@ -359,10 +359,17 @@ const WMResizer = new class {
 		WMResizer.inResize = false
 		target.classList.remove("X", "Y", "XY1", "XY2", "resizing")
 	}
+	/** @param {import("./core").CustomizationData} data */
+	updateVars({ object, id, css }) {
+		const border = parseInt(object.windows.appearance.border),
+		padding = parseInt(object.windows.appearance.padding)
+		WMResizer.resizeMargin = border + padding
+	}
 
 	constructor() {
 		WebdeskEvent.WINDOW_RESIZE_START.on(this.init)
 		WebdeskEvent.WINDOW_RESIZE.on(this.followCursor)
 		WebdeskEvent.WINDOW_RESIZE_END.on(this.reset)
+		WebdeskEvent.CUSTOMIZATION_CHANGE_SAVED.on(this.updateVars)
 	}
 }

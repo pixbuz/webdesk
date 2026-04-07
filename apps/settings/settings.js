@@ -89,7 +89,6 @@ const Launchers = new class {
 		
 		if (showText === "true") { Launchers.checkbox.setAttribute("checked", "") }
 		else { Launchers.checkbox.removeAttribute("checked") }
-
 	}
 
 	constructor() {
@@ -99,8 +98,47 @@ const Launchers = new class {
 }
 
 const Windows = new class {
+	section = mainElement.querySelector(`[windows]`)
+	sectionButton = document.querySelector(`.sectionOpener[windows]`)
+	inputs = this.section.querySelectorAll("input")
+
+	saveChanges(event) {
+		const cssVar = event.target.name
+		const newColor = event.target.value
+
+		console.log(cssVar, newColor)
+
+		Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE_SAVE", payload: { css: cssVar, value: newColor } })
+	}
+	updateInput(event) {
+		const cssVar = event.target.name
+		const newColor = event.target.value
+
+		Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE", payload: { css: cssVar, value: newColor } })
+	}
+	async init() {
+		const { style: windowsTextStyle } = await Messager.send("get.style", { target: "windows" })
+		const windowsStyleSheet = new CSSStyleSheet()
+		await windowsStyleSheet.replace(windowsTextStyle)
+		const windowsStyle = windowsStyleSheet.cssRules[0]
+
+		for (const input of Windows.inputs) {
+			const cssVar = input.name
+			let value
+
+			console.log(cssVar)
+
+			value = windowsStyle.style.getPropertyValue(cssVar)
+
+			input.value = value
+			input.addEventListener("change", Windows.saveChanges)
+			input.addEventListener("input", Windows.updateInput)
+		}
+	}
+
 	constructor() {
-		
+		this.sectionButton.addEventListener("click", this.init, { once: true })
+		console.log(this.inputs)
 	}
 }
 
@@ -119,6 +157,7 @@ const Applications = new class {
 const Colors = new class {
 	section = mainElement.querySelector(`[colors]`)
 	sectionButton = document.querySelector(`.sectionOpener[colors]`)
+	inputs = this.section.querySelectorAll("input")
 	customID = 0
 
 	saveChanges(event) {
@@ -148,7 +187,7 @@ const Colors = new class {
 		windowsStyle = windowsStyleSheet.cssRules[0],
 		dockStyle = dockStyleSheet.cssRules[0]
 
-		for (const input of Colors.section.querySelectorAll("input")) {
+		for (const input of Colors.inputs) {
 			const cssVar = input.name
 			let value
 
@@ -157,16 +196,13 @@ const Colors = new class {
 			else if (cssVar.startsWith("--launchers")) { value = launchersStyle.style.getPropertyValue(cssVar) }
 
 			input.value = value
+			input.addEventListener("change", Colors.saveChanges)
+			input.addEventListener("input", Colors.updateInput)
 		}
 	}
 
 	constructor() {
 		this.sectionButton.addEventListener("click", this.init, { once: true })
-
-		for (const input of this.section.querySelectorAll("input")) {
-			input.addEventListener("change", this.saveChanges.bind(this))
-			input.addEventListener("input", this.updateInput.bind(this))
-		}
 
 		Messager.send("get.localstorage", { key: "customization-id" }).then((event) => { Colors.customID = event.value })
 	}
@@ -309,13 +345,15 @@ const Animations = new class {
 			else if (cssVar.startsWith("--windows")) { value = windowsStyle.style.getPropertyValue(cssVar) }
 
 			input.value = value.replaceAll("ms", "")
+			input.addEventListener("input", Animations.updateInput)
+			input.addEventListener("change", Animations.saveChanges)
 		}
 	}
 
 	constructor() {
 		this.sectionButton.addEventListener("click", this.init, { once: true })
-		this.inputs.forEach((input) => { input.addEventListener("input", this.updateInput) })
-		this.inputs.forEach((input) => { input.addEventListener("change", this.saveChanges) })
+		this.inputs.forEach((input) => {  })
+		this.inputs.forEach((input) => {  })
 	}
 }
 
@@ -324,7 +362,7 @@ for (const button of document.querySelectorAll("button.sectionOpener")) {
 }
 
 /* BEBUGGGG BEBUUUUUGGG */
-let subSection = mainElement.querySelector(`div[launchers]`)
+let subSection = mainElement.querySelector(`div[windows]`)
 currentSubSection.style.display = "none"
 subSection.style.display = "flex"
 currentSubSection = subSection

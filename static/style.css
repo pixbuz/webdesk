@@ -245,7 +245,7 @@ body {
 
 	user-select: none;
 	overflow: hidden;
-	height: 2.5vmin;
+	height: var(--windows-appearance-titlebar);
 	width: 100%;
 }
 

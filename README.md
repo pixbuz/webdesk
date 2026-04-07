@@ -16,33 +16,33 @@ As stated above the main part of Webdesk are windows. These `<article>` elements
 - [ ] Clean Up code
 	- [ ] Improve async-ing
 	- [ ] ~~Server side rendering of the page for lighthouse rules~~
-	- [x] Improve code readability
-		- [x] Variable names
-		- [x] Event wrapping methods (no anon functions)
+	- [x] ~~Improve code readability~~
+		- [x] ~~Variable names~~
+		- [x] ~~Event wrapping methods (no anon functions)~~
 - [ ] Finish Windows
-	- [x] Titlebar messaging system
+	- [x] ~~Titlebar messaging system~~
 	- [ ] ~~Titlebar message movement system~~
-	- [x] Secure settings app priviledge
+	- [ ] ~~Secure settings app priviledge~~
 	- [ ] ~~Smooth movement with animation frames~~
 	- [ ] Settable margin size for resizing
-	- [ ] Add animations
+	- [x] ~~Add animations~~
+- [ ] Improve styling rules
+- [ ] Settings App
+	- [x] ~~Add more sections~~
+		- [x] ~~App dock~~
+	- [x] ~~Finish settings~~
+		- [x] ~~Add animations settings~~
+		- [ ] ~~Add application settings~~
+		- [x] ~~Finish customization page~~
+		- [x] ~~Finish backgrounds page~~
 - [ ] Terminal App
 	- [ ] Add more commands
 	- [ ] Improve the style
-- [ ] Settings App
-	- [ ] Add more sections
-		- [ ] App dock
-	- [ ] Finish settings
-		- [ ] Add animations settings
-		- [ ] Add application settings
-		- [x] Finish customization page
-		- [x] Finish backgrounds page
-- [x] ~~Info App~~
 - [ ] Blog App
 	- [ ] Begin it
-- [ ] Improve styling rules
-- [ ] Finish service worker
-	- [x] Smart caching
-	- [ ] Frontend element
+- [ ] ~~Info App~~
+- [x] ~~Finish service worker~~
+	- [x] ~~Smart caching~~
+	- [x] ~~Frontend element~~
 - [ ] Event propagation tree diagram
 - [ ] Do the mobile website of evil

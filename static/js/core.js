@@ -1,4 +1,5 @@
 // NOTE: Generator functions tho?
+// NOTE: Observers tho?
 
 // TODO: Settings titlebar
 // TODO: Error handling for database things

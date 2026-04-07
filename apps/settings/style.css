@@ -90,7 +90,7 @@ main > div:first-child {
 	display: unset;
 }
 
-div > .hr {
+div > [hr] {
 	background: #2E3440;
 	margin-inline: 2.5%;
 	height: 1px;
