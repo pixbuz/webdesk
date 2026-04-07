@@ -1,5 +1,7 @@
 {
-	"icon": "icon.svg",
-	"index": "index.html",
-	"description": "Stuff I've been busy with"
+	"icon": "blog.svg",
+	"index": "blog.html",
+	"description": "Stuff I've been busy with",
+	"style": "blog.css",
+	"script": "blog.js"
 }
