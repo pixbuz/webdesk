@@ -104,17 +104,15 @@ const Windows = new class {
 
 	saveChanges(event) {
 		const cssVar = event.target.name
-		const newColor = event.target.value
+		const newValue = (event.target.type === 'checkbox') ? event.target.checked : event.target.value
 
-		console.log(cssVar, newColor)
-
-		Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE_SAVE", payload: { css: cssVar, value: newColor } })
+		Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE_SAVE", payload: { css: cssVar, value: newValue } })
 	}
 	updateInput(event) {
 		const cssVar = event.target.name
-		const newColor = event.target.value
+		const newValue = (event.target.type === 'checkbox') ? event.target.checked : event.target.value
 
-		Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE", payload: { css: cssVar, value: newColor } })
+		Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE", payload: { css: cssVar, value: newValue } })
 	}
 	async init() {
 		const { style: windowsTextStyle } = await Messager.send("get.style", { target: "windows" })
@@ -126,8 +124,6 @@ const Windows = new class {
 			const cssVar = input.name
 			let value
 
-			console.log(cssVar)
-
 			value = windowsStyle.style.getPropertyValue(cssVar)
 
 			input.value = value
@@ -138,13 +134,48 @@ const Windows = new class {
 
 	constructor() {
 		this.sectionButton.addEventListener("click", this.init, { once: true })
-		console.log(this.inputs)
 	}
 }
 
 const Dock = new class {
+	section = mainElement.querySelector(`[dock]`)
+	sectionButton = document.querySelector(`.sectionOpener[dock]`)
+	inputs = [ ...this.section.querySelectorAll("input"), ...this.section.querySelectorAll("select") ]
+
+	saveChanges(event) {
+		console.log(event)
+		const cssVar = event.target.name
+		const newValue = (event.target.type === 'checkbox') ? event.target.checked : event.target.value
+
+		Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE_SAVE", payload: { css: cssVar, value: newValue } })
+	}
+	updateInput(event) {
+		console.log(event)
+		const cssVar = event.target.name
+		const newValue = (event.target.type === 'checkbox') ? event.target.checked : event.target.value
+
+		Messager.send("emit.event", { type: "CUSTOMIZATION_CHANGE", payload: { css: cssVar, value: newValue } })
+	}
+	async init() {
+		const { style: dockTextStyle } = await Messager.send("get.style", { target: "dock" })
+		const dockStyleSheet = new CSSStyleSheet()
+		await dockStyleSheet.replace(dockTextStyle)
+		const dockStyle = dockStyleSheet.cssRules[0]
+
+		for (const input of Dock.inputs) {
+			const cssVar = input.name
+			let value
+
+			value = dockStyle.style.getPropertyValue(cssVar)
+
+			input.value = value
+			input.addEventListener("change", Dock.saveChanges)
+			input.addEventListener("input", Dock.updateInput)
+		}
+	}
+
 	constructor() {
-		
+		this.sectionButton.addEventListener("click", this.init, { once: true })
 	}
 }
 

@@ -171,6 +171,7 @@ const Stator = new class {
 
 	constructor() {
 		WebdeskEvent.CUSTOMIZATION_LOADED.on(this.updateVars)
+		WebdeskEvent.CUSTOMIZATION_CHANGE_SAVED.on(this.updateVars)
 
 		element.addEventListener("pointerenter", () => {
 			Stator.inHover = true

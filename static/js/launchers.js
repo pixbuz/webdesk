@@ -20,8 +20,6 @@ function addLauncher(appName, manifest) {
 	launcherWrapper.setAttribute("title", manifest.description == "undefined" ? appName : manifest.description)
 	launcherWrapper.append(icon, title)
 
-	if (includeText) { title.classList.add("show") }
-
 	space.appendChild(launcherWrapper)
 
 	launcherWrapper.addEventListener("click", () => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: appName }) })
@@ -31,10 +29,8 @@ function addLauncher(appName, manifest) {
 function updateTitles({ object }) {
 	includeText = object.launchers.appearance.text
 
-	for (const launcherTitle of space.querySelectorAll(".name")) {
-		if (includeText) { launcherTitle.classList.add("show") }
-		else { launcherTitle.classList.remove("show") }
-	}
+	if (includeText) { space.classList.add("showTitles") }
+	else { space.classList.remove("showTitles") }
 }
 
 /** @param {import("./core").CustomizationData} data */
@@ -47,5 +43,5 @@ function queueLaunchers({ object }) {
 	}
 }
 
-WebdeskEvent.CUSTOMIZATION_LOADED.on(queueLaunchers)
+WebdeskEvent.CUSTOMIZATION_LOADED.on(queueLaunchers, updateTitles)
 WebdeskEvent.CUSTOMIZATION_CHANGE_SAVED.on(updateTitles)

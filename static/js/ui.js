@@ -115,7 +115,10 @@ const defaultDockCustomization = new class {
 		},
 	}
 	appearance = {
+		height: "32px",
+		bottom: "16px",
 		border: {
+			radius: "6px",
 			width: "none",
 			style: "solid",
 		}
@@ -133,12 +136,6 @@ const defaultDockCustomization = new class {
 	behavior = {
 		autoHide: {
 			mode: "overlap",	// never | overlap | always
-			upDelay: 0,
-			downDelay: 2000,
-		},
-		hideOnMaximisedWindow: {
-			enabled: true,
-			upTime: 5000,
 			upDelay: 0,
 			downDelay: 2000,
 		},

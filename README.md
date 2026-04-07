@@ -19,15 +19,15 @@ As stated above the main part of Webdesk are windows. These `<article>` elements
 	- [x] ~~Improve code readability~~
 		- [x] ~~Variable names~~
 		- [x] ~~Event wrapping methods (no anon functions)~~
-- [ ] Finish Windows
+- [x] Finish Windows
 	- [x] ~~Titlebar messaging system~~
 	- [ ] ~~Titlebar message movement system~~
 	- [ ] ~~Secure settings app priviledge~~
 	- [ ] ~~Smooth movement with animation frames~~
-	- [ ] Settable margin size for resizing
+	- [x] ~~Settable margin size for resizing~~
 	- [x] ~~Add animations~~
 - [ ] Improve styling rules
-- [ ] Settings App
+- [x] ~~Settings App~~
 	- [x] ~~Add more sections~~
 		- [x] ~~App dock~~
 	- [x] ~~Finish settings~~
