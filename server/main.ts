@@ -2,9 +2,9 @@
 
 import { log } from "./log.ts"
 import { config } from "../server.config.ts"
-import { Route, WebdeskRoute } from "./newMapper.ts"
+import { AppRoute } from "./newnewMapper.ts"
 
-const webdesk = WebdeskRoute.create()!
+// const webdesk = WebdeskRoute.create()!
 
 const options = config.ssl ? {
 	cert: config.cert,
@@ -26,16 +26,16 @@ const _server = Deno.serve({
 	}
 })
 
-for await (const app of Deno.readDir("apps")) { Route.create(app.name) }
+for await (const app of Deno.readDir("apps")) { AppRoute.create(app.name) }
 
 function requestHandler(browserRequest: Request, _connInfo: Deno.ServeHandlerInfo<Deno.NetAddr>): Response {
 	const requestURL: URL = new URL(browserRequest.url)
 	const subOriginName: string = requestURL.hostname.substring(0, requestURL.hostname.lastIndexOf("."))
-	const subOrigin: Route | undefined = Route.registred[subOriginName]
+	const subOrigin: Route | undefined = AppRoute.registred[subOriginName]
 
 	log.info(`${subOriginName !== "" ? `Suborigin "${subOriginName}" r`: "R"}ecived request for "${requestURL.pathname}"`)
 
-	if (subOriginName === "") { return webdesk.respond(browserRequest) }
+	if (subOriginName === "") { /* return webdesk.respond(browserRequest) */ }
 	else if (subOrigin) { return subOrigin.respond(browserRequest) }
 	else { return new Response() }
 }

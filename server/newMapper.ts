@@ -368,6 +368,7 @@ export class Route {
 	public respond(request: Request): Response {
 		const pathname = new URL(request.url).pathname
 
+		console.log(this.commands, pathname)
 		if (this.commands[pathname] && pathname.startsWith("/api")) {
 			const result = this.commands[pathname](request)
 

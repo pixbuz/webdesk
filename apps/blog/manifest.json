@@ -3,5 +3,7 @@
 	"index": "blog.html",
 	"description": "Stuff I've been busy with",
 	"style": "blog.css",
-	"script": "blog.js"
+	"script": "logic/frontend.js",
+	"ignore": [ "entries", "logic" ],
+	"modules": [ "logic/backend.ts" ]
 }
