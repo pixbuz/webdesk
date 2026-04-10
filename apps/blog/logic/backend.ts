@@ -1,3 +1,5 @@
 export function test() {
-	return new Response("hi")
+	return { data: "hi", type: "text/plain"}
 }
+
+export const yeah = 5

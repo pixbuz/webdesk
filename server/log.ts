@@ -1,3 +1,5 @@
+// TODO: log verbose
+
 import { config } from "../server.config.ts"
 
 enum LogColors {
