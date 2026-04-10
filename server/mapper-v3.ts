@@ -9,7 +9,7 @@
 import { log } from "./log.ts"
 import { config } from "../server.config.ts"
 
-type Command = (req: Request) => (CommandOutput | Response)
+type Command = (req: Request) => (CommandOutput | Response | Promise<CommandOutput> | Promise<Response>)
 type CommandOutput = { data: unknown, type: string }
 type FileContent = Uint8Array
 type RelativeFilePath = string
@@ -229,18 +229,34 @@ class BaseRoute {
 
 	protected constructor(protected readonly basePath: string, protected readonly name: string, protected readonly manifest: ApplicationManifest) { UpdateWatcher.start() }
 
-	protected requestFileAdd(relPath: RelativeFilePath) {
-		const file = relPath.substring(config.appFolder.length + this.name.length + 2)
-		const endpoint = this.manifest.routes[file] || `/${file}`
-		log.info(`Application ${this.name} requested to add ${endpoint}`)
-		for (const ignored of this.manifest.ignore) {
-			if (file.startsWith(ignored)) {
-				log.debug(`The add request for file ${file} of ${this.name} was rejected`)
-				return false
+	protected requestCacheUpdate(resetCounter = false) {
+		log.info(`Application ${this.name} requested a whole cache update`)
+		this.updateCache(resetCounter)
+		return true
+	}
+
+	protected addMainAssets() {
+		const { index, icon, script, style } = this.manifest
+		if (index) { this.addFile("/", index, true) }
+		else { log.info(`Application ${this.name} has no index specified`) }
+		if (icon) { this.addFile("/icon", icon, true) }
+		else { log.info(`Application ${this.name} has no icon specified`) }
+		if (script) { this.addFile("/js", script, true) }
+		else { log.debug(`Application ${this.name} has no script specified`) }
+		if (style) { this.addFile("/style", style, true) }
+		else { log.debug(`Application ${this.name} has no style specified`) }
+	}
+
+	protected async addCommands(differentModulesEndpoints = false) {
+		const { modules } = this.manifest
+		for (const moduleName of modules) {
+			const module = await import(`../${this.basePath}/${moduleName}`)
+			for (const [ name, value ] of Object.entries(module)) {
+				let endpoint = `/api/${name}`
+				if (differentModulesEndpoints) { endpoint = `/api/${moduleName}/${name}` }
+				this.addCommand(name, value, endpoint)
 			}
 		}
-		this.addFile(endpoint, relPath)
-		return true
 	}
 
 	protected requestFileRemove(path: RelativeFilePath) {
@@ -253,6 +269,20 @@ class BaseRoute {
 		this.origins.delete(endpoint)
 		this.removeHash(endpoint)
 		this.totalEndpoints--
+		return true
+	}
+
+	protected requestFileAdd(relPath: RelativeFilePath) {
+		const file = relPath.substring(config.appFolder.length + this.name.length + 2)
+		const endpoint = this.manifest.routes[file] || `/${file}`
+		log.info(`Application ${this.name} requested to add ${endpoint}`)
+		for (const ignored of this.manifest.ignore) {
+			if (file.startsWith(ignored)) {
+				log.debug(`The add request for file ${file} of ${this.name} was rejected`)
+				return false
+			}
+		}
+		this.addFile(endpoint, relPath)
 		return true
 	}
 
@@ -274,24 +304,6 @@ class BaseRoute {
 		return true
 	}
 
-	protected requestCacheUpdate(resetCounter = false) {
-		log.info(`Application ${this.name} requested a whole cache update`)
-		this.updateCache(resetCounter)
-		return true
-	}
-
-	protected addMainAssets() {
-		const { index, icon, script, style } = this.manifest
-		if (index) { this.addFile("/", index, true) }
-		else { log.info(`Application ${this.name} has no index specified`) }
-		if (icon) { this.addFile("/icon", icon, true) }
-		else { log.info(`Application ${this.name} has no icon specified`) }
-		if (script) { this.addFile("/js", script, true) }
-		else { log.debug(`Application ${this.name} has no script specified`) }
-		if (style) { this.addFile("/style", style, true) }
-		else { log.debug(`Application ${this.name} has no style specified`) }
-	}
-
 	protected async addAssetsFromAppFolder(path: string = "") {
 		const baseFiles = [ this.manifest.index, this.manifest.icon, this.manifest.script, this.manifest.style, ...this.manifest.modules, "manifest.json" ]
 		const { routes, ignore } = this.manifest
@@ -304,35 +316,22 @@ class BaseRoute {
 			else if (entry.isSymlink) { log.debug(`Skipped indexing of application ${this.name}'s "${entry.name}", is system link`) }
 			else if (entry.isDirectory) { this.addAssetsFromFolder(`${path}${entry.name}/`) }
 			else /* if (entry.isFile) */ {
-				const endpoint = routes[`${path}${entry.name}`] || `${path}${entry.name}`
+				const endpoint = routes[`${path}${entry.name}`] || `/${path}${entry.name}`
 				this.addFile(endpoint, `/${path}${entry.name}`, true)
 			}
 		}
 	}
 
-	protected async addCommands(differentModulesEndpoints = false) {
-		const { modules } = this.manifest
-		for (const moduleName of modules) {
-			const module = await import(`../${this.basePath}/${moduleName}`)
-			for (const [ name, value ] of Object.entries(module)) {
-				let endpoint = `/api/${name}`
-				if (differentModulesEndpoints) { endpoint = `/api/${moduleName}/${name}` }
-				this.addCommand(name, value, endpoint)
-			}
-		}
-	}
-
-	protected runCommand(apiCommand: Command, request: Request, browserOrigin: string) {
+	protected async runCommand(apiCommand: Command, request: Request, browserOrigin: string) {
 		try {
-			const result = apiCommand(request)
+			const result = await apiCommand(request)
 			log.info(`Application ${this.name}'s "${apiCommand.name}" command ran without errors`)
 			if (result instanceof Response) {
 				const origin = result.headers.get("origin")
 				if (!origin) { log.warn(`Application ${this.name}'s "${apiCommand.name}" command returned a response without an origin, the request will likely fail`) }
 				else if (origin === this.name) { log.warn(`Application ${this.name}'s "${apiCommand.name}" command returned a response with the wrong origin, the request will likely fail`) }
 				return result
-			}
-			else { return new CommandResponse(browserOrigin, result.data, result.type) }
+			} else { return new CommandResponse(browserOrigin, result.data, result.type) }
 		} catch (error) {
 			log.warn(`Error running application ${this.name}'s "${apiCommand.name}" command: ${(error as Error).message}`)
 			return new CommandResponse(browserOrigin)
@@ -436,8 +435,8 @@ class UpdateWatcher {
 }
 
 export class AppRoute extends BaseRoute {
+	public static readonly manifests: Record<string, ApplicationManifest> = { }
 	public static readonly registred: Record<string, AppRoute> = { }
-	public static readonly manifests: Record<string, string> = { }
 	public static readonly hashes: Record<string, number> = { }
 
 	public static getManifests() { return { data: JSON.stringify(AppRoute.manifests), type: MIMES.json } }
@@ -447,7 +446,7 @@ export class AppRoute extends BaseRoute {
 		try {
 			const manifestContents = await Deno.readTextFile(`./apps/${name}/manifest.json`)
 			const manifestObject = new ApplicationManifest(JSON.parse(manifestContents))
-			if (!manifestObject.service) { AppRoute.manifests[name] = manifestContents }
+			if (!manifestObject.service) { AppRoute.manifests[name] = manifestObject }
 			AppRoute.registred[name] = new AppRoute(name, manifestObject)
 		} catch(error) { return log.debug(`Error while making the app route for ${name}: ${(error as Error).message}`) }
 	}

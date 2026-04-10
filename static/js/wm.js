@@ -15,7 +15,7 @@ const WMTitlebarFactory = new class {
 		titlebar.setAttribute("sandbox", "allow-scripts")
 		titlebar.setAttribute("title", `"${app}"'s application titlebar`)
 
-		if (path == "") { titlebar.src = "/titlebar" }
+		if (path === "") { titlebar.src = "/titlebar" }
 		else { titlebar.src = `${window.location.protocol}//${app}.${window.location.hostname}/titlebar` }
 
 		const initMessage = { command: "init", data: {
