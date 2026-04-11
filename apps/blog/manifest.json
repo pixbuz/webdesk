@@ -4,6 +4,6 @@
 	"description": "Stuff I've been busy with",
 	"style": "blog.css",
 	"script": "logic/frontend.js",
-	"ignore": [ "entries", "logic" ],
+	"ignore": [ "entries", "logic", "viewer.html" ],
 	"modules": [ "logic/backend.ts" ]
 }

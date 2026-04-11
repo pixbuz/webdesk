@@ -287,8 +287,12 @@ class BaseRoute {
 	}
 
 	protected requestFileUpdate(path: RelativeFilePath) {
+		const shortRelPath = path.substring(this.basePath.length + 1)
 		const endpoint = this.origins.get(path)
-		if (!endpoint) {
+		if (this.manifest.modules.includes(shortRelPath)) {
+			log.info(`Application ${this.name}'s ${path} module changed, updating commands`)
+			return this.addCommands()
+		} else if (!endpoint) {
 			log.info(`Application ${this.name} requested to update an ignored file`)
 			return false
 		}

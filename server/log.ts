@@ -25,8 +25,8 @@ export const log = new class {
 		const passMills = now - this.relTimeBase
 
 		const secs = (passMills / 1000) % 60
-		const mins = Math.floor(passMills / (60 * 1000))
-		const hour = Math.floor(passMills / (60 * 60 * 1000))
+		const mins = Math.floor(passMills / (60 * 1000)) % 60
+		const hour = Math.floor(passMills / (60 * 60 * 1000)) % 24
 		const days = Math.floor(passMills / (24 * 60 * 60 * 1000))
 
 		return `[${`${days}`.padStart(3, "0")}:${`${hour}`.padStart(2, "0")}:${`${mins}`.padStart(2, "0")}:${`${secs.toFixed(3)}`.padStart(6, "0")}]`

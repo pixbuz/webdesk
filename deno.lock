@@ -10,6 +10,8 @@
   },
   "remote": {
     "https://esm.sh/marked@12.0.0": "3f2c4d66d5db8b47fd8b9b8085c74abf349969b9043ae62add3effed7c0b233e",
-    "https://esm.sh/marked@12.0.0/denonext/marked.mjs": "da9d02cfda3aacc3bc1d8b305203a8b45487a3c6ff683cdc5f994a67e58a2bad"
+    "https://esm.sh/marked@12.0.0/denonext/marked.mjs": "da9d02cfda3aacc3bc1d8b305203a8b45487a3c6ff683cdc5f994a67e58a2bad",
+    "https://esm.sh/marked@18.0.0": "79c0e9f5d4d75597e27e4e566970a96418a02a0b9470f97ee4c8685df2f6ce3e",
+    "https://esm.sh/marked@18.0.0/denonext/marked.mjs": "2e7e93574b50cdf90ce6f169994f8cbb308ce956d49acd31d5fde4f058542577"
   }
 }

@@ -1,35 +1,121 @@
-const entries = document.querySelector(".latest")
+const entriesContainer = document.querySelector(".latest")
+const searchInput = document.querySelector(".hero input")
+
+// 1. We keep a master list of all entries in memory
+let masterEntries = []
 
 async function init() {
-	const entriesRequest = await fetch("/api/getEntries")
-	const entriesText = await entriesRequest.text()
-	const entries = JSON.parse(entriesText)
+	const res = await fetch("/api/getEntries")
+	const data = await res.json()
+	
+	// Convert the object into an array of flat objects for easier sorting
+	masterEntries = Object.entries(data).map(([name, details]) => ({
+		name,
+		...details
+	}))
 
-	for (const [ name, { html, preview, extract } ] of Object.entries(entries)) {
-		addEntry(name, html, preview, extract)
+	// Sort by date (Newest first) initially
+	sortByDate(masterEntries)
+	renderEntries(masterEntries)
+}
+
+// 2. The Search Listener
+searchInput.addEventListener("input", (e) => {
+	const query = e.target.value.toLowerCase().trim()
+	
+	// If the search is empty, just show everything sorted by date again
+	if (!query) {
+		sortByDate(masterEntries)
+		renderEntries(masterEntries)
+		return
+	}
+
+	// Split the search query into individual words (ignoring extra spaces)
+	const keywords = query.split(/\s+/)
+
+	// 3. The Scoring Engine
+	const scoredEntries = masterEntries.map(entry => {
+		let score = 0
+		// We search both the title and the extract for better results
+		const textToSearch = (entry.name + " " + entry.extract).toLowerCase()
+		
+		for (const word of keywords) {
+			// A fast way to count occurrences of a word in a string
+			const occurrences = textToSearch.split(word).length - 1
+			score += occurrences
+		}
+
+		// Return a new object that includes the calculated score
+		return { ...entry, score }
+	})
+
+	// Filter out entries with 0 score, then rank them
+	const results = scoredEntries
+		.filter(entry => entry.score > 0)
+		.sort((a, b) => {
+			// Highest score goes to the top
+			if (b.score !== a.score) {
+				return b.score - a.score
+			}
+			// If there is a tie in score, sort by newest date
+			return parseDate(b.date) - parseDate(a.date)
+		})
+
+	renderEntries(results)
+})
+
+// --- Helper Functions ---
+
+function renderEntries(entriesArray) {
+	// Clear the current grid
+	entriesContainer.innerHTML = ""
+	
+	// Generate the new cards
+	for (const entry of entriesArray) {
+		addEntry(entry.name, entry.extract, entry.date)
 	}
 }
 
-function addEntry(name, html, preview, extract) {
-	const element = document.createElement("a"),
-		title = document.createElement("h1"),
-		extractWrapper = document.createElement("p"),
-		previewWrapper = document.createElement("div"),
-		info = document.createElement("div")
-	
-	title.innerText = name
-	extractWrapper.innerText = extract
+function parseDate(dateStr) {
+	const [day, month, year] = dateStr.split("/")
+	return new Date(`${year}-${month}-${day}`).getTime()
+}
 
-	info.append(title, extractWrapper)
-	info.classList.add("info")
+function sortByDate(array) {
+	array.sort((a, b) => parseDate(b.date) - parseDate(a.date))
+}
 
-	previewWrapper.innerHTML = preview
-	previewWrapper.classList.add("preview")
+function addEntry(name, extract, date) {
+	const element = document.createElement("a")
+	const title = document.createElement("h1")
+	const creationDate = document.createElement("p")
+	const extractWrapper = document.createElement("p")
+	const cover = document.createElement("img")
+	const info = document.createElement("div")
 	
-	element.setAttribute("href", `/api/posts?${name}`)
-	element.append(previewWrapper, info)
-	element.classList.add("entry")
-	entries.appendChild(element)
+	const safeName = encodeURIComponent(name)
+
+	title.textContent = name.replace(".md", "")
+	title.className = "title"
+	
+	creationDate.textContent = date
+	creationDate.className = "date"
+	
+	extractWrapper.textContent = extract
+	extractWrapper.className = "extract"
+
+	info.className = "info"
+	info.append(title, creationDate, extractWrapper)
+
+	cover.src = `/api/cover?${safeName}`
+	cover.className = "cover"
+	cover.loading = "lazy"
+	
+	element.href = `/api/entry?${safeName}`
+	element.className = "entry"
+	element.append(cover, info)
+
+	entriesContainer.append(element)
 }
 
 init()
