@@ -55,6 +55,7 @@ const minimised = {
 function add({ target }) {
 	const app = target.getAttribute("app")
 	const manifest = ApplicationManifests[app]
+	console.log(target, ApplicationManifests, manifest)
 	if (manifest.service) { return }
 
 	const icon = document.createElement("button"),

@@ -26,7 +26,7 @@ const _server = Deno.serve({
 
 for await (const app of Deno.readDir("apps")) { AppRoute.create(app.name) }
 
-function requestHandler(browserRequest: Request, _connInfo: Deno.ServeHandlerInfo<Deno.NetAddr>): Response {
+function requestHandler(browserRequest: Request, _connInfo: Deno.ServeHandlerInfo<Deno.NetAddr>) {
 	const requestURL = new URL(browserRequest.url)
 	const subOriginName = requestURL.hostname.substring(0, requestURL.hostname.lastIndexOf("."))
 	const subOriginRoute = AppRoute.registred[subOriginName]
