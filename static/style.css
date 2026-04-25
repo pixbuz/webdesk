@@ -5,7 +5,46 @@
 	padding: 0;
 	position: relative;
 	box-sizing: border-box;
-	font-family: system-ui, -apple-system;
+	font-family: var(--font1), var(--font2), system-ui, -apple-system;
+}
+
+:root {
+	--font1: ;
+	--font2: ;
+
+	--launchers-text: ;
+	
+	--dock-border-radius: ;
+	--dock-border: ;
+	--dock-background: ;
+	--dock-text: ;
+	--dock-bottom: ;
+	--dock-height: ;
+	
+	--window-border: ;
+	--window-focus-border: ;
+	--window-background: ;
+	--window-focus-background: ;
+	--window-padding: ;
+	--window-titlebar: ;
+	--window-title: ;
+	--window-min-height: ;
+	--window-min-width: ;
+	--window-max-height: ;
+	--window-max-width: ;
+	--window-height: ;
+	--window-width: ;
+	--window-dots: ;
+	--window-focus-dots: ;
+
+	--animations-open: ;
+	--animations-close: ;
+	--animations-to-minimised: ;
+	--animations-to-maximised: ;
+	--animations-from-minimised: ;
+	--animations-from-maximised: ;
+	--animations-dock-up: ;
+	--animations-dock-down: ;
 }
 
 html,
@@ -100,12 +139,12 @@ body {
 	align-content: center;
 	position: absolute;
 	overflow-y: hidden;
-	border-radius: var(--dock-appearance-border-radius);
+	border-radius: var(--dock-border-radius);
 	min-width: 20%;
 	max-width: 90%;
 	display: flex;
-	bottom: var(--dock-appearance-bottom);
-	height: var(--dock-appearance-height);
+	bottom: var(--dock-bottom);
+	height: var(--dock-height);
 	z-index: 30;
 }
 
@@ -205,20 +244,20 @@ body {
 [app] {
 	will-change: top, left, width, height;
 
-	padding: calc(var(--windows-appearance-border) + var(--windows-appearance-padding));
-	border-radius: calc(var(--windows-appearance-border) * 2 + var(--windows-appearance-padding));
+	padding: calc(var(--window-border) + var(--window-padding));
+	border-radius: calc(var(--window-border) * 2 + var(--window-padding));
 	position: absolute;
 }
 
 [app]::before {
-	border-radius: calc(var(--windows-appearance-border) + var(--windows-appearance-padding));
-	inset: var(--windows-appearance-border);
+	border-radius: calc(var(--window-border) + var(--window-padding));
+	inset: var(--window-border);
 	position: absolute;
 	content: "";
 }
 
 [app]::after {
-	margin-inline: calc(50% - (var(--windows-appearance-border) + var(--windows-appearance-padding)) * 2);
+	margin-inline: calc(50% - (var(--window-border) + var(--window-padding)) * 2);
 	pointer-events: none;
 	position: absolute;
 	opacity: 25%;
@@ -241,11 +280,11 @@ body {
 }
 
 [app] .titlebarWrapper {
-	padding-bottom: var(--windows-appearance-padding);
+	padding-bottom: var(--window-padding);
 
 	user-select: none;
 	overflow: hidden;
-	height: var(--windows-appearance-titlebar);
+	height: var(--window-titlebar);
 	width: 100%;
 }
 
@@ -259,14 +298,14 @@ body {
 [app] .contentWrapper {
 	will-change: width, height;
 
-	min-height: var(--windows-appearance-min-height);
-	min-width: var(--windows-appearance-min-width);
+	min-height: var(--window-min-height);
+	min-width: var(--window-min-width);
 
-	max-height: var(--windows-appearance-max-height);
-	max-width: var(--windows-appearance-max-width);
+	max-height: var(--window-max-height);
+	max-width: var(--window-max-width);
 
-	height: var(--windows-appearance-height);
-	width: var(--windows-appearance-width);
+	height: var(--window-height);
+	width: var(--window-width);
 
 	pointer-events: none;
 	border-radius: 4px;
@@ -308,76 +347,74 @@ body {
 /* ----- Color customization ----- */
 
 .Dock {
-	border: var(--dock-appearance-border-style) var(--dock-color-border) var(--dock-appearance-border-width);
-	background: var(--dock-color-background);
-	color: var(--dock-color-text);
+	border: var(--dock-border);
+	background: var(--dock-background);
+	color: var(--dock-text);
 }
 
 .Dock .Clock p {
-	background: var(--dock-color-text);
+	background: var(--dock-text);
 	background-clip: text;
 	color: transparent;
 }
 
-[launcher] { color: var(--launchers-color-text); }
+[launcher] { color: var(--launchers-text); }
 
 [app] {
-	background: var(--windows-color-border);
-	color: var(--windows-color-title);
+	background: var(--window-border);
+	color: var(--window-title);
 }
 
-[app]::before { background: var(--windows-color-background); }
+[app]::before { background: var(--window-background); }
 
 [app]::after {
-	background: radial-gradient(circle, var(--windows-color-dots) 37.5%, transparent 50%);
+	background: var(--window-dots);
 	background-size: 4px 4px;
 	background-repeat: space;
 }
 
-[app].focus { background: var(--windows-color-focus-border); }
+[app].focus { background: var(--window-focus-border); }
 
-[app].focus::before { background: var(--windows-color-focus-background); }
+[app].focus::before { background: var(--window-focus-background); }
 
 [app].focus::after {
-	background: radial-gradient(circle, var(--windows-color-focus-dots) 37.5%, transparent 50%);
+	background: var(--window-focus-dots);
 	background-size: 4px 4px;
 	background-repeat: space;
 }
 
-[app].opening { animation: open var(--windows-animations-open-speed) var(--windows-animations-open-function); }
-[app].closing { animation: close var(--windows-animations-close-speed) var(--windows-animations-close-function); }
+[app].opening { animation: var(--animations-open); }
+[app].closing { animation: var(--animations-close); }
 
-[app].minimised { animation: to-minimise-move var(--windows-animations-to-minimised-speed) var(--windows-animations-to-minimised-function) forwards; }
-[app].minimised .contentWrapper { animation: to-minimise-size var(--windows-animations-to-minimised-speed) var(--windows-animations-to-minimised-function) forwards;
+[app].minimised { animation: var(--animations-to-minimised); }
+[app].minimised .contentWrapper { animation: var(--animations-to-minimised);
 	min-height: 0;
 	min-width: 0;
 }
 
-[app].from-minimised { animation: from-minimise-move var(--windows-animations-from-minimised-speed) var(--windows-animations-from-minimised-function); }
-[app].from-minimised .contentWrapper { animation: from-minimise-size var(--windows-animations-from-minimised-speed) var(--windows-animations-from-minimised-function); }
+[app].from-minimised { animation: var(--animations-from-minimised); }
+[app].from-minimised .contentWrapper { animation: var(---animations-from-minimised); }
 
-[app].maximised { animation: to-maximise-move var(--windows-animations-to-maximised-speed) var(--windows-animations-to-maximised-function) forwards; }
-[app].maximised .contentWrapper { animation: to-maximise-size var(--windows-animations-to-maximised-speed) var(--windows-animations-to-maximised-function) forwards;
+[app].maximised { animation: var(--animations-to-maximised); }
+[app].maximised .contentWrapper { animation: var(--animations-to-maximised);
 	max-height: 100svh;
 	max-width: 100svw;
 }
 
-[app].from-maximised { animation: from-maximise-move var(--windows-animations-from-maximised-speed) var(--windows-animations-from-maximised-function); }
-[app].from-maximised .contentWrapper { animation: from-maximise-size var(--windows-animations-from-maximised-speed) var(--windows-animations-from-maximised-function);
+[app].from-maximised { animation: var(--animations-from-maximised); }
+[app].from-maximised .contentWrapper { animation: var(--animations-from-maximised);
 	max-height: 100svh;
 	max-width: 100svw;
 }
 
 .Dock.up {
-	transition: translate var(--dock-animations-up-speed) var(--dock-animations-up-function),
-		opacity var(--dock-animations-up-speed) var(--dock-animations-up-function);
+	transition: var(--animations-dock-up);
 	translate: 0 0;
 	opacity: 1;
 }
 .Dock {
-	transition: translate var(--dock-animations-down-speed) var(--dock-animations-down-function),
-		opacity var(--dock-animations-down-speed) var(--dock-animations-down-function);
-	translate: 0 var(--dock-appearance-bottom);
+	transition: translate var(--animations-dock-down);
+	translate: 0 var(--dock-bottom);
 	opacity: 0;
 }
 

@@ -259,15 +259,16 @@ export class WebdeskEvent {
 	static CUSTOMIZATION_LOAD = new CustomizationEvent()
 	static CUSTOMIZATION_LOADED = new CustomizationEvent()
 
-	static CUSTOMIZATION_CHANGE = new ChangeEvent()
-	static CUSTOMIZATION_CHANGE_SAVE = new ChangeEvent()
-	static CUSTOMIZATION_CHANGE_SAVED = new CustomizationEvent()
+	static CUSTOMIZATION_PREVIEW = new ChangeEvent()
+	static CUSTOMIZATION_PREVIEW_SAVE_REQUEST = new ChangeEvent()
+	static CUSTOMIZATION_PREVIEW_SAVED = new CustomizationEvent()
 
-	static BACKGROUND_LOAD = new BackgroundEvent()
+	static BACKGROUND_LOAD_REQUEST = new BackgroundEvent()
 	static BACKGROUND_LOADED = new BackgroundEvent()
 	static BACKGROUND_REMOVE_ALL = new EmptyEvent()
+	// ^^^ ?????
 
-	static BACKGROUND_UPLOAD = new EmptyEvent()
+	static BACKGROUND_UPLOAD_REQUEST = new EmptyEvent()
 	static BACKGROUND_UPLOADED = new BackgroundEvent()
 	
 	static emitToIframes(thisArg, data) {
