@@ -3,12 +3,13 @@
 
 // TODO: Settings titlebar
 // TODO: Error handling for database things
-// TODO: Make ApplicationManifests into a object/class?
+// TODO: Deprecate ApplicationManifests?
 
 /** @typedef {Object} EmptyData */
 /** @typedef {Object} ClockData
  * @property {string[]} update */
 /** @typedef {Object} LauncherData
+ * @property {Object} manifest
  * @property {string} app */
 /** @typedef {Object} TargetData
  * @property {HTMLElement} target */
@@ -42,39 +43,10 @@
  * @property {Object} object
  * @property {boolean} force */
 
-fetch("/api/getManifests").then(async (response) => {
-	ApplicationManifests = await response.json()
-	WebdeskEvent.MANIFESTS_READY.emit({ data: ApplicationManifests })
-
-	if (newUser) { setTimeout(() => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" }) }, 1000) }
-}).catch((error) => { console.log(error) })
-
-let newUser = false
+const newUser = localStorage.getItem("user") ? false : true
+const activeCustomName = localStorage.getItem("activeCustomization")
 const offlineMessageElement = document.querySelector("#offline")
-const SWManager = new class {
-	loadInformation() {
-		navigator.storage.estimate().then(({ usage, quota }) => {
-			const usedMB = (usage / 1024 ** 2).toFixed(2)
-			const totalMB = (quota / 1024 ** 2).toFixed(2)
-			const percentUsed = ((usage / quota) * 100).toFixed(2)
-
-			console.log(`Using ${usedMB} MB out of ${totalMB} MB (${percentUsed}%)`)
-		})
-	}
-
-	com(event) {
-		if (event.data === "offline") { offlineMessageElement.classList.add("visible") }
-	}
-
-	constructor() {
-		navigator.serviceWorker.addEventListener("message", this.com)
-		navigator.serviceWorker.register("/sw")
-			.then((registration) => {
-				if (registration.active) { registration.active.postMessage("checkHashes") }
-			})
-			.catch((error) => { console.error(error) })
-	}
-}
+const customStyleSheet = new CSSStyleSheet()
 
 function removeHTMLElements(leaf) {
 	if (!leaf) { return }
@@ -86,6 +58,51 @@ function removeHTMLElements(leaf) {
 		else { serialized[key] = value }
 	}
 	return serialized
+}
+function loadCSS(css) {
+	for (const [ selector, rules ] of Object.entries(css)) {
+		console.log(`${selector} { ${rules} }`)
+		customStyleSheet.insertRule(`${selector} { ${rules} }`)
+	}
+	WebdeskEvent.CUSTOMIZATION_LOADED.emit({ css })
+}
+function cssToJson(cssString) {
+	const cssStyleSheet = {}
+	const pureCss = cssString
+		.replace(/\/\*[\s\S]*?\*\//g, "")
+		.replace(/[\n\r\t]/g, " ") 
+		.replace(/\s+/g, " ")
+		.trim()
+
+	let i = 0
+	while (i < pureCss.length) {
+		let openBrace = pureCss.indexOf('{', i)
+		if (openBrace === -1) break
+
+		const selector = pureCss.substring(i, openBrace).trim()
+
+		let depth = 0
+		let closeBrace = -1
+
+		for (let j = openBrace; j < pureCss.length; j++) {
+			if (pureCss[j] === '{') depth++
+			if (pureCss[j] === '}') depth--
+
+			if (depth === 0) {
+				closeBrace = j
+				break
+			}
+		}
+
+		if (closeBrace !== -1) {
+			const rules = pureCss.substring(openBrace + 1, closeBrace).trim()
+			cssStyleSheet[selector] = rules
+			
+			i = closeBrace + 1
+		} else break
+	}
+
+	return cssStyleSheet
 }
 
 /** @template T */
@@ -122,107 +139,6 @@ class WebdeskEventBase {
 /** @extends {WebdeskEventBase<ReadyData>} */ class ReadyEvent extends WebdeskEventBase {}
 
 export let ApplicationManifests
-export const webdeskDB = new class {
-	version = 1
-	// Helper for the main functions for interacting with the database
-	async _run(tableName, mode, callback) {
-		// Get the newest connection for the Database
-		const database = await webdeskDB.ready
-
-		// Return undefined if trying to access a table that doesn't exist
-		if (!database.objectStoreNames.contains(tableName)) { return undefined }
-
-		return new Promise((resolve, reject) => {
-			try {
-				const tx = database.transaction(tableName, mode == 0 ? "readonly" : "readwrite")
-				const store = tx.objectStore(tableName)
-				const request = callback(store)
-
-				request.onsuccess = () => resolve(request.result)
-				request.onerror = () => reject(request.error)
-			} catch (err) { reject(err) }
-		})
-	}
-	// Get a key's value from a table
-	get(table, key) {
-		return webdeskDB._run(table, 0, (store) => store.get(key))
-	}
-	// Get all the values from all the keys of a table
-	getAll(table) {
-		return webdeskDB._run(table, 0, (store) => store.getAll())
-	}
-	// Set the value of a key inside a table
-	set(table, key, value) {
-		return webdeskDB._run(table, 1, (store) => store.put(value, key))
-	}
-	// Delete a key inside a table
-	delete(table, key) {
-		return webdeskDB._run(table, 1, (store) => store.delete(key))
-	}
-	// Adds new tables into the database
-	async createTable(tableName) {
-		// Wait for the database
-		const database = await webdeskDB.ready
-
-		// If table exists do nothing
-		if (database.objectStoreNames.contains(tableName)) { return }
-
-		// Close the Database
-		database.close()
-		console.log(`Closing Database to create table "${tableName}"`)
-
-		return new Promise((resolve, reject) => {
-			// Up the Database version
-			const req = indexedDB.open("webdesk", ++webdeskDB.version)
-
-			// Before the Database Opens, add the new table
-			req.onupgradeneeded = (event) => {
-				const db = event.target.result
-				if (!db.objectStoreNames.contains(tableName)) { db.createObjectStore(tableName) }
-			}
-
-			// When the Database Opens, resolve all Promises
-			req.onsuccess = (event) => {
-				const db = event.target.result
-				db.onversionchange = () => { db.close() }
-
-				localStorage.setItem("db-version", webdeskDB.version)
-
-				// Update the global ready reference instantly without queueing
-				webdeskDB.ready = Promise.resolve(db)
-				resolve()
-			}
-
-			req.onblocked = req.onerror = (event) => reject(event)
-		})
-	}
-	constructor() {
-		// Get the last version of the database
-		const dbVersion = localStorage.getItem("db-version")
-		// If there is no item in local storage called "db-version", initialize
-		if (dbVersion == undefined) {
-			localStorage.setItem("db-version", 1)
-			newUser = true
-		} else { this.version = parseInt(dbVersion) }
-
-		// Stops any db interaction in case of db updating
-		this.ready = new Promise((resolve, reject) => {
-			// Send the db open request
-			const req = indexedDB.open("webdesk", this.version)
-			// If successfull, update the status of the database connection
-			req.onsuccess = () => {
-				// When adding new tables, automatically close the database
-				req.result.onversionchange = () => { req.result.close() }
-				resolve(req.result)
-			}
-			// On error, report it
-			req.onblocked = req.onerror = (event) => reject(event)
-		})
-
-		// Used to not overlap operations to the Database
-		this.updateLock = Promise.resolve()
-	}
-}
 export class WebdeskEvent {
 	static MANIFESTS_READY = new ReadyEvent()
 	static LAUNCHER_CLICK = new LauncherEvent()
@@ -256,7 +172,7 @@ export class WebdeskEvent {
 	static ICON_CLICK = new TargetEvent()
 	static CLOCK_UPDATE = new ClockEvent()
 
-	static CUSTOMIZATION_LOAD = new CustomizationEvent()
+	static CUSTOMIZATION_LOAD_REQUEST = new CustomizationEvent()
 	static CUSTOMIZATION_LOADED = new CustomizationEvent()
 
 	static CUSTOMIZATION_PREVIEW = new ChangeEvent()
@@ -280,7 +196,123 @@ export class WebdeskEvent {
 		MessagingHub.propagateEvent(names[nameIndex], data)
 	}
 }
-export const time = new class {
+const SWManager = new class {
+	loadInformation() {
+		navigator.storage.estimate().then(({ usage, quota }) => {
+			const usedMB = (usage / 1024 ** 2).toFixed(2)
+			const totalMB = (quota / 1024 ** 2).toFixed(2)
+			const percentUsed = ((usage / quota) * 100).toFixed(2)
+
+			console.log(`Using ${usedMB} MB out of ${totalMB} MB (${percentUsed}%)`)
+		})
+	}
+
+	com(event) {
+		if (event.data === "offline") { offlineMessageElement.classList.add("visible") }
+	}
+
+	constructor() {
+		navigator.serviceWorker.addEventListener("message", this.com)
+		navigator.serviceWorker.register("/sw")
+			.then((registration) => {
+				if (registration.active) { registration.active.postMessage("checkHashes") }
+			})
+			.catch((error) => { console.error(error) })
+	}
+}
+const inits = new class {
+	async UI() {
+		localStorage.setItem("activeCustomization", "Default")
+		const response = await fetch("/style")
+		if (response.ok) {
+			const css = await response.text()
+			await WebdeskDB.set("_customs", "Default", css)
+			await customStyleSheet.replace(css)
+		} else { /* Error stuff */ }
+	}
+	async total() {
+		localStorage.setItem("user", true)
+		await WebdeskDB.createTable("_customs")
+		await WebdeskDB.createTable("_backgrounds")
+		inits.UI()
+	}
+}
+export const WebdeskDB = new class {
+	version = 1
+	// Helper for the main functions for interacting with the database
+	async #run(tableName, mode, callback) {
+		// Get the newest connection for the Database
+		const database = await WebdeskDB.ready
+		// Return undefined if trying to access a table that doesn't exist
+		if (!database.objectStoreNames.contains(tableName)) { return undefined }
+
+		return new Promise((resolve, reject) => {
+			try {
+				const tx = database.transaction(tableName, mode == 0 ? "readonly" : "readwrite")
+				const store = tx.objectStore(tableName)
+				const request = callback(store)
+
+				request.onsuccess = () => resolve(request.result)
+				request.onerror = () => reject(request.error)
+			} catch (err) { reject(err) }
+		})
+	}
+	get(table, key) { return WebdeskDB.#run(table, 0, (store) => store.get(key)) }
+	getAll(table) { return WebdeskDB.#run(table, 0, (store) => store.getAll()) }
+	set(table, key, value) { return WebdeskDB.#run(table, 1, (store) => store.put(value, key)) }
+	delete(table, key) { return WebdeskDB.#run(table, 1, (store) => store.delete(key)) }
+	// Adds new tables into the database
+	async createTable(tableName) {
+		const database = await WebdeskDB.ready
+		// If table exists do nothing
+		if (database.objectStoreNames.contains(tableName)) { return }
+
+		database.close()
+		console.log(`Closing Database to create table "${tableName}"`)
+
+		return new Promise((resolve, reject) => {
+			// Up the Database version
+			const req = indexedDB.open("webdesk", ++WebdeskDB.version)
+
+			// Before the Database Opens, add the new table
+			req.onupgradeneeded = (event) => {
+				const db = event.target.result
+				if (!db.objectStoreNames.contains(tableName)) { db.createObjectStore(tableName) }
+			}
+			// When the Database Opens, resolve the ready promise
+			req.onsuccess = (event) => {
+				const db = event.target.result
+				db.onversionchange = () => { db.close() }
+
+				localStorage.setItem("db-version", WebdeskDB.version)
+
+				// Update the global ready reference instantly without queueing
+				WebdeskDB.ready = Promise.resolve(db)
+				resolve()
+			}
+
+			req.onblocked = req.onerror = (event) => reject(event)
+		})
+	}
+	constructor() {
+		const dbVersion = localStorage.getItem("db-version")
+		if (dbVersion == undefined) { localStorage.setItem("db-version", 1) }
+		else { this.version = parseInt(dbVersion) }
+
+		this.ready = new Promise((resolve, reject) => {
+			const req = indexedDB.open("webdesk", this.version)
+			req.onsuccess = () => {
+				req.result.onversionchange = () => { req.result.close() }
+				resolve(req.result)
+			}
+			// On error, report it
+			req.onblocked = req.onerror = (event) => reject(event)
+		})
+
+		this.updateLock = Promise.resolve()
+	}
+}
+export const Time = new class {
 	init = new Date()
 	seconds = this.init.getSeconds()
 	minutes = this.init.getMinutes()
@@ -291,25 +323,25 @@ export const time = new class {
 
 	progress() {
 		const changed = [ "seconds" ]
-		time.seconds++
+		Time.seconds++
 
-		if (time.seconds >= 60) {
-			time.seconds = 0
-			time.minutes++
+		if (Time.seconds >= 60) {
+			Time.seconds = 0
+			Time.minutes++
 
 			changed.push("minutes")
 		}
 
-		if (time.minutes >= 60) {
-			time.minutes = 0
-			time.hours++
+		if (Time.minutes >= 60) {
+			Time.minutes = 0
+			Time.hours++
 
 			changed.push("hours")
 		}
 
-		if (time.hours >= 24) {
-			time.hours = 0
-			time.day++
+		if (Time.hours >= 24) {
+			Time.hours = 0
+			Time.day++
 
 			changed.push("day")
 		}
@@ -319,15 +351,10 @@ export const time = new class {
 
 	constructor() {
 		setTimeout(() => {
-			time.progress()
-			setInterval(time.progress, 1000)
+			Time.progress()
+			setInterval(Time.progress, 1000)
 		}, 1000 - this.init.getMilliseconds())
 	}
-}
-export const StyleSheets = {
-	launchers: new CSSStyleSheet(),
-	windows: new CSSStyleSheet(),
-	dock: new CSSStyleSheet()
 }
 export const MessagingHub = new class {
 	/** @type {Map<HTMLElement, object>} */
@@ -348,13 +375,13 @@ export const MessagingHub = new class {
 			}
 			case "get.db": {
 				const { table, key } = data
-				const value = await webdeskDB.get(table, key)
+				const value = await WebdeskDB.get(table, key)
 
 				return contentChannel.port1.postMessage({ command, payload: { value } })
 			}
 			case "getAll.db": {
 				const { table } = data
-				const value = await webdeskDB.getAll(table)
+				const value = await WebdeskDB.getAll(table)
 
 				return contentChannel.port1.postMessage({ command, payload: { value } })
 			}
@@ -428,4 +455,16 @@ export const MessagingHub = new class {
 	}
 }
 
-document.adoptedStyleSheets = Object.values(StyleSheets)
+fetch("/api/getManifests").then(async (response) => {
+	ApplicationManifests = await response.json()
+	WebdeskEvent.MANIFESTS_READY.emit(ApplicationManifests)
+
+	if (newUser) { setTimeout(() => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" }) }, 1000) }
+}).catch((error) => { console.log(error) })
+
+document.adoptedStyleSheets.push(customStyleSheet)
+
+if (newUser) inits.total()
+
+if (activeCustomName) WebdeskDB.get("_customs", activeCustomName).then((css) => customStyleSheet.replace(css))
+else inits.UI()

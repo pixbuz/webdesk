@@ -8,47 +8,7 @@
 	font-family: var(--font1), var(--font2), system-ui, -apple-system;
 }
 
-:root {
-	--font1: ;
-	--font2: ;
-
-	--launchers-text: ;
-	
-	--dock-border-radius: ;
-	--dock-border: ;
-	--dock-background: ;
-	--dock-text: ;
-	--dock-bottom: ;
-	--dock-height: ;
-	
-	--window-border: ;
-	--window-focus-border: ;
-	--window-background: ;
-	--window-focus-background: ;
-	--window-padding: ;
-	--window-titlebar: ;
-	--window-title: ;
-	--window-min-height: ;
-	--window-min-width: ;
-	--window-max-height: ;
-	--window-max-width: ;
-	--window-height: ;
-	--window-width: ;
-	--window-dots: ;
-	--window-focus-dots: ;
-
-	--animations-open: ;
-	--animations-close: ;
-	--animations-to-minimised: ;
-	--animations-to-maximised: ;
-	--animations-from-minimised: ;
-	--animations-from-maximised: ;
-	--animations-dock-up: ;
-	--animations-dock-down: ;
-}
-
-html,
-body {
+html {
 	background: #000;
 	position: static;
 	overflow: hidden;
@@ -132,7 +92,7 @@ body {
 	gap: 4px 8px;
 }
 
-.Dock {
+[dock] {
 	justify-content: center;
 	will-change: translate, opacity;
 	flex-flow: row nowrap;
@@ -148,7 +108,7 @@ body {
 	z-index: 30;
 }
 
-.Dock .Open {
+[dock] .Open {
 	justify-content: start;
 	flex-flow: row nowrap;
 	scrollbar-width: thin;
@@ -160,7 +120,7 @@ body {
 	flex: 1;
 }
 
-.Dock .Open::-webkit-scrollbar {
+[dock] .Open::-webkit-scrollbar {
 	height: 4px;
 }
 
@@ -185,7 +145,7 @@ body {
 	display: none;
 }
 
-.Dock .Clock {
+[dock] .Clock {
 	flex-flow: column nowrap;
 	justify-content: center;
 	align-content: center;
@@ -195,12 +155,12 @@ body {
 	height: 100%;
 }
 
-.Dock .Clock p {
+[dock] .Clock p {
 	font-size: 75%;
 }
 
-.Dock .Clock .Time,
-.Dock .Clock .Date {
+[dock] .Clock .Time,
+[dock] .Clock .Date {
 	justify-content: center;
 	align-content: start;
 	display: flex;
@@ -208,8 +168,8 @@ body {
 	width: 100%;
 }
 
-.Dock .Clock .Time:not(.showSeconds) :nth-last-child(1),
-.Dock .Clock .Time:not(.showSeconds) :nth-last-child(2) {
+[dock] .Clock .Time:not(.showSeconds) :nth-last-child(1),
+[dock] .Clock .Time:not(.showSeconds) :nth-last-child(2) {
 	display: none;
 }
 
@@ -346,13 +306,13 @@ body {
 
 /* ----- Color customization ----- */
 
-.Dock {
+[dock] {
 	border: var(--dock-border);
 	background: var(--dock-background);
 	color: var(--dock-text);
 }
 
-.Dock .Clock p {
+[dock] .Clock p {
 	background: var(--dock-text);
 	background-clip: text;
 	color: transparent;
@@ -407,12 +367,12 @@ body {
 	max-width: 100svw;
 }
 
-.Dock.up {
+[dock].up {
 	transition: var(--animations-dock-up);
 	translate: 0 0;
 	opacity: 1;
 }
-.Dock {
+[dock] {
 	transition: translate var(--animations-dock-down);
 	translate: 0 var(--dock-bottom);
 	opacity: 0;

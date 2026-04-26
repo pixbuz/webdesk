@@ -4,7 +4,7 @@
 
 const alwaysFetchList = [ "/api/appHashes" ]
 const hostname = self.location.hostname
-const verbose = true
+const verbose = false
 let offline = false
 
 class Cashier {

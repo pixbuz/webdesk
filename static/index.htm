@@ -5,7 +5,6 @@
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta name="description" content="A modern desktop environment built for the browser. Window management, customizable themes, custom backgrounds and an overall OS-like experience on the web.">
-		<link rel="stylesheet" href="/style">
 		<link rel="manifest" href="/manifest">
 		<link rel="preload" href="/api/getManifests" as="fetch" crossorigin="anonymous">
 		<link rel="modulepreload" href="/core">
@@ -29,8 +28,8 @@
 			</div>
 		</section>
 		<main class="Window Space" aria-label="Desktop Workspace"></main>
-		<section class="Error Space" aria-live="polite" aria-label="Notifications"></section>
-		<nav class="Dock" aria-label="Taskbar">
+		<!-- <section class="Notification Space" aria-live="polite" aria-label="Notifications"></section> -->
+		<nav dock aria-label="Taskbar">
 			<div class="Open"></div>
 			<div class="Clock">
 				<div class="Time">
@@ -51,7 +50,6 @@
 		</nav>
 		<script async src="/launchers" type="module"></script>
 		<script async src="/dock" type="module"></script>
-		<script async src="/ui" type="module"></script>
 		<script async src="/wm" type="module"></script>
 	</body>
 </html>

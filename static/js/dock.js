@@ -1,6 +1,6 @@
 // TODO: When in overlap mode hide when a window is maximised
 
-import { time, WebdeskEvent, ApplicationManifests } from "./core"
+import { Time, WebdeskEvent, ApplicationManifests } from "./core"
 
 const element = document.querySelector(".Dock")
 const open = element.querySelector(".Open")
@@ -102,7 +102,7 @@ function focus({ lost, gain }) {
 /** @param {import("./core").ClockData} data */
 function updateClockElement({ update }) {
 	update.forEach((piece) => {
-		clockPieces[piece].innerText = `${time[piece]}`.padStart(2, 0)
+		clockPieces[piece].innerText = `${Time[piece]}`.padStart(2, 0)
 	})
 }
 
@@ -207,5 +207,5 @@ WebdeskEvent.WINDOW_MAXIMISE_END.on(maximised.remove)
 WebdeskEvent.WINDOW_UPDATED_FOCUS.on(focus)
 
 Object.keys(clockPieces).forEach((piece) => {
-	clockPieces[piece].innerText = `${time[piece]}`.padStart(2, 0)
+	clockPieces[piece].innerText = `${Time[piece]}`.padStart(2, 0)
 })
