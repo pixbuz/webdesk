@@ -2,7 +2,7 @@
 
 import { Time, WebdeskEvent, ApplicationManifests } from "./core"
 
-const element = document.querySelector(".Dock")
+const element = document.querySelector("[dock]")
 const open = element.querySelector(".Open")
 
 const clock = element.querySelector(".Clock")
@@ -52,10 +52,7 @@ const minimised = {
 }
 
 /** @param {import("./core").TargetData} data */
-function add({ target }) {
-	const app = target.getAttribute("app")
-	const manifest = ApplicationManifests[app]
-	console.log(target, ApplicationManifests, manifest)
+function add({ app, manifest }) {
 	if (manifest.service) { return }
 
 	const icon = document.createElement("button"),
@@ -65,14 +62,11 @@ function add({ target }) {
 	image.src = `${window.location.protocol}//${app}.${window.location.hostname}/icon`
 	name.innerText = app
 
-	icon.append(name, image)
 	icon.classList.add("focus")
 	icon.setAttribute("icon", app)
+	icon.append(name, image)
 
-	windowToIcon.set(target, icon)
 	open.append(icon)
-
-	icon.addEventListener("click", () => { WebdeskEvent.ICON_CLICK.emit({ target }) })
 }
 
 /** @param {import("./core").CloseData} data */
@@ -171,9 +165,6 @@ const Stator = new class {
 	}
 
 	constructor() {
-		WebdeskEvent.CUSTOMIZATION_LOADED.on(this.updateVars)
-		WebdeskEvent.CUSTOMIZATION_CHANGE_SAVED.on(this.updateVars)
-
 		element.addEventListener("pointerenter", () => {
 			Stator.inHover = true
 			Stator.dockState()
@@ -193,9 +184,12 @@ const Stator = new class {
 	}
 }
 
+WebdeskEvent.CUSTOMIZATION_LOADED.on(Stator.updateVars)
+// WebdeskEvent.CUSTOMIZATION_CHANGE_SAVED.on(Stator.updateVars)
+
 WebdeskEvent.CLOCK_UPDATE.on(updateClockElement)
 
-WebdeskEvent.WINDOW_OPEN.on(add)
+WebdeskEvent.LAUNCHER_CLICK.on(add)
 WebdeskEvent.WINDOW_CLOSING.on(updateClosedWindow)
 
 WebdeskEvent.WINDOW_MINIMISE.on(minimised.add)

@@ -4,6 +4,7 @@
 // TODO: Settings titlebar
 // TODO: Error handling for database things
 // TODO: Deprecate ApplicationManifests?
+// TODO: Windows having a symbol as identifier
 
 /** @typedef {Object} EmptyData */
 /** @typedef {Object} ClockData
@@ -401,43 +402,38 @@ export const MessagingHub = new class {
 			default: { return contentChannel.port1.postMessage({ command, payload: { } }) }
 		}
 	}
-	/** @param {OpeningData} openingData */
-	#addLink({ window: appWindow, titlebar, app }) {
+	/** @param {CloseData} closeData */
+	#removeLink({ closed }) { MessagingHub.windowToChannels.delete(closed) }
+
+	generatePorts(identifier) {
 		const titlebarChannel = new MessageChannel(),
 		contentChannel = new MessageChannel(),
 		privateChannel = new MessageChannel()
 
 		const newLink = { content: contentChannel, titlebar: titlebarChannel, private: privateChannel }
-		MessagingHub.windowToChannels.set(appWindow, newLink)
+		MessagingHub.windowToChannels.set(identifier, newLink)
 
 		newLink.content.port1.addEventListener("message", (event) => { MessagingHub.#commandResponder(event, newLink) })
 
 		newLink.titlebar.port1.start()
 		newLink.content.port1.start()
 	}
-	/** @param {CloseData} closeData */
-	#removeLink({ closed }) { MessagingHub.windowToChannels.delete(closed) }
-	/** @param {ReadyData} readyData */
-	#sendContentPorts({ data: iframe, message }) {
-		const appWindow = iframe.closest("[app]"),
-		target = iframe.contentWindow,
-		link = MessagingHub.windowToChannels.get(appWindow),
+	sendContentPorts(identifier, iframe, message = "ports") {
+		const link = MessagingHub.windowToChannels.get(identifier),
 		{ port2: contentPort } = link.content,
 		{ port1: privatePort } = link.private
 
-		target.postMessage(message, "*", [ contentPort, privatePort ])
+		iframe.contentWindow.postMessage(message, "*", [ contentPort, privatePort ])
+		return link.content.port1
 	}
-	/** @param {ReadyData} readyData */
-	#sendTitlebarPorts({ data: iframe, message }) {
-		const appWindow = iframe.closest("[app]"),
-		target = iframe.contentWindow,
-		link = MessagingHub.windowToChannels.get(appWindow),
+	sendTitlebarPorts(identifier, iframe, message = "ports") {
+		const link = MessagingHub.windowToChannels.get(identifier),
 		{ port2: titlebarPort } = link.titlebar,
 		{ port2: privatePort } = link.private
 
-		target.postMessage(message, "*", [ titlebarPort, privatePort ])
+		iframe.contentWindow.postMessage(message, "*", [ titlebarPort, privatePort ])
+		return link.titlebar.port1
 	}
-
 	propagateEvent(name, data) {
 		const sendData = removeHTMLElements(data)
 		MessagingHub.windowToChannels.forEach((link) => {
@@ -447,11 +443,7 @@ export const MessagingHub = new class {
 	}
 
 	constructor() {
-		WebdeskEvent.WINDOW_OPENING.on(this.#addLink)
-		WebdeskEvent.WINDOW_CLOSING.on(this.#removeLink)
-
-		WebdeskEvent.CONTENT_READY.on(this.#sendContentPorts)
-		WebdeskEvent.TITLEBAR_READY.on(this.#sendTitlebarPorts)
+		WebdeskEvent.WINDOW_CLOSE.on(this.#removeLink)
 	}
 }
 
@@ -466,5 +458,7 @@ document.adoptedStyleSheets.push(customStyleSheet)
 
 if (newUser) inits.total()
 
-if (activeCustomName) WebdeskDB.get("_customs", activeCustomName).then((css) => customStyleSheet.replace(css))
-else inits.UI()
+// if (activeCustomName) WebdeskDB.get("_customs", activeCustomName).then((css) => customStyleSheet.replace(css))
+// else inits.UI()
+
+inits.UI()

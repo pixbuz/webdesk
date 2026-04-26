@@ -5,36 +5,33 @@ import { WebdeskEvent, MessagingHub } from "./core"
 const Factory = new class {
 	space = document.querySelector(".Window.Space")
 	centerOffsets = [ ]
-	open = [ ]
+	open = new Map()
 
 	/** @param {import("./core").LauncherData} data */
 	async skeletonizeWindow({ app, manifest }) {
+		const windowIdentifier = Symbol(app)
 		const windowWrapper = document.createElement("article"),
 			contentWrapper = document.createElement("section"),
 			titlebarWrapper = document.createElement("header"),
 			content = document.createElement("iframe"),
 			titlebar = document.createElement("iframe")
 
-		windowWrapper.classList.add("loading")
-		Factory.space.append(windowWrapper)
-		windowWrapper.style.left = Factory.centerOffsets[0]
-		windowWrapper.style.top = Factory.centerOffsets[1]
-		Factory.open.push(windowWrapper)
+		MessagingHub.generatePorts(windowIdentifier)
+		// windowWrapper.classList.add("loading")
 
-		const titlebarLoaded = new Promise((resolve) => { titlebar.addEventListener("load", resolve, { once: true }) })
-		const contentLoaded = new Promise((resolve) => { content.addEventListener("load", resolve, { once: true }) })
-		Promise.all([titlebarLoaded, contentLoaded]).then(() => {
-			target.classList.remove("loading")
+		Promise.all([
+			new Promise((resolve) => { titlebar.addEventListener("load", () => Factory.titlebarLoaded(windowIdentifier, titlebar, resolve), { once: true }) }),
+			new Promise((resolve) => { content.addEventListener("load", () => Factory.contentLoaded(windowIdentifier, content, resolve), { once: true }) })
+		]).then(() => {
+			windowWrapper.classList.remove("loading")
 			WebdeskEvent.WINDOW_OPEN.emit({ target: windowWrapper })
 		})
-		
-		WebdeskEvent.WINDOW_OPENING.emit({ window: windowWrapper, titlebar: titlebar, app })
-		// ???
 
 		titlebar.classList.add("titlebar")
 		titlebar.setAttribute("allowfullscreen", false)
 		titlebar.setAttribute("sandbox", `allow-scripts`)
 		titlebar.setAttribute("title", `Application ${app}'s titlebar`)
+		titlebar.src = `${window.location.protocol}//${ manifest.path ? `${app}.${window.location.hostname}` : window.location.hostname }/titlebar`
 
 		titlebarWrapper.append(titlebar)
 		titlebarWrapper.classList.add("titlebarWrapper")
@@ -48,7 +45,7 @@ const Factory = new class {
 		contentWrapper.append(content)
 		contentWrapper.classList.add("contentWrapper")
 
-		windowWrapper.setAttribute("app", app)
+		windowWrapper.setAttribute("window", app)
 		windowWrapper.append(titlebarWrapper, contentWrapper)
 
 		windowWrapper.addEventListener("pointerdown", (event) => {
@@ -59,29 +56,32 @@ const Factory = new class {
 		// ???
 
 		windowWrapper.addEventListener("pointermove", (event) => {
-			if (Resizer.inResize) {
-				WebdeskEvent.WINDOW_RESIZE.emit({ target: windowWrapper, x: event.x, y: event.y })
-			}
+			if (Resizer.inResize) WebdeskEvent.WINDOW_RESIZE.emit({ target: windowWrapper, x: event.x, y: event.y })
 		})
 		// ???
 
 		windowWrapper.addEventListener("pointerup", (event) => {
 			windowWrapper.releasePointerCapture(event.pointerId)
 
-			if (Resizer.inResize) {
-				WebdeskEvent.WINDOW_RESIZE_END.emit({ target: windowWrapper, x: event.x, y: event.y })
-			}
+			if (Resizer.inResize) WebdeskEvent.WINDOW_RESIZE_END.emit({ target: windowWrapper, x: event.x, y: event.y })
 		})
 		// ???
 
-		window.addEventListener("resize", () => { Mover.updatePositionIfCollision({ target: windowWrapper }) })
-		// ???
+		window.addEventListener("resize", () => { Mover.updatePositionIfCollision({ target: windowWrapper }) }) // ???
+
+		Factory.space.append(windowWrapper)
+		Factory.open.set(windowIdentifier, windowWrapper)
 	}
-	/** @param {import("./core").CustomizationData} data */
-	setVars({ id, css, object, force }) {
-		Factory.centerOffsets[0] = `calc(50% - ${object.windows.appearance.width}/2)`
-		Factory.centerOffsets[1] = `calc(50% - ${object.windows.appearance.height}/2)`
-	} // ???
+	titlebarLoaded(id, iframe, promiseResolve) {
+		MessagingHub.sendTitlebarPorts(id, iframe, { command: "init", payload: { app: id.description, palette: null /* TODO */, }
+		})
+			.addEventListener("message", (messageEvent) => Titlebar.messageInterpreter(messageEvent, iframe.closest("[window]")) )
+		promiseResolve()
+	}
+	contentLoaded(id, iframe, promiseResolve) {
+		MessagingHub.sendContentPorts(id, iframe)
+		promiseResolve()
+	}
 	/** @param {import("./core").TargetData} data */ maximise({ target }) { target.classList.add("maximised") }
 	/** @param {import("./core").TargetData} data */ minimise({ target }) { target.classList.add("minimised") }
 	/** @param {import("./core").TargetData} data */ unMaximise({ target }) { target.classList.remove("maximised") }
@@ -90,20 +90,6 @@ const Factory = new class {
 	checkAction({ target }) {
 		if (target.classList.contains("minimised")) { Factory.unMinimise({ target }) }
 		else { Factory.minimise({ target }) }
-	}
-
-	constructor() {
-		WebdeskEvent.ICON_CLICK.on(this.checkAction) // ???
-		WebdeskEvent.LAUNCHER_CLICK.on(this.skeletonizeWindow)
-
-		WebdeskEvent.WINDOW_MINIMISE.on(this.minimise)
-		WebdeskEvent.WINDOW_MINIMISE_END.on(this.unMinimise)
-		
-
-		WebdeskEvent.WINDOW_MAXIMISE.on(this.maximise)
-		WebdeskEvent.WINDOW_MAXIMISE_END.on(this.unMaximise)
-
-		WebdeskEvent.CUSTOMIZATION_LOADED.on(this.setVars)
 	}
 }
 
@@ -119,44 +105,11 @@ const Animationer = new class {
 		target.addEventListener("animationend", () => { callback(); clearTimeout(failsafe) }, { once: true })
 		target.classList.add(name)
 	}
-
-	constructor() {
-		WebdeskEvent.WINDOW_OPEN.on(this.open)
-		WebdeskEvent.WINDOW_MAXIMISE_END.on(this.unMaximise)
-		WebdeskEvent.WINDOW_MINIMISE_END.on(this.unMinimise)
-		WebdeskEvent.WINDOW_CLOSE.on(this.close)
-	}
 }
 
-const TitlebarFactory = new class {
+const Titlebar = new class {
 	titlebarVars
 
-	/** @param {import("./core").OpeningData} data */
-	async setup({ window: appWindow, titlebar, app }) {
-		const comChannel = MessagingHub.windowToChannels.get(appWindow).titlebar
-		const path = ApplicationManifests[app].titlebar
-		const manifest = ApplicationManifests[app]
-
-		titlebar.setAttribute("allowfullscreen", false)
-		titlebar.setAttribute("sandbox", "allow-scripts")
-		titlebar.setAttribute("title", `"${app}"'s application titlebar`)
-
-		if (path === "") { titlebar.src = "/titlebar" }
-		else { titlebar.src = `${window.location.protocol}//${app}.${window.location.hostname}/titlebar` }
-
-		const initMessage = { command: "init", data: {
-			style: TitlebarFactory.titlebarVars,
-			service: manifest.service,
-			app: app,
-		}}
-
-		comChannel.port1.addEventListener("message", (messageEvent) => { TitlebarFactory.messageInterpreter(messageEvent, appWindow) })
-
-		titlebar.addEventListener("load", () => { WebdeskEvent.TITLEBAR_READY.emit({ data: titlebar, message: initMessage }) }, { once: true })
-
-		WebdeskEvent.CUSTOMIZATION_CHANGE.on((titlebarData) => { comChannel.port1.postMessage({ command: "css", data: titlebarData }) })
-		WebdeskEvent.WINDOW_UPDATED_FOCUS.on(TitlebarFactory.relayFocusChange)
-	}
 	/** @param {import("./core").FocusData} data */
 	relayFocusChange({ lost, gain }) {
 		if (gain && MessagingHub.windowToChannels.get(gain)) {
@@ -189,23 +142,17 @@ const TitlebarFactory = new class {
 			}
 			case "move-start": { return WebdeskEvent.WINDOW_MOVE_START.emit({ ...message.data, target: appWindow }) }
 
-			case "close": { return WebdeskEvent.WINDOW_CLOSING.emit({ closed: appWindow, app }) }
-			case "minimise": { return WebdeskEvent.WINDOW_MINIMISE.emit({ target: appWindow, app }) }
-			case "maximise": { return TitlebarFactory.relayMaximise({ target: appWindow, app }) }
+			case "close": { return WebdeskEvent.WINDOW_CLOSING.emit({ closed: appWindow }) }
+			case "minimise": { return WebdeskEvent.WINDOW_MINIMISE.emit({ target: appWindow }) }
+			case "maximise": { return Titlebar.relayMaximise({ target: appWindow }) }
 		}
 	}
 	/** @param {import("./core").CustomizationData} customizationData */
 	setUpVars({ id, css, object, force }) {
-		TitlebarFactory.titlebarVars = css
+		Titlebar.titlebarVars = css
 			.split("; ")
 			.filter((cssVar) => { return cssVar.startsWith("--windows-") && cssVar.includes("titlebar") })
 			.join("; ")
-	}
-
-	constructor() {
-		WebdeskEvent.WINDOW_OPENING.on(this.setup)
-		WebdeskEvent.CUSTOMIZATION_LOADED.on(this.setUpVars)
-		WebdeskEvent.CUSTOMIZATION_CHANGE_SAVED.on(this.setUpVars)
 	}
 }
 
@@ -239,16 +186,6 @@ const Focuser = new class {
 		if (Focuser.focusHistory[0]) { Focuser.focusHistory[0].classList.add("focus") }
 		WebdeskEvent.WINDOW_UPDATED_FOCUS.emit({ lost: undefined, gain: Focuser.focusHistory[0] })
 	}
-
-	constructor() {
-		WebdeskEvent.WINDOW_UPDATED_FOCUS.on(this.adjustZIndexes)
-		WebdeskEvent.WINDOW_CLOSING.on(this.clearHistory)
-
-		WebdeskEvent.WINDOW_RESIZE_START.on(this.focusWindow)
-		WebdeskEvent.WINDOW_MOVE_START.on(this.focusWindow)
-		WebdeskEvent.WINDOW_OPEN.on(this.focusWindow)
-		WebdeskEvent.ICON_CLICK.on(this.focusWindow)
-	}
 }
 
 const Mover = new class {
@@ -258,6 +195,7 @@ const Mover = new class {
 	/** @param {import("./core").InteractionData} data */
 	init({ target, x, y }) {
 		target.classList.add("moving")
+		target.style.translate = ""
 		const box = target.getBoundingClientRect()
 
 		Mover.anchor = { x: (x - box.left), y: (y - box.top) }
@@ -283,15 +221,6 @@ const Mover = new class {
 		Mover.inMove = false
 		target.classList.remove("moving")
 	}
-
-	constructor() {
-		WebdeskEvent.WINDOW_MOVE_START.on(this.init)
-		WebdeskEvent.WINDOW_MOVE.on(this.followCursor)
-		WebdeskEvent.WINDOW_MOVE_END.on(this.reset)
-
-		WebdeskEvent.WINDOW_RESIZE_END.on(this.updatePositionIfCollision)
-		WebdeskEvent.WINDOW_MOVE_END.on(this.updatePositionIfCollision)
-	}
 }
 
 const Resizer = new class {
@@ -305,6 +234,7 @@ const Resizer = new class {
 	/** @param {import("./core").InteractionData} interactionData */
 	init({ target, x, y }) {
 		Resizer.startContentBox = target.querySelector(".contentWrapper").getBoundingClientRect()
+		target.style.translate = ""
 		Resizer.inResize = true
 		Resizer.anchor.x = x
 		Resizer.anchor.y = y
@@ -362,11 +292,46 @@ const Resizer = new class {
 		padding = parseInt(object.windows.appearance.padding)
 		Resizer.resizeMargin = border + padding
 	}
-
-	constructor() {
-		WebdeskEvent.WINDOW_RESIZE_START.on(this.init)
-		WebdeskEvent.WINDOW_RESIZE.on(this.followCursor)
-		WebdeskEvent.WINDOW_RESIZE_END.on(this.reset)
-		WebdeskEvent.CUSTOMIZATION_CHANGE_SAVED.on(this.updateVars)
-	}
 }
+
+WebdeskEvent.ICON_CLICK.on(Factory.checkAction) // ???
+WebdeskEvent.LAUNCHER_CLICK.on(Factory.skeletonizeWindow)
+
+WebdeskEvent.WINDOW_MINIMISE.on(Factory.minimise)
+WebdeskEvent.WINDOW_MINIMISE_END.on(Factory.unMinimise)
+
+WebdeskEvent.WINDOW_MAXIMISE.on(Factory.maximise)
+WebdeskEvent.WINDOW_MAXIMISE_END.on(Factory.unMaximise)
+
+
+WebdeskEvent.WINDOW_OPEN.on(Animationer.open)
+WebdeskEvent.WINDOW_MAXIMISE_END.on(Animationer.unMaximise)
+WebdeskEvent.WINDOW_MINIMISE_END.on(Animationer.unMinimise)
+WebdeskEvent.WINDOW_CLOSE.on(Animationer.close)
+
+
+WebdeskEvent.CUSTOMIZATION_LOADED.on(Titlebar.setUpVars)
+WebdeskEvent.WINDOW_UPDATED_FOCUS.on(Titlebar.relayFocusChange)
+// WebdeskEvent.CUSTOMIZATION_CHANGE_SAVED.on(TitlebarFactory.setUpVars)
+
+
+WebdeskEvent.WINDOW_UPDATED_FOCUS.on(Focuser.adjustZIndexes)
+WebdeskEvent.WINDOW_CLOSING.on(Focuser.clearHistory)
+
+WebdeskEvent.WINDOW_RESIZE_START.on(Focuser.focusWindow)
+WebdeskEvent.WINDOW_MOVE_START.on(Focuser.focusWindow)
+WebdeskEvent.WINDOW_OPEN.on(Focuser.focusWindow)
+WebdeskEvent.ICON_CLICK.on(Focuser.focusWindow)
+
+
+WebdeskEvent.WINDOW_MOVE_START.on(Mover.init)
+WebdeskEvent.WINDOW_MOVE.on(Mover.followCursor)
+WebdeskEvent.WINDOW_MOVE_END.on(Mover.reset)
+
+WebdeskEvent.WINDOW_RESIZE_END.on(Mover.updatePositionIfCollision)
+WebdeskEvent.WINDOW_MOVE_END.on(Mover.updatePositionIfCollision)
+
+
+WebdeskEvent.WINDOW_RESIZE_START.on(Resizer.init)
+WebdeskEvent.WINDOW_RESIZE.on(Resizer.followCursor)
+WebdeskEvent.WINDOW_RESIZE_END.on(Resizer.reset)
