@@ -4,7 +4,7 @@
 // TODO: Settings titlebar
 // TODO: Error handling for database things
 // TODO: Deprecate ApplicationManifests?
-// TODO: Windows having a symbol as identifier
+// TODO: Intro window not opening for new users
 
 /** @typedef {Object} EmptyData */
 /** @typedef {Object} ClockData
@@ -46,24 +46,41 @@
 
 const newUser = localStorage.getItem("user") ? false : true
 const activeCustomName = localStorage.getItem("activeCustomization")
+const activeBackgroundName = localStorage.getItem("activeBackground")
 const offlineMessageElement = document.querySelector("#offline")
+const backgroundWrapper = document.querySelector("body > .Background")
 const customStyleSheet = new CSSStyleSheet()
 
-function removeHTMLElements(leaf) {
+export let activeCustomObject
+export const WebdeskEvent = {}
+export const ApplicationManifests = {}
+
+function filterHTMLElements(leaf) {
 	if (!leaf) { return }
 	const serialized = { }
 	for (const [ key, value ] of Object.entries(leaf)) {
 		if (Array.isArray(value)) { serialized[key] = value.map((element) => { if (element instanceof HTMLElement) { return "HTMLElement" } else { return element } })}
-		else if (Object.prototype.toString.call(value) === "[object Object]") { serialized[key] = removeHTMLElements(serialized[key]) }
+		else if (Object.prototype.toString.call(value) === "[object Object]") { serialized[key] = filterHTMLElements(serialized[key]) }
 		else if (value instanceof HTMLElement) { serialized[key] = "HTMLElement" }
 		else { serialized[key] = value }
 	}
 	return serialized
 }
-function loadCSS(css, blocking = false) {
-	if (blocking) await customStyleSheet.replace(css)
-	else customStyleSheet.replace(css)
-	WebdeskEvent.CUSTOMIZATION_LOADED.emit({ css })
+
+async function loadCSS({ css, palette }) {
+	const paletteRules = []
+	for (const [ color, value ] of Object.entries(palette)) {
+		paletteRules.push(`--${color}: ${value};`)
+	}
+	const fullCSS = `:root { ${paletteRules.join("\n")} }\n${css}`
+	customStyleSheet.replace(fullCSS)
+
+	activeCustomObject = { css, palette }
+	WebdeskEvent.CUSTOMIZATION_LOADED.emit(activeCustomObject)
+}
+
+async function loadBackground(background) {
+	backgroundWrapper.innerHTML = background
 }
 
 class WebdeskEventTemplate {
@@ -73,8 +90,7 @@ class WebdeskEventTemplate {
 
 	/** @param {Partial<T>} data */
 	emit(data = {}) {
-		WebdeskEvent.emitToIframes(this, data)
-		this.#callbacks.forEach((callback) => { callback(data) })
+		this.#callbacks.forEach(callback => callback(data) )
 		MessagingHub.propagateEvent(this.#name, data)
 	}
 
@@ -82,9 +98,9 @@ class WebdeskEventTemplate {
 	on(...newCallbacks) { this.#callbacks.push(...newCallbacks) }
 
 	/** @param {...((data: T) => void)} callback */
-	off(callback) { this.#callbacks = this.#callbacks.filter((registredCallback) => { registredCallback !== callback }) }
+	off(callback) { this.#callbacks = this.#callbacks.filter(registredCallback => registredCallback !== callback) }
 
-	constructor(name) { WebdeskEvent[this.name = name] = this }
+	constructor(name) { WebdeskEvent[this.#name = name] = this }
 }
 
 new WebdeskEventTemplate("MANIFESTS_READY")
@@ -100,7 +116,6 @@ new WebdeskEventTemplate("WINDOW_RESIZE_END")
 new WebdeskEventTemplate("WINDOW_UPDATED_FOCUS")
 new WebdeskEventTemplate("WINDOW_OPENING")
 new WebdeskEventTemplate("WINDOW_OPEN")
-new WebdeskEventTemplate("WINDOW_CLOSING")
 new WebdeskEventTemplate("WINDOW_CLOSE")
 new WebdeskEventTemplate("WINDOW_MAXIMISE")
 new WebdeskEventTemplate("WINDOW_MAXIMISE_END")
@@ -121,8 +136,6 @@ new WebdeskEventTemplate("BACKGROUND_REMOVE_ALL") // ???
 new WebdeskEventTemplate("BACKGROUND_UPLOAD_REQUEST")
 new WebdeskEventTemplate("BACKGROUND_UPLOADED")
 
-export let ApplicationManifests
-export const WebdeskEvent
 const SWManager = new class {
 	loadInformation() {
 		navigator.storage.estimate().then(({ usage, quota }) => {
@@ -146,20 +159,83 @@ const SWManager = new class {
 	}
 }
 const inits = new class {
-	async UI() {
-		localStorage.setItem("activeCustomization", "Default")
+	async customization() {
+		WebdeskDB.createTable("_customs")
 		const response = await fetch("/style")
 		if (response.ok) {
-			const css = await response.text()
-			await WebdeskDB.set("_customs", "Default", css)
-			await customStyleSheet.replace(css)
+			localStorage.setItem("activeCustomization", "Default")
+			const css = response.text()
+			const lightPalette = {
+				"accent": "rgb(64, 96, 248)",
+				"success": "rgb(64, 248, 96)",
+				"error": "rgb(248, 96, 64)",
+				"canvas": "rgb(248, 248, 255)",
+				"content": "rgb(26, 26, 46)",
+			}
+			const darkPalette = {
+				"accent": "rgb(64, 96, 248)",
+				"success": "rgb(64, 248, 96)",
+				"error": "rgb(248, 96, 64)",
+				"canvas": "rgb(14, 14, 18)",
+				"content": "rgb(248, 248, 255)",
+			}
+			WebdeskDB.set("_customs", "Default-Light", { css: (await css), palette: lightPalette })
+			WebdeskDB.set("_customs", "Default-Dark", { css: (await css), palette: darkPalette })
+			loadCSS({ css: (await css), palette: darkPalette })
 		} else { /* Error stuff */ }
+	}
+	async background() {
+		const lightSVG = `
+			<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+				<filter id="cool">
+					<feTurbulence baseFrequency="0.01" numOctaves="1" result="noise"/>
+						<feDiffuseLighting in="noise" lighting-color="#FFF" surfaceScale="2">
+							<feDistantLight azimuth="45" elevation="30" />
+						</feDiffuseLighting>
+					</filter>
+				<rect width="100%" height="100%" filter="url(#cool)" />
+			</svg>`
+		const darkSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+			<filter id="grainy-texture" x="0" y="0" width="100%" height="100%">
+				<feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch" result="rawNoise" />
+
+				<feColorMatrix in="rawNoise" type="matrix"
+					values="0.007 0.007 0.007 0 0
+						0.007 0.007 0.007 0 0
+						0.007 0.007 0.007 0 0
+						0 0 0 1 0" result="neutralBase" />
+
+				<feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="1" stitchTiles="stitch" result="highlightNoise" />
+				<feDisplacementMap in="highlightNoise" in2="rawNoise" scale="10" xChannelSelector="R" yChannelSelector="G" result="distortedHighlights" />
+				<feColorMatrix in="distortedHighlights" type="matrix"
+					values="10 -5 -5 0 0
+						-5 10 -5 0 0
+						-5 -5 10 0 0
+						0 0 0 1 0" result="vibrantHighlights" />
+
+				<feColorMatrix in="vibrantHighlights" type="matrix"
+					values="1 0 0 0 0
+						0 1 0 0 0
+						0 0 1 0 0
+						1 1 1 50 -42" result="finalGlints" />
+
+				<feMerge>
+					<feMergeNode in="neutralBase" />
+					<feMergeNode in="finalGlints" />
+				</feMerge>
+			</filter>
+			
+			<rect width="100%" height="100%" filter="url(#grainy-texture)" />
+		</svg>`
+		WebdeskDB.createTable("_backgrounds")
+		WebdeskDB.set("_backgrounds", "Default-Light", lightSVG)
+		WebdeskDB.set("_backgrounds", "Default-Dark", darkSVG)
+		loadBackground(darkSVG)
 	}
 	async total() {
 		localStorage.setItem("user", true)
-		await WebdeskDB.createTable("_customs")
-		await WebdeskDB.createTable("_backgrounds")
-		inits.UI()
+		inits.customization()
+		inits.background()
 	}
 }
 export const WebdeskDB = new class {
@@ -359,7 +435,7 @@ export const MessagingHub = new class {
 		return link.titlebar.port1
 	}
 	propagateEvent(name, data) {
-		const sendData = removeHTMLElements(data)
+		const sendData = filterHTMLElements(data)
 		MessagingHub.windowToChannels.forEach((link) => {
 			link.content.port1.postMessage({ command: "event", payload: { event: name, data: sendData }})
 			link.titlebar.port1.postMessage({ command: "event", payload: { event: name, data: sendData }})
@@ -372,17 +448,21 @@ export const MessagingHub = new class {
 }
 
 fetch("/api/getManifests").then(async (response) => {
-	ApplicationManifests = await response.json()
+	Object.assign(ApplicationManifests, await response.json())
 	WebdeskEvent.MANIFESTS_READY.emit(ApplicationManifests)
 
 	if (newUser) setTimeout(() => WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" }), 1000)
-}).catch((error) => { console.log(error) })
+}).catch(error => console.log(error))
 
 document.adoptedStyleSheets.push(customStyleSheet)
 
 if (newUser) inits.total()
 
-// if (activeCustomName) WebdeskDB.get("_customs", activeCustomName).then((css) => customStyleSheet.replace(css))
-// else inits.UI()
+// if (activeCustomName) WebdeskDB.get("_customs", activeBackgroundName).then(loadCSS)
+// else inits.customization()
 
-inits.UI()
+// if (activeBackgroundName) WebdeskDB.get("_backgrounds", activeBackgroundName).then(loadBackground)
+// else inits.background()
+
+inits.customization()
+inits.background()

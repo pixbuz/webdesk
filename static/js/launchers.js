@@ -1,8 +1,7 @@
-import { WebdeskEvent } from "./core"
+import { WebdeskEvent, ApplicationManifests } from "./core"
 
 const space = document.querySelector(".Launcher.Space")
 let includeText = true
-const ApplicationManifests = {}
 
 function addLauncher(name, manifest) {
 	const launcherWrapper = document.createElement("button"),
@@ -25,7 +24,6 @@ function addLauncher(name, manifest) {
 }
 
 function queueLaunchers(manifests) {
-	Object.assign(ApplicationManifests, manifests)
 	for (const [ name, manifest ] of Object.entries(manifests).sort()) {
 		if (manifest.service) { continue }
 		else { addLauncher(name, manifest) }

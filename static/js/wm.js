@@ -1,6 +1,7 @@
 // TODO: Make centerWindow toggle-able from settings
+// TODO: Windows identified with symbols?
 
-import { WebdeskEvent, MessagingHub } from "./core"
+import { WebdeskEvent, MessagingHub, activeCustomObject } from "./core"
 
 const Factory = new class {
 	space = document.querySelector(".Window.Space")
@@ -15,6 +16,10 @@ const Factory = new class {
 			titlebarWrapper = document.createElement("header"),
 			content = document.createElement("iframe"),
 			titlebar = document.createElement("iframe")
+
+		// const test = Symbol(windowWrapper)
+		// console.log(test.description == windowWrapper)
+		// ^^^ VEEEERY INTRESTING
 
 		MessagingHub.generatePorts(windowIdentifier)
 		// windowWrapper.classList.add("loading")
@@ -73,8 +78,9 @@ const Factory = new class {
 		Factory.open.set(windowIdentifier, windowWrapper)
 	}
 	titlebarLoaded(id, iframe, promiseResolve) {
-		MessagingHub.sendTitlebarPorts(id, iframe, { command: "init", payload: { app: id.description, palette: null /* TODO */, }})
-			.addEventListener("message", (messageEvent) => Titlebar.messageInterpreter(messageEvent, iframe.closest("[window]")) )
+		const titlebarPort = MessagingHub.sendTitlebarPorts(id, iframe, { command: "init", payload: { app: id.description, palette: activeCustomObject.palette }})
+		titlebarPort.addEventListener("message", messageEvent => Titlebar.messageInterpreter(messageEvent, iframe.closest("[window]")) )
+		titlebarPort.start()
 		promiseResolve()
 	}
 	contentLoaded(id, iframe, promiseResolve) {
@@ -93,7 +99,7 @@ const Factory = new class {
 }
 
 const Animationer = new class {
-	#animationTimeout = 10000
+	#animationTimeout = 1000
 
 	/** @param {import("./core").TargetData} data */ open({ target }) { Animationer.runAnimation(target, "open") }
 	/** @param {import("./core").TargetData} data */ unMaximise({ target }) { Animationer.runAnimation(target, "unmaximise") }
@@ -107,8 +113,6 @@ const Animationer = new class {
 }
 
 const Titlebar = new class {
-	titlebarVars
-
 	/** @param {import("./core").FocusData} data */
 	relayFocusChange({ lost, gain }) {
 		if (gain && MessagingHub.windowToChannels.get(gain)) {
@@ -141,17 +145,10 @@ const Titlebar = new class {
 			}
 			case "move-start": { return WebdeskEvent.WINDOW_MOVE_START.emit({ ...message.data, target: appWindow }) }
 
-			case "close": { return WebdeskEvent.WINDOW_CLOSING.emit({ closed: appWindow }) }
+			case "close": { return WebdeskEvent.WINDOW_CLOSE.emit({ target: appWindow }) }
 			case "minimise": { return WebdeskEvent.WINDOW_MINIMISE.emit({ target: appWindow }) }
 			case "maximise": { return Titlebar.relayMaximise({ target: appWindow }) }
 		}
-	}
-	/** @param {import("./core").CustomizationData} customizationData */
-	setUpVars({ id, css, object, force }) {
-		Titlebar.titlebarVars = css
-			.split("; ")
-			.filter((cssVar) => { return cssVar.startsWith("--windows-") && cssVar.includes("titlebar") })
-			.join("; ")
 	}
 }
 
@@ -178,10 +175,10 @@ const Focuser = new class {
 			appWindow.style.zIndex = Math.max(20, 29 - appWindowIndex)
 		}
 	}
-	/** @param {import("./core").CloseData} data */
-	clearHistory({ closed }) {
-		closed.classList.remove("focus")
-		Focuser.focusHistory = Focuser.focusHistory.filter((appWindow) => { return !(appWindow.classList.contains("closing")) })
+	/** @param {import("./core").TargetData} data */
+	clearHistory({ target }) {
+		target.classList.remove("focus")
+		Focuser.focusHistory = Focuser.focusHistory.filter(appWindow => !appWindow.classList.contains("close"))
 		if (Focuser.focusHistory[0]) { Focuser.focusHistory[0].classList.add("focus") }
 		WebdeskEvent.WINDOW_UPDATED_FOCUS.emit({ lost: undefined, gain: Focuser.focusHistory[0] })
 	}
@@ -309,13 +306,11 @@ WebdeskEvent.WINDOW_MINIMISE_END.on(Animationer.unMinimise)
 WebdeskEvent.WINDOW_CLOSE.on(Animationer.close)
 
 
-WebdeskEvent.CUSTOMIZATION_LOADED.on(Titlebar.setUpVars)
 WebdeskEvent.WINDOW_UPDATED_FOCUS.on(Titlebar.relayFocusChange)
-// WebdeskEvent.CUSTOMIZATION_CHANGE_SAVED.on(TitlebarFactory.setUpVars)
 
 
 WebdeskEvent.WINDOW_UPDATED_FOCUS.on(Focuser.adjustZIndexes)
-WebdeskEvent.WINDOW_CLOSING.on(Focuser.clearHistory)
+WebdeskEvent.WINDOW_CLOSE.on(Focuser.clearHistory)
 
 WebdeskEvent.WINDOW_RESIZE_START.on(Focuser.focusWindow)
 WebdeskEvent.WINDOW_MOVE_START.on(Focuser.focusWindow)

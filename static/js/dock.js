@@ -69,9 +69,10 @@ function add({ app, manifest }) {
 	open.append(icon)
 }
 
-/** @param {import("./core").CloseData} data */
-function updateClosedWindow({ closed, open }) {
-	const icon = windowToIcon.get(closed)
+/** @param {import("./core").TargetData} data */
+function updateClosedWindow({ target }) {
+	const icon = windowToIcon.get(target)
+	console.log(target, icon)
 
 	if (icon) {
 		windowToIcon.delete(closed)
@@ -100,97 +101,10 @@ function updateClockElement({ update }) {
 	})
 }
 
-const Stator = new class {
-	inHover = false
-	isOverlapped = false
-	downTimeout = 0
-	upTimeout = 0
-	autoHide
-
-	/** @param {import("./core").CustomizationData} data */
-	updateVars({ id, css, object }) {
-		Stator.autoHide = object.dock.behavior.autoHide
-		Stator.dockState()
-	}
-	dockUpCheck() {
-		const { mode } = Stator.autoHide
-
-		if (mode === "always") { return Stator.inHover }
-		else if (mode === "overlap") { return !Stator.isOverlapped || Stator.inHover }
-		else { return true }
-	}
-	dockState(skipWait = false) {
-		if (Stator.dockUpCheck()) {
-			clearTimeout(Stator.downTimeout)
-			clearTimeout(Stator.upTimeout)
-			return Stator.upTimeout = setTimeout(() => {
-				if (Stator.dockUpCheck()) { element.classList.add("up") }
-			}, skipWait ? 0 : Stator.autoHide.upDelay)
-		}
-
-		clearTimeout(Stator.downTimeout)
-		clearTimeout(Stator.upTimeout)
-		Stator.downTimeout = setTimeout(() => {
-			if (!Stator.dockUpCheck()) { element.classList.remove("up") }
-		}, skipWait ? 0 : Stator.autoHide.upDelay)
-	}
-
-	observer() {
-		const dockBox = element.getBoundingClientRect()
-		const windows = document.querySelectorAll(".Window.Space article[app]:not(.minimised)")
-		let overlapped = false
-
-		for (const win of windows) {
-			const box = win.getBoundingClientRect()
-			const collision = !(
-				box.right < dockBox.left ||
-				box.left > dockBox.right ||
-				box.bottom < dockBox.top ||
-				box.top > dockBox.bottom
-			)
-
-			if (collision) {
-				overlapped = true
-				break
-			} else if (win.classList.contains("maximised")) {
-				overlapped = true
-				break
-			}
-		}
-
-		if (Stator.isOverlapped !== overlapped) {
-			Stator.isOverlapped = overlapped
-			Stator.dockState()
-		}
-	}
-
-	constructor() {
-		element.addEventListener("pointerenter", () => {
-			Stator.inHover = true
-			Stator.dockState()
-		})
-		element.addEventListener("pointerleave", () => {
-			Stator.inHover = false
-			Stator.dockState()
-		})
-
-		const observer = new MutationObserver(() => { requestAnimationFrame(this.observer) })
-		observer.observe(document.querySelector(".Window.Space"), {
-			attributes: true,
-			childList: true,
-			subtree: true,
-			attributeFilter: [ "style", "class" ]
-		})
-	}
-}
-
-WebdeskEvent.CUSTOMIZATION_LOADED.on(Stator.updateVars)
-// WebdeskEvent.CUSTOMIZATION_CHANGE_SAVED.on(Stator.updateVars)
-
 WebdeskEvent.CLOCK_UPDATE.on(updateClockElement)
 
 WebdeskEvent.LAUNCHER_CLICK.on(add)
-WebdeskEvent.WINDOW_CLOSING.on(updateClosedWindow)
+WebdeskEvent.WINDOW_CLOSE.on(updateClosedWindow)
 
 WebdeskEvent.WINDOW_MINIMISE.on(minimised.add)
 WebdeskEvent.WINDOW_MINIMISE_END.on(maximised.remove)

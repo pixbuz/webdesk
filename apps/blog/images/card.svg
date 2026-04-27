@@ -1,6 +1,9 @@
 <svg version="1.1" viewBox="0 0 52 28" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 	<style>
-		tspan { text-transform: capitalize; }
+		tspan {
+			font-family: system-ui, -apple-system;
+			text-transform: capitalize;
+		}
 	</style>
 	<g>
 		<circle id="path5" cx="4" cy="4" r=".125" fill="#bfbfbf" style="paint-order:stroke fill markers"/>

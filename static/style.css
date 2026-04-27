@@ -1,32 +1,3 @@
-
-* {
-	margin: 0;
-	padding: 0;
-	position: relative;
-	box-sizing: border-box;
-	font-family: Inter, Roboto, system-ui, -apple-system;
-}
-
-html {
-	background: #000;
-	position: static;
-	overflow: hidden;
-	height: 100svh;
-	width: 100svw;
-	z-index: 0;
-}
-
-body {
-	background: #000;
-	position: relative;
-	overflow: hidden;
-	height: 100svh;
-	width: 100svw;
-	z-index: 0;
-	justify-content: center;
-	display: flex;
-}
-
 .NoConnection {
 	pointer-events: none !important;
 	backdrop-filter: blur(99px);
@@ -59,34 +30,6 @@ body {
 	aspect-ratio: 1;
 	height: 100%;
 	fill: none;
-}
-
-.Space {
-	width: 100%;
-	height: 100%;
-	pointer-events: none;
-	position: absolute;
-	inset: 0;
-}
-
-.Space > * {
-	pointer-events: all;
-}
-
-.Space.Background {
-	z-index: 00;
-}
-
-.Space.Launcher {
-	z-index: 10;
-}
-
-.Space.Window {
-	z-index: 20;
-}
-
-.Space.Error {
-	z-index: 40;
 }
 
 .Background {
@@ -122,6 +65,7 @@ body {
 	display: flex;
 	width: 5vmin;
 	border: none;
+	color: var(--content);
 }
 
 [launcher] .icon {
@@ -132,7 +76,6 @@ body {
 [launcher] .name {
 	text-transform: capitalize;
 	text-align: center;
-	display: none;
 	flex: 1;
 }
 
@@ -148,8 +91,10 @@ body {
 	bottom: 16px;
 	height: 32px;
 	z-index: 30;
-	background: #FFF;
 	padding: 4px;
+	background: var(--canvas);
+	color: var(--content);
+	border-radius: 8px;
 }
 
 [dock] .Open {
@@ -187,6 +132,7 @@ body {
 	display: flex;
 	height: 50%;
 	width: 100%;
+	color: var(--content);
 }
 
 [dock] .Clock .Date {
@@ -213,7 +159,7 @@ body {
 	pointer-events: none;
 }
 
-[icon] .icon {
+[icon] img {
 	max-height: 100%;
 	aspect-ratio: 1;
 }
@@ -226,14 +172,14 @@ body {
 	will-change: top, left, width, height;
 	padding: calc(2px + 4px);
 	border-radius: calc(2px * 2 + 4px);
-	border: solid 2px #FFF;
-	background: #888;
+	border: solid 2px rgb(from var(--content) calc(r + 16) calc(g + 16) calc(b + 16));
+	background: rgb(from var(--canvas) calc(r + 16) calc(g + 16) calc(b + 16));
 	position: absolute;
 }
 
 [window].focus {
-	background: #FFF;
-	border: #888;
+	border: solid 2px var(--content);
+	background: var(--canvas);
 }
 
 [window].loading {

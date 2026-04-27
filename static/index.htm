@@ -8,6 +8,49 @@
 		<link rel="manifest" href="/manifest">
 		<link rel="preload" href="/api/getManifests" as="fetch" crossorigin="anonymous">
 		<link rel="modulepreload" href="/core">
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				position: relative;
+				box-sizing: border-box;
+				font-family: Inter, Roboto, system-ui, -apple-system;
+			}
+
+			html {
+				background: #000;
+				position: static;
+				overflow: hidden;
+				height: 100svh;
+				width: 100svw;
+				z-index: 0;
+			}
+
+			body {
+				background: #000;
+				position: relative;
+				overflow: hidden;
+				height: 100svh;
+				width: 100svw;
+				z-index: 0;
+				justify-content: center;
+				display: flex;
+			}
+
+			.Space {
+				width: 100%;
+				height: 100%;
+				pointer-events: none;
+				position: absolute;
+				inset: 0;
+			}
+
+			.Space > * { pointer-events: all; }
+			.Space.Background { z-index: 00; }
+			.Space.Launcher { z-index: 10; }
+			.Space.Window { z-index: 20; }
+			.Space.Error { z-index: 40; }
+		</style>
 	</head>
 	<body class="">
 		<div class="Background" aria-hidden="true"></div>

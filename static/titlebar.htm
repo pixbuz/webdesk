@@ -31,13 +31,12 @@
 				width: 21px;
 			}
 			.title {
-				color: var(--windows-color-titlebar-title);
+				color: var(--content);
 				text-transform: capitalize;
 				text-align: center;
 				margin: auto;
 				flex: 1;
 			}
-			body.focus .title { color: var(--windows-color-titlebar-focus-title); }
 			.buttons {
 				justify-content: flex-end;
 				flex-flow: row nowrap;
@@ -54,13 +53,9 @@
 				border: none;
 				height: 85%;
 			}
-			[minimise] { background: var(--windows-color-titlebar-buttons-mini); }
-			[maximise] { background: var(--windows-color-titlebar-buttons-maxi); }
-			[close] { background: var(--windows-color-titlebar-buttons-close); }
-
-			body.focus [minimise] { background: var(--windows-color-titlebar-focus-buttons-mini); }
-			body.focus [maximise] { background: var(--windows-color-titlebar-focus-buttons-maxi); }
-			body.focus [close] { background: var(--windows-color-titlebar-focus-buttons-close); }
+			[minimise] { background: var(--success); }
+			[maximise] { background: var(--accent); }
+			[close] { background: var(--error); }
 		</style>
 	</head>
 	<body>
@@ -87,9 +82,8 @@ function com({ data: message, ports }) {
 		init(message.payload)
 	}
 
-	console.log(message)
 	switch(message.command) {
-		case "css": return updateVar(message.data)
+		case "css": return updatePalette(message.data)
 		case "focus": return updateFocus(message.data)
 	}
 }
@@ -99,15 +93,17 @@ function updateFocus(inFocus) {
 	else { document.body.classList.remove("focus") }
 }
 
-function updateVar(details) {
-	document.documentElement.style.setProperty(details.css, details.value)
+function updatePalette(palette) {
+	const paletteRules = [ ]
+	for (const [ color, value ] of Object.entries(palette)) { paletteRules.push(`--${color}: ${value};`) }
+	document.body.setAttribute("style", `${paletteRules.join("")}`)
 }
 
-function init({ app, palette}) {
+function init({ app, palette }) {
 	document.querySelector(".title").innerText = app
-	document.documentElement.setAttribute("style", palette)
-
 	document.querySelector(".icon").src = `http://${app}.localhost/icon`
+
+	updatePalette(palette)
 
 	// IDEA: using right mouse click moves but doesn't update the window focus
 	document.body.addEventListener("pointermove", (event) => port.postMessage({ command: "move", data: { x: event.screenX, y: event.screenY } }))
