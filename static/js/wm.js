@@ -73,8 +73,7 @@ const Factory = new class {
 		Factory.open.set(windowIdentifier, windowWrapper)
 	}
 	titlebarLoaded(id, iframe, promiseResolve) {
-		MessagingHub.sendTitlebarPorts(id, iframe, { command: "init", payload: { app: id.description, palette: null /* TODO */, }
-		})
+		MessagingHub.sendTitlebarPorts(id, iframe, { command: "init", payload: { app: id.description, palette: null /* TODO */, }})
 			.addEventListener("message", (messageEvent) => Titlebar.messageInterpreter(messageEvent, iframe.closest("[window]")) )
 		promiseResolve()
 	}
