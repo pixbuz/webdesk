@@ -60,61 +60,22 @@ function removeHTMLElements(leaf) {
 	}
 	return serialized
 }
-function loadCSS(css) {
-	for (const [ selector, rules ] of Object.entries(css)) {
-		console.log(`${selector} { ${rules} }`)
-		customStyleSheet.insertRule(`${selector} { ${rules} }`)
-	}
+function loadCSS(css, blocking = false) {
+	if (blocking) await customStyleSheet.replace(css)
+	else customStyleSheet.replace(css)
 	WebdeskEvent.CUSTOMIZATION_LOADED.emit({ css })
 }
-function cssToJson(cssString) {
-	const cssStyleSheet = {}
-	const pureCss = cssString
-		.replace(/\/\*[\s\S]*?\*\//g, "")
-		.replace(/[\n\r\t]/g, " ") 
-		.replace(/\s+/g, " ")
-		.trim()
 
-	let i = 0
-	while (i < pureCss.length) {
-		let openBrace = pureCss.indexOf('{', i)
-		if (openBrace === -1) break
-
-		const selector = pureCss.substring(i, openBrace).trim()
-
-		let depth = 0
-		let closeBrace = -1
-
-		for (let j = openBrace; j < pureCss.length; j++) {
-			if (pureCss[j] === '{') depth++
-			if (pureCss[j] === '}') depth--
-
-			if (depth === 0) {
-				closeBrace = j
-				break
-			}
-		}
-
-		if (closeBrace !== -1) {
-			const rules = pureCss.substring(openBrace + 1, closeBrace).trim()
-			cssStyleSheet[selector] = rules
-			
-			i = closeBrace + 1
-		} else break
-	}
-
-	return cssStyleSheet
-}
-
-/** @template T */
-class WebdeskEventBase {
+class WebdeskEventTemplate {
 	/** @type {((data: T) => void)[]} */
 	#callbacks = [ ]
+	#name = ""
 
 	/** @param {Partial<T>} data */
 	emit(data = {}) {
 		WebdeskEvent.emitToIframes(this, data)
 		this.#callbacks.forEach((callback) => { callback(data) })
+		MessagingHub.propagateEvent(this.#name, data)
 	}
 
 	/** @param {...((data: T) => void)} newCallbacks */
@@ -123,80 +84,45 @@ class WebdeskEventBase {
 	/** @param {...((data: T) => void)} callback */
 	off(callback) { this.#callbacks = this.#callbacks.filter((registredCallback) => { registredCallback !== callback }) }
 
-	constructor() { }
+	constructor(name) { WebdeskEvent[this.name = name] = this }
 }
 
-/** @extends {WebdeskEventBase<EmptyData>} */ class EmptyEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<LauncherData>} */ class LauncherEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<OpeningData>} */ class OpeningEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<InteractionData>} */ class InteractionEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<CloseData>} */ class CloseEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<FocusData>} */ class FocusEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<TargetData>} */ class TargetEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<ClockData>} */ class ClockEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<CustomizationData>} */ class CustomizationEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<ChangeData>} */ class ChangeEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<BackgroundData>} */ class BackgroundEvent extends WebdeskEventBase {}
-/** @extends {WebdeskEventBase<ReadyData>} */ class ReadyEvent extends WebdeskEventBase {}
+new WebdeskEventTemplate("MANIFESTS_READY")
+new WebdeskEventTemplate("LAUNCHER_CLICK")
+new WebdeskEventTemplate("TITLEBAR_READY")
+new WebdeskEventTemplate("CONTENT_READY")
+new WebdeskEventTemplate("WINDOW_MOVE_START")
+new WebdeskEventTemplate("WINDOW_MOVE")
+new WebdeskEventTemplate("WINDOW_MOVE_END")
+new WebdeskEventTemplate("WINDOW_RESIZE_START")
+new WebdeskEventTemplate("WINDOW_RESIZE")
+new WebdeskEventTemplate("WINDOW_RESIZE_END")
+new WebdeskEventTemplate("WINDOW_UPDATED_FOCUS")
+new WebdeskEventTemplate("WINDOW_OPENING")
+new WebdeskEventTemplate("WINDOW_OPEN")
+new WebdeskEventTemplate("WINDOW_CLOSING")
+new WebdeskEventTemplate("WINDOW_CLOSE")
+new WebdeskEventTemplate("WINDOW_MAXIMISE")
+new WebdeskEventTemplate("WINDOW_MAXIMISE_END")
+new WebdeskEventTemplate("WINDOW_MINIMISE")
+new WebdeskEventTemplate("WINDOW_MINIMISE_END")
+new WebdeskEventTemplate("DOCK_HOVER")
+new WebdeskEventTemplate("DOCK_HOVER_END")
+new WebdeskEventTemplate("ICON_CLICK")
+new WebdeskEventTemplate("CLOCK_UPDATE")
+new WebdeskEventTemplate("CUSTOMIZATION_LOAD_REQUEST")
+new WebdeskEventTemplate("CUSTOMIZATION_LOADED")
+new WebdeskEventTemplate("CUSTOMIZATION_PREVIEW")
+new WebdeskEventTemplate("CUSTOMIZATION_PREVIEW_SAVE_REQUEST")
+new WebdeskEventTemplate("CUSTOMIZATION_PREVIEW_SAVED")
+new WebdeskEventTemplate("BACKGROUND_LOAD_REQUEST")
+new WebdeskEventTemplate("BACKGROUND_LOADED")
+new WebdeskEventTemplate("BACKGROUND_REMOVE_ALL") // ???
+new WebdeskEventTemplate("BACKGROUND_UPLOAD_REQUEST")
+new WebdeskEventTemplate("BACKGROUND_UPLOADED")
 
 export let ApplicationManifests
-export class WebdeskEvent {
-	static MANIFESTS_READY = new ReadyEvent()
-	static LAUNCHER_CLICK = new LauncherEvent()
-	static TITLEBAR_READY = new ReadyEvent()
-
-	static CONTENT_READY = new ReadyEvent()
-
-	static WINDOW_MOVE_START = new InteractionEvent()
-	static WINDOW_MOVE = new InteractionEvent()
-	static WINDOW_MOVE_END = new InteractionEvent()
-
-	static WINDOW_RESIZE_START = new InteractionEvent()
-	static WINDOW_RESIZE = new InteractionEvent()
-	static WINDOW_RESIZE_END = new InteractionEvent()
-
-	static WINDOW_UPDATED_FOCUS = new FocusEvent()
-	static WINDOW_OPENING = new OpeningEvent()
-	static WINDOW_OPEN = new TargetEvent()
-	
-	static WINDOW_CLOSING = new CloseEvent()
-	static WINDOW_CLOSE = new TargetEvent()
-
-	static WINDOW_MAXIMISE = new TargetEvent()
-	static WINDOW_MAXIMISE_END = new TargetEvent()
-
-	static WINDOW_MINIMISE = new TargetEvent()
-	static WINDOW_MINIMISE_END = new TargetEvent()
-
-	static DOCK_HOVER = new EmptyEvent()
-	static DOCK_HOVER_END = new EmptyEvent()
-	static ICON_CLICK = new TargetEvent()
-	static CLOCK_UPDATE = new ClockEvent()
-
-	static CUSTOMIZATION_LOAD_REQUEST = new CustomizationEvent()
-	static CUSTOMIZATION_LOADED = new CustomizationEvent()
-
-	static CUSTOMIZATION_PREVIEW = new ChangeEvent()
-	static CUSTOMIZATION_PREVIEW_SAVE_REQUEST = new ChangeEvent()
-	static CUSTOMIZATION_PREVIEW_SAVED = new CustomizationEvent()
-
-	static BACKGROUND_LOAD_REQUEST = new BackgroundEvent()
-	static BACKGROUND_LOADED = new BackgroundEvent()
-	static BACKGROUND_REMOVE_ALL = new EmptyEvent()
-	// ^^^ ?????
-
-	static BACKGROUND_UPLOAD_REQUEST = new EmptyEvent()
-	static BACKGROUND_UPLOADED = new BackgroundEvent()
-	
-	static emitToIframes(thisArg, data) {
-		const names = Object.keys(WebdeskEvent)
-		const types = Object.values(WebdeskEvent)
-
-		const nameIndex = types.indexOf(thisArg)
-
-		MessagingHub.propagateEvent(names[nameIndex], data)
-	}
-}
+export const WebdeskEvent
 const SWManager = new class {
 	loadInformation() {
 		navigator.storage.estimate().then(({ usage, quota }) => {
@@ -215,10 +141,8 @@ const SWManager = new class {
 	constructor() {
 		navigator.serviceWorker.addEventListener("message", this.com)
 		navigator.serviceWorker.register("/sw")
-			.then((registration) => {
-				if (registration.active) { registration.active.postMessage("checkHashes") }
-			})
-			.catch((error) => { console.error(error) })
+			.then(registration => registration.active.postMessage("checkHashes"))
+			.catch(error => console.error(error))
 	}
 }
 const inits = new class {
@@ -451,7 +375,7 @@ fetch("/api/getManifests").then(async (response) => {
 	ApplicationManifests = await response.json()
 	WebdeskEvent.MANIFESTS_READY.emit(ApplicationManifests)
 
-	if (newUser) { setTimeout(() => { WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" }) }, 1000) }
+	if (newUser) setTimeout(() => WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" }), 1000)
 }).catch((error) => { console.log(error) })
 
 document.adoptedStyleSheets.push(customStyleSheet)
