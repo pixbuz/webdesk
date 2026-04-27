@@ -171,6 +171,7 @@ const inits = new class {
 				"error": "rgb(248, 96, 64)",
 				"canvas": "rgb(248, 248, 255)",
 				"content": "rgb(26, 26, 46)",
+				"contrast": "-1",
 			}
 			const darkPalette = {
 				"accent": "rgb(64, 96, 248)",
@@ -178,6 +179,7 @@ const inits = new class {
 				"error": "rgb(248, 96, 64)",
 				"canvas": "rgb(14, 14, 18)",
 				"content": "rgb(248, 248, 255)",
+				"contrast": "+1",
 			}
 			WebdeskDB.set("_customs", "Default-Light", { css: (await css), palette: lightPalette })
 			WebdeskDB.set("_customs", "Default-Dark", { css: (await css), palette: darkPalette })

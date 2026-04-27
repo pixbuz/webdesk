@@ -5,10 +5,10 @@ let port
 window.addEventListener("message", com, { once: true })
 
 function com({ data: { command, data }, ports }) {
-	if (!port) {
-		port = ports[0]
-		port.start()
-		port.addEventListener("message", com)
+	if (!webdeskCom) {
+		webdeskCom = ports[0]
+		webdeskCom.start()
+		webdeskCom.addEventListener("message", com)
 	}
 
 	console.log(data)

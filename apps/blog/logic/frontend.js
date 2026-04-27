@@ -3,6 +3,8 @@ const searchInput = document.querySelector(".hero input")
 
 // 1. We keep a master list of all entries in memory
 let masterEntries = []
+let titlebarCom
+let webdeskCom
 
 async function init() {
 	const res = await fetch("/api/getEntries")
@@ -117,5 +119,28 @@ function addEntry(name, extract, date) {
 
 	entriesContainer.append(element)
 }
+
+function com({ data: message, ports }) {
+	if (ports) {
+		webdeskCom = ports[0]
+		titlebarCom = ports[1]
+		webdeskCom.start()
+		titlebarCom.start()
+		initStyle(message.payload.palette)
+	}
+
+	console.log(message)
+	switch(message.command) {
+		case "palette": { return initStyle(message.payload) }
+	}
+}
+
+function initStyle(palette) {
+	const paletteRules = [ ]
+	for (const [ color, value ] of Object.entries(palette)) { paletteRules.push(`--${color}: ${value};`) }
+	document.body.setAttribute("style", `${paletteRules.join("")}`)
+}
+
+window.addEventListener("message", com, { once: true })
 
 init()

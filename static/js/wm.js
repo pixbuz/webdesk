@@ -84,8 +84,12 @@ const Factory = new class {
 		promiseResolve()
 	}
 	contentLoaded(id, iframe, promiseResolve) {
-		MessagingHub.sendContentPorts(id, iframe)
+		const contentPort = MessagingHub.sendContentPorts(id, iframe, { command: "init", payload: { palette: activeCustomObject.palette } })
+		contentPort.addEventListener("message", messageEvent => Content.messageInterpreter(messageEvent, iframe.closest("[window]")))
+		iframe.addEventListener("load", () => contentPort.postMessage({ command: "palette", payload: activeCustomObject.palette }))
+		contentPort.start()
 		promiseResolve()
+		// TODO: Fix this (bad)
 	}
 	/** @param {import("./core").TargetData} data */ maximise({ target }) { target.classList.add("maximised") }
 	/** @param {import("./core").TargetData} data */ minimise({ target }) { target.classList.add("minimised") }
