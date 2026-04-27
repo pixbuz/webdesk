@@ -15,10 +15,12 @@ const options = config.ssl ? {
 	hostname: config.hostname,
 	handler: requestHandler,
 }
+log.verbose(`Server settings are: ${JSON.stringify(options)}`)
 
 const _server = Deno.serve({
 	...options,
 	onListen({ hostname, port }) {
+		log.verbose(`SSL in config is set to: ${config.ssl}`)
 		config.ssl ? log.info("Server using TSL/SSL") : log.warn("Server running unsecured")
 		log.info(`Server listening on ${config.ssl ? "https:" : "http:"}//${hostname}:${port}`)
 	}
@@ -31,7 +33,7 @@ function requestHandler(browserRequest: Request, _connInfo: Deno.ServeHandlerInf
 	const subOriginName = requestURL.hostname.substring(0, requestURL.hostname.lastIndexOf("."))
 	const subOriginRoute = AppRoute.registred[subOriginName]
 
-	log.debug(`Recived request for "${browserRequest.url}"`)
+	log.verbose(`Server recived request for "${browserRequest.url}"`)
 
 	if (subOriginName === "") { return webdeskRoute.respond(browserRequest) }
 	else if (subOriginRoute) { return subOriginRoute.respond(browserRequest) }

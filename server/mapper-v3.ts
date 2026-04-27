@@ -47,9 +47,11 @@ const MIMES = Object.freeze({
 	mp4: "video/mp4",
 	wav: "audio/wav",
 })
+log.verbose(`Mapper knows these mimes: ${Object.keys(MIMES).join(", ")}`)
 
 class SmartResponse extends Response {
 	constructor(browserOrigin: string | null, fileOrigin: RelativeFilePath = "", body?: unknown) {
+	log.debug(`Sending response: origin ${browserOrigin}, file ${fileOrigin}, body length ${body.length}`)
 		const extension = fileOrigin.substring(fileOrigin.lastIndexOf(".") + 1)
 		const mime = MIMES[extension as keyof typeof MIMES] || "application/octet-stream"
 		super(body as BodyInit, { status: (body ? 200 : 400), headers: {
