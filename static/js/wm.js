@@ -1,49 +1,45 @@
 // TODO: Make centerWindow toggle-able from settings
 // TODO: Windows identified with symbols?
 
-import { WebdeskEvent, MessagingHub, activeCustomObject } from "./core"
+import { WebdeskEvent, MessagingHub, activeCustomObject, openWindows } from "./core"
 
 const Factory = new class {
 	space = document.querySelector(".Window.Space")
 	centerOffsets = [ ]
-	open = new Map()
 
 	/** @param {import("./core").LauncherData} data */
 	async skeletonizeWindow({ app, manifest }) {
-		const windowIdentifier = Symbol(app)
+		
 		const windowWrapper = document.createElement("article"),
 			contentWrapper = document.createElement("section"),
 			titlebarWrapper = document.createElement("header"),
 			content = document.createElement("iframe"),
 			titlebar = document.createElement("iframe")
+		const windowIdentifier = Symbol(app)
 
-		// const test = Symbol(windowWrapper)
-		// console.log(test.description == windowWrapper)
-		// ^^^ VEEEERY INTRESTING
-
-		MessagingHub.generatePorts(windowIdentifier)
-		// windowWrapper.classList.add("loading")
+		windowWrapper.classList.add("loading")
 
 		Promise.all([
-			new Promise((resolve) => { titlebar.addEventListener("load", () => Factory.titlebarLoaded(windowIdentifier, titlebar, resolve), { once: true }) }),
-			new Promise((resolve) => { content.addEventListener("load", () => Factory.contentLoaded(windowIdentifier, content, resolve), { once: true }) })
+			new Promise(resolve => titlebar.addEventListener("load", () => Factory.loaded(windowIdentifier, titlebar, resolve), { once: true })),
+			new Promise(resolve => content.addEventListener("load", () => Factory.loaded(windowIdentifier, content, resolve), { once: true })),
 		]).then(() => {
 			windowWrapper.classList.remove("loading")
-			WebdeskEvent.WINDOW_OPEN.emit({ target: windowWrapper })
+			WebdeskEvent.WINDOW_OPEN.emit({ symbol: windowIdentifier, element: windowWrapper })
 		})
 
 		titlebar.classList.add("titlebar")
 		titlebar.setAttribute("allowfullscreen", false)
-		titlebar.setAttribute("sandbox", `allow-scripts`)
+		titlebar.setAttribute("sandbox", `allow-scripts allow-same-origin`)
 		titlebar.setAttribute("title", `Application ${app}'s titlebar`)
-		titlebar.src = `${window.location.protocol}//${ manifest.path ? `${app}.${window.location.hostname}` : window.location.hostname }/titlebar`
+		titlebar.src = `${window.location.protocol}//${ manifest.path ? `${app}.` : "" }${window.location.hostname}/titlebar`
+		if (!manifest.path) console.log("nerd vvv")
 
 		titlebarWrapper.append(titlebar)
 		titlebarWrapper.classList.add("titlebarWrapper")
 
 		content.classList.add("content")
 		content.setAttribute("allowfullscreen", false)
-		content.setAttribute("sandbox", `allow-scripts`)
+		content.setAttribute("sandbox", `allow-scripts allow-same-origin`)
 		content.setAttribute("title", `Application ${app}'s content`)
 		content.src = `${window.location.protocol}//${app}.${window.location.hostname}/`
 
@@ -75,21 +71,12 @@ const Factory = new class {
 		window.addEventListener("resize", () => { Mover.updatePositionIfCollision({ target: windowWrapper }) }) // ???
 
 		Factory.space.append(windowWrapper)
-		Factory.open.set(windowIdentifier, windowWrapper)
+		openWindows.set(windowIdentifier, windowWrapper)
 	}
-	titlebarLoaded(id, iframe, promiseResolve) {
-		const titlebarPort = MessagingHub.sendTitlebarPorts(id, iframe, { command: "init", payload: { app: id.description, palette: activeCustomObject.palette }})
-		titlebarPort.addEventListener("message", messageEvent => Titlebar.messageInterpreter(messageEvent, iframe.closest("[window]")) )
-		titlebarPort.start()
+	loaded(id, iframe, promiseResolve) {
+		const message = { command: "init", data: { app: id.description, palette: activeCustomObject.palette, origin: window.location.origin } }
+		iframe.contentWindow.postMessage(message, iframe.src)
 		promiseResolve()
-	}
-	contentLoaded(id, iframe, promiseResolve) {
-		const contentPort = MessagingHub.sendContentPorts(id, iframe, { command: "init", payload: { palette: activeCustomObject.palette } })
-		contentPort.addEventListener("message", messageEvent => Content.messageInterpreter(messageEvent, iframe.closest("[window]")))
-		iframe.addEventListener("load", () => contentPort.postMessage({ command: "palette", payload: activeCustomObject.palette }))
-		contentPort.start()
-		promiseResolve()
-		// TODO: Fix this (bad)
 	}
 	/** @param {import("./core").TargetData} data */ maximise({ target }) { target.classList.add("maximised") }
 	/** @param {import("./core").TargetData} data */ minimise({ target }) { target.classList.add("minimised") }
@@ -105,7 +92,7 @@ const Factory = new class {
 const Animationer = new class {
 	#animationTimeout = 1000
 
-	/** @param {import("./core").TargetData} data */ open({ target }) { Animationer.runAnimation(target, "open") }
+	/** @param {import("./core").OpenData} data */ open({ element: target }) { Animationer.runAnimation(target, "open") }
 	/** @param {import("./core").TargetData} data */ unMaximise({ target }) { Animationer.runAnimation(target, "unmaximise") }
 	/** @param {import("./core").TargetData} data */ unMinimise({ target }) { Animationer.runAnimation(target, "unminimise") }
 	/** @param {import("./core").TargetData} data */ close({ target }) { Animationer.runAnimation(target, "close", () => { target.remove() }) }
@@ -119,13 +106,13 @@ const Animationer = new class {
 const Titlebar = new class {
 	/** @param {import("./core").FocusData} data */
 	relayFocusChange({ lost, gain }) {
-		if (gain && MessagingHub.windowToChannels.get(gain)) {
-			const messageChannel = MessagingHub.windowToChannels.get(gain).titlebar
-			messageChannel.port1.postMessage({ command: "focus", data: true })
+		if (gain && MessagingHub.getChannels(gain)) {
+			const messageChannel = MessagingHub.getChannels(gain).titlebar
+			messageChannel.postMessage({ command: "focus", data: true })
 		}
-		if (lost && MessagingHub.windowToChannels.get(lost)) {
-			const messageChannel = MessagingHub.windowToChannels.get(lost).titlebar
-			messageChannel.port1.postMessage({ command: "focus", data: false })
+		if (lost && MessagingHub.getChannels(lost)) {
+			const messageChannel = MessagingHub.getChannels(gain).titlebar
+			messageChannel.postMessage({ command: "focus", data: false })
 		}
 	}
 	/** @param {import("./core").TargetData} data */
@@ -133,25 +120,21 @@ const Titlebar = new class {
 		if (target.classList.contains("maximised")) { WebdeskEvent.WINDOW_MAXIMISE_END.emit({ target }) }
 		else { WebdeskEvent.WINDOW_MAXIMISE.emit({ target }) }
 	}
-	/** @param {MessageEvent} messageEvent
-	@param {HTMLElement} appWindow */
-	messageInterpreter({ data: message }, appWindow) {
-		const app = appWindow.getAttribute("app")
-
+	/** @param {MessageEvent} messageEvent */
+	messageInterpreter({ data: message, appWindow}) {
 		switch(message.command) {
 			case "move-end": {
-				if (Mover.inMove) { return WebdeskEvent.WINDOW_MOVE_END.emit({ ...message.data, target: appWindow }) }
-				else { return }
+				if (Mover.inMove) return WebdeskEvent.WINDOW_MOVE_END.emit({ ...message.data, target: appWindow })
+				else return
 			}
 			case "move": {
-				if (Mover.inMove) { return WebdeskEvent.WINDOW_MOVE.emit({ ...message.data, target: appWindow }) }
-				else { return }
+				if (Mover.inMove) return WebdeskEvent.WINDOW_MOVE.emit({ ...message.data, target: appWindow })
+				else return
 			}
-			case "move-start": { return WebdeskEvent.WINDOW_MOVE_START.emit({ ...message.data, target: appWindow }) }
-
-			case "close": { return WebdeskEvent.WINDOW_CLOSE.emit({ target: appWindow }) }
-			case "minimise": { return WebdeskEvent.WINDOW_MINIMISE.emit({ target: appWindow }) }
-			case "maximise": { return Titlebar.relayMaximise({ target: appWindow }) }
+			case "move-start": return WebdeskEvent.WINDOW_MOVE_START.emit({ ...message.data, target: appWindow })
+			case "close": return WebdeskEvent.WINDOW_CLOSE.emit({ target: appWindow })
+			case "minimise": return WebdeskEvent.WINDOW_MINIMISE.emit({ target: appWindow })
+			case "maximise": return Titlebar.relayMaximise({ target: appWindow })
 		}
 	}
 }
@@ -195,7 +178,6 @@ const Mover = new class {
 	/** @param {import("./core").InteractionData} data */
 	init({ target, x, y }) {
 		target.classList.add("moving")
-		target.style.translate = ""
 		const box = target.getBoundingClientRect()
 
 		Mover.anchor = { x: (x - box.left), y: (y - box.top) }
@@ -308,6 +290,8 @@ WebdeskEvent.WINDOW_OPEN.on(Animationer.open)
 WebdeskEvent.WINDOW_MAXIMISE_END.on(Animationer.unMaximise)
 WebdeskEvent.WINDOW_MINIMISE_END.on(Animationer.unMinimise)
 WebdeskEvent.WINDOW_CLOSE.on(Animationer.close)
+
+WebdeskEvent.TITLEBAR_MESSAGE.on(Titlebar.messageInterpreter)
 
 
 WebdeskEvent.WINDOW_UPDATED_FOCUS.on(Titlebar.relayFocusChange)

@@ -3,6 +3,7 @@
 	"style": "style.css",
 	"script": "settings.js",
 	"icon": "icon.svg",
+	"service": true,
 
 	"description": "Customize Webdesk",
 	"titlebar": ""

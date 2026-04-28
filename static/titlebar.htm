@@ -66,27 +66,19 @@
 		</div>
 		<p class="title"></p>
 		<div class="buttons">
-			<button minimise onclick="port.postMessage({ command: `minimise` })"></button>
-			<button maximise onclick="port.postMessage({ command: `maximise` })"></button>
-			<button close onclick="port.postMessage({ command: `close` })"></button>
+			<button minimise onclick="window.parent.postMessage({ command: `minimise` })"></button>
+			<button maximise onclick="window.parent.postMessage({ command: `maximise` })"></button>
+			<button close onclick="window.parent.postMessage({ command: `close` })"></button>
 		</div>
 	</body>
 	<script>
-let port
-
 window.addEventListener("message", com, { once: true })
 
-function com({ data: message, ports }) {
-	if (!port) {
-		port = ports[0]
-		port.start()
-		port.addEventListener("message", (event) => com(event) )
-		init(message.payload)
-	}
-
+function com({ data: message }) {
 	switch(message.command) {
 		case "css": return updatePalette(message.data)
 		case "focus": return updateFocus(message.data)
+		case "init": return init(message.data)
 	}
 }
 
@@ -101,28 +93,30 @@ function updatePalette(palette) {
 	document.body.setAttribute("style", `${paletteRules.join("")}`)
 }
 
-function init({ app, palette }) {
+function init({ app, palette, origin }) {
 	document.querySelector(".title").innerText = app
-	document.querySelector(".icon").src = `http://${app}.localhost/icon`
+	document.querySelector(".icon").src = `${window.location.protocol}//${app}.${window.location.hostname}/icon`
 
 	updatePalette(palette)
 
 	// IDEA: using right mouse click moves but doesn't update the window focus
-	document.body.addEventListener("pointermove", (event) => port.postMessage({ command: "move", data: { x: event.screenX, y: event.screenY } }))
+	document.body.addEventListener("pointermove", (event) => window.parent.postMessage({ command: "move", data: { x: event.screenX, y: event.screenY } }))
 	document.body.addEventListener("pointerdown", sendPointerEvent)
 	document.body.addEventListener("pointerup", sendPointerEvent)
 }
 
 function sendPointerEvent(event) {
 	const data = { x: event.screenX, y: event.screenY }
+	let command
 	if (event.target.tagName === "BUTTON") return
 	else if (event.type === "pointerup") {
 		document.body.releasePointerCapture(event.pointerId)
-		port.postMessage({ command: "move-end", data })
+		command = "move-end"
 	} else {
 		document.body.setPointerCapture(event.pointerId)
-		port.postMessage({ command: "move-start", data })
+		command = "move-start"
 	}
+	window.parent.postMessage({ command, data })
 }
 	</script>
 </html>

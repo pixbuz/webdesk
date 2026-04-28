@@ -1,10 +1,12 @@
 // NOTE: Generator functions tho?
 // NOTE: Observers tho?
+// NOTE: "event" variable ???
 
-// TODO: Settings titlebar
+// TODO: More private webdesk events
 // TODO: Error handling for database things
-// TODO: Deprecate ApplicationManifests?
 // TODO: Intro window not opening for new users
+// TODO: Clock is not keeping time goofy
+// TODO: Make message types
 
 /** @typedef {Object} EmptyData */
 /** @typedef {Object} ClockData
@@ -26,10 +28,9 @@
 /** @typedef {Object} ChangeData
  * @property {string} css
  * @property {string} value */
-/** @typedef {Object} OpeningData
- * @property {HTMLElement} titlebar
- * @property {HTMLElement} window
- * @property {any} app */
+/** @typedef {Object} OpenData
+ * @property {HTMLElement} element
+ * @property {Symbol} id */
 /** @typedef {Object} BackgroundData
  * @property {number} id
  * @property {boolean} force
@@ -52,8 +53,70 @@ const backgroundWrapper = document.querySelector("body > .Background")
 const customStyleSheet = new CSSStyleSheet()
 
 export let activeCustomObject
+export const openWindows = new Map()
 export const WebdeskEvent = {}
 export const ApplicationManifests = {}
+
+class WebdeskEventTemplate {
+	/** @type {((data: T) => void)[]} */
+	#callbacks = [ ]
+	#name = ""
+
+	/** @param {Partial<T>} data */
+	emit(data = {}) { this.#callbacks.forEach(callback => callback(data)) }
+
+	/** @param {...((data: T) => void)} newCallbacks */
+	on(...newCallbacks) { this.#callbacks.push(...newCallbacks) }
+
+	/** @param {...((data: T) => void)} callback */
+	off(callback) { this.#callbacks = this.#callbacks.filter(registredCallback => registredCallback !== callback) }
+
+	constructor(name) { WebdeskEvent[this.#name = name] = this }
+}
+
+new WebdeskEventTemplate("MANIFESTS_READY")
+new WebdeskEventTemplate("LAUNCHER_CLICK")
+
+new WebdeskEventTemplate("WINDOW_MOVE_START")
+new WebdeskEventTemplate("WINDOW_MOVE")
+new WebdeskEventTemplate("WINDOW_MOVE_END")
+
+new WebdeskEventTemplate("WINDOW_RESIZE_START")
+new WebdeskEventTemplate("WINDOW_RESIZE")
+new WebdeskEventTemplate("WINDOW_RESIZE_END")
+
+new WebdeskEventTemplate("WINDOW_UPDATED_FOCUS")
+new WebdeskEventTemplate("WINDOW_OPEN")
+new WebdeskEventTemplate("WINDOW_CLOSE")
+
+new WebdeskEventTemplate("WINDOW_MAXIMISE")
+new WebdeskEventTemplate("WINDOW_MAXIMISE_END")
+
+new WebdeskEventTemplate("WINDOW_MINIMISE")
+new WebdeskEventTemplate("WINDOW_MINIMISE_END")
+
+new WebdeskEventTemplate("TITLEBAR_MESSAGE")
+new WebdeskEventTemplate("CONTENT_MESSAGE")
+new WebdeskEventTemplate("MESSAGE")
+
+new WebdeskEventTemplate("DOCK_HOVER")
+new WebdeskEventTemplate("DOCK_HOVER_END")
+
+new WebdeskEventTemplate("ICON_CLICK")
+
+new WebdeskEventTemplate("CLOCK_UPDATE")
+
+new WebdeskEventTemplate("CUSTOMIZATION_LOAD_REQUEST")
+new WebdeskEventTemplate("CUSTOMIZATION_LOADED")
+new WebdeskEventTemplate("CUSTOMIZATION_PREVIEW")
+new WebdeskEventTemplate("CUSTOMIZATION_PREVIEW_SAVE_REQUEST")
+new WebdeskEventTemplate("CUSTOMIZATION_PREVIEW_SAVED")
+
+new WebdeskEventTemplate("BACKGROUND_LOAD_REQUEST")
+new WebdeskEventTemplate("BACKGROUND_LOADED")
+new WebdeskEventTemplate("BACKGROUND_REMOVE_ALL") // ???
+new WebdeskEventTemplate("BACKGROUND_UPLOAD_REQUEST")
+new WebdeskEventTemplate("BACKGROUND_UPLOADED")
 
 function filterHTMLElements(leaf) {
 	if (!leaf) { return }
@@ -83,59 +146,6 @@ async function loadBackground(background) {
 	backgroundWrapper.innerHTML = background
 }
 
-class WebdeskEventTemplate {
-	/** @type {((data: T) => void)[]} */
-	#callbacks = [ ]
-	#name = ""
-
-	/** @param {Partial<T>} data */
-	emit(data = {}) {
-		this.#callbacks.forEach(callback => callback(data) )
-		MessagingHub.propagateEvent(this.#name, data)
-	}
-
-	/** @param {...((data: T) => void)} newCallbacks */
-	on(...newCallbacks) { this.#callbacks.push(...newCallbacks) }
-
-	/** @param {...((data: T) => void)} callback */
-	off(callback) { this.#callbacks = this.#callbacks.filter(registredCallback => registredCallback !== callback) }
-
-	constructor(name) { WebdeskEvent[this.#name = name] = this }
-}
-
-new WebdeskEventTemplate("MANIFESTS_READY")
-new WebdeskEventTemplate("LAUNCHER_CLICK")
-new WebdeskEventTemplate("TITLEBAR_READY")
-new WebdeskEventTemplate("CONTENT_READY")
-new WebdeskEventTemplate("WINDOW_MOVE_START")
-new WebdeskEventTemplate("WINDOW_MOVE")
-new WebdeskEventTemplate("WINDOW_MOVE_END")
-new WebdeskEventTemplate("WINDOW_RESIZE_START")
-new WebdeskEventTemplate("WINDOW_RESIZE")
-new WebdeskEventTemplate("WINDOW_RESIZE_END")
-new WebdeskEventTemplate("WINDOW_UPDATED_FOCUS")
-new WebdeskEventTemplate("WINDOW_OPENING")
-new WebdeskEventTemplate("WINDOW_OPEN")
-new WebdeskEventTemplate("WINDOW_CLOSE")
-new WebdeskEventTemplate("WINDOW_MAXIMISE")
-new WebdeskEventTemplate("WINDOW_MAXIMISE_END")
-new WebdeskEventTemplate("WINDOW_MINIMISE")
-new WebdeskEventTemplate("WINDOW_MINIMISE_END")
-new WebdeskEventTemplate("DOCK_HOVER")
-new WebdeskEventTemplate("DOCK_HOVER_END")
-new WebdeskEventTemplate("ICON_CLICK")
-new WebdeskEventTemplate("CLOCK_UPDATE")
-new WebdeskEventTemplate("CUSTOMIZATION_LOAD_REQUEST")
-new WebdeskEventTemplate("CUSTOMIZATION_LOADED")
-new WebdeskEventTemplate("CUSTOMIZATION_PREVIEW")
-new WebdeskEventTemplate("CUSTOMIZATION_PREVIEW_SAVE_REQUEST")
-new WebdeskEventTemplate("CUSTOMIZATION_PREVIEW_SAVED")
-new WebdeskEventTemplate("BACKGROUND_LOAD_REQUEST")
-new WebdeskEventTemplate("BACKGROUND_LOADED")
-new WebdeskEventTemplate("BACKGROUND_REMOVE_ALL") // ???
-new WebdeskEventTemplate("BACKGROUND_UPLOAD_REQUEST")
-new WebdeskEventTemplate("BACKGROUND_UPLOADED")
-
 const SWManager = new class {
 	loadInformation() {
 		navigator.storage.estimate().then(({ usage, quota }) => {
@@ -163,7 +173,7 @@ const inits = new class {
 		WebdeskDB.createTable("_customs")
 		const response = await fetch("/style")
 		if (response.ok) {
-			localStorage.setItem("activeCustomization", "Default")
+			localStorage.setItem("activeCustomization", "Default-Dark")
 			const css = response.text()
 			const lightPalette = {
 				"accent": "rgb(64, 96, 248)",
@@ -187,49 +197,50 @@ const inits = new class {
 		} else { /* Error stuff */ }
 	}
 	async background() {
+		WebdeskDB.createTable("_backgrounds")
+		localStorage.setItem("activeBackground", "Default-Dark")
 		const lightSVG = `
 			<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
 				<filter id="cool">
 					<feTurbulence baseFrequency="0.01" numOctaves="1" result="noise"/>
-						<feDiffuseLighting in="noise" lighting-color="#FFF" surfaceScale="2">
-							<feDistantLight azimuth="45" elevation="30" />
-						</feDiffuseLighting>
-					</filter>
+					<feDiffuseLighting in="noise" lighting-color="#FFF" surfaceScale="2">
+						<feDistantLight azimuth="45" elevation="30" />
+					</feDiffuseLighting>
+				</filter>
 				<rect width="100%" height="100%" filter="url(#cool)" />
 			</svg>`
-		const darkSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-			<filter id="grainy-texture" x="0" y="0" width="100%" height="100%">
-				<feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch" result="rawNoise" />
+		const darkSVG = `
+			<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+				<filter id="grainy-texture" x="0" y="0" width="100%" height="100%">
+					<feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch" result="rawNoise" />
 
-				<feColorMatrix in="rawNoise" type="matrix"
-					values="0.007 0.007 0.007 0 0
-						0.007 0.007 0.007 0 0
-						0.007 0.007 0.007 0 0
-						0 0 0 1 0" result="neutralBase" />
+					<feColorMatrix in="rawNoise" type="matrix"
+						values="0.007 0.007 0.007 0 0
+							0.007 0.007 0.007 0 0
+							0.007 0.007 0.007 0 0
+							0 0 0 1 0" result="neutralBase" />
 
-				<feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="1" stitchTiles="stitch" result="highlightNoise" />
-				<feDisplacementMap in="highlightNoise" in2="rawNoise" scale="10" xChannelSelector="R" yChannelSelector="G" result="distortedHighlights" />
-				<feColorMatrix in="distortedHighlights" type="matrix"
-					values="10 -5 -5 0 0
-						-5 10 -5 0 0
-						-5 -5 10 0 0
-						0 0 0 1 0" result="vibrantHighlights" />
+					<feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="1" stitchTiles="stitch" result="highlightNoise" />
+					<feDisplacementMap in="highlightNoise" in2="rawNoise" scale="10" xChannelSelector="R" yChannelSelector="G" result="distortedHighlights" />
+					<feColorMatrix in="distortedHighlights" type="matrix"
+						values="10 -5 -5 0 0
+							-5 10 -5 0 0
+							-5 -5 10 0 0
+							0 0 0 1 0" result="vibrantHighlights" />
 
-				<feColorMatrix in="vibrantHighlights" type="matrix"
-					values="1 0 0 0 0
-						0 1 0 0 0
-						0 0 1 0 0
-						1 1 1 50 -42" result="finalGlints" />
+					<feColorMatrix in="vibrantHighlights" type="matrix"
+						values="1 0 0 0 0
+							0 1 0 0 0
+							0 0 1 0 0
+							1 1 1 50 -42" result="finalGlints" />
 
-				<feMerge>
-					<feMergeNode in="neutralBase" />
-					<feMergeNode in="finalGlints" />
-				</feMerge>
-			</filter>
-			
-			<rect width="100%" height="100%" filter="url(#grainy-texture)" />
-		</svg>`
-		WebdeskDB.createTable("_backgrounds")
+					<feMerge>
+						<feMergeNode in="neutralBase" />
+						<feMergeNode in="finalGlints" />
+					</feMerge>
+				</filter>
+				<rect width="100%" height="100%" filter="url(#grainy-texture)" />
+			</svg>`
 		WebdeskDB.set("_backgrounds", "Default-Light", lightSVG)
 		WebdeskDB.set("_backgrounds", "Default-Dark", darkSVG)
 		loadBackground(darkSVG)
@@ -360,93 +371,26 @@ export const Time = new class {
 	}
 }
 export const MessagingHub = new class {
-	/** @type {Map<HTMLElement, object>} */
-	windowToChannels = new Map()
-
-	async #commandResponder({ data: { command, data } }, { content: contentChannel, titlebar: titlebarChannel }) {
-		switch(command) {
-			case "emit.event": {
-				WebdeskEvent[data.type].emit(data.payload)
-
-				return contentChannel.port1.postMessage({ command, payload: { } })
-			}
-			case "get.localstorage": {
-				const { key } = data
-				const value = localStorage.getItem(key)
-
-				return contentChannel.port1.postMessage({ command, payload: { value } })
-			}
-			case "get.db": {
-				const { table, key } = data
-				const value = await WebdeskDB.get(table, key)
-
-				return contentChannel.port1.postMessage({ command, payload: { value } })
-			}
-			case "getAll.db": {
-				const { table } = data
-				const value = await WebdeskDB.getAll(table)
-
-				return contentChannel.port1.postMessage({ command, payload: { value } })
-			}
-			case "get.style": {
-				const { target } = data
-				let style = null
-
-				switch(target) {
-					case "launchers": { style = StyleSheets.launchers.cssRules[0].cssText; break }
-					case "windows": { style = StyleSheets.windows.cssRules[0].cssText; break }
-					case "dock": { style = StyleSheets.dock.cssRules[0].cssText; break }
-					case "all": { style = { launchers: StyleSheets.launchers.cssRules[0].cssText, windows: StyleSheets.windows.cssRules[0].cssText, dock: StyleSheets.dock.cssRules[0].cssText }; break }
-				}
-
-				return contentChannel.port1.postMessage({ command, payload: { style } })
-			}
-			default: { return contentChannel.port1.postMessage({ command, payload: { } }) }
-		}
-	}
-	/** @param {CloseData} closeData */
-	#removeLink({ closed }) { MessagingHub.windowToChannels.delete(closed) }
-
-	generatePorts(identifier) {
-		const titlebarChannel = new MessageChannel(),
-		contentChannel = new MessageChannel(),
-		privateChannel = new MessageChannel()
-
-		const newLink = { content: contentChannel, titlebar: titlebarChannel, private: privateChannel }
-		MessagingHub.windowToChannels.set(identifier, newLink)
-
-		newLink.content.port1.addEventListener("message", (event) => { MessagingHub.#commandResponder(event, newLink) })
-
-		newLink.titlebar.port1.start()
-		newLink.content.port1.start()
-	}
-	sendContentPorts(identifier, iframe, message = "ports") {
-		const link = MessagingHub.windowToChannels.get(identifier),
-		{ port2: contentPort } = link.content,
-		{ port1: privatePort } = link.private
-
-		iframe.contentWindow.postMessage(message, "*", [ contentPort, privatePort ])
-		return link.content.port1
-	}
-	sendTitlebarPorts(identifier, iframe, message = "ports") {
-		const link = MessagingHub.windowToChannels.get(identifier),
-		{ port2: titlebarPort } = link.titlebar,
-		{ port2: privatePort } = link.private
-
-		iframe.contentWindow.postMessage(message, "*", [ titlebarPort, privatePort ])
-		return link.titlebar.port1
-	}
-	propagateEvent(name, data) {
-		const sendData = filterHTMLElements(data)
-		MessagingHub.windowToChannels.forEach((link) => {
-			link.content.port1.postMessage({ command: "event", payload: { event: name, data: sendData }})
-			link.titlebar.port1.postMessage({ command: "event", payload: { event: name, data: sendData }})
-		})
+	getChannels(appWindow) {
+		const titlebar = appWindow.querySelector(".titlebar").contentWindow
+		const content = appWindow.querySelector(".titlebar").contentWindow
+		return { titlebar, content }
 	}
 
-	constructor() {
-		WebdeskEvent.WINDOW_CLOSE.on(this.#removeLink)
+	/** @param {MessageEvent} data */
+	reciver({ origin, source, data }) {
+		const iframe = Array.from(document.querySelectorAll("iframe")).find(iframe => iframe.contentWindow === event.source)
+		
+		if (!iframe) return
+
+		const appWindow = iframe.closest("[window]")
+
+		if (iframe.classList.contains("titlebar")) WebdeskEvent.TITLEBAR_MESSAGE.emit({ data, appWindow })
+		else if (iframe.classList.contains("content")) WebdeskEvent.CONTENT_MESSAGE.emit({ data, appWindow })
+		else WebdeskEvent.MESSAGE.emit(data)
 	}
+
+	constructor() { }
 }
 
 fetch("/api/getManifests").then(async (response) => {
@@ -458,13 +402,12 @@ fetch("/api/getManifests").then(async (response) => {
 
 document.adoptedStyleSheets.push(customStyleSheet)
 
+window.addEventListener("message", MessagingHub.reciver)
+
 if (newUser) inits.total()
 
-// if (activeCustomName) WebdeskDB.get("_customs", activeBackgroundName).then(loadCSS)
-// else inits.customization()
+if (activeCustomName) WebdeskDB.get("_customs", activeCustomName).then(loadCSS)
+else inits.customization()
 
-// if (activeBackgroundName) WebdeskDB.get("_backgrounds", activeBackgroundName).then(loadBackground)
-// else inits.background()
-
-inits.customization()
-inits.background()
+if (activeBackgroundName) WebdeskDB.get("_backgrounds", activeBackgroundName).then(loadBackground)
+else inits.background()
