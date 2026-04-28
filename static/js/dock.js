@@ -1,5 +1,3 @@
-// TODO: When in overlap mode hide when a window is maximised
-
 import { Time, WebdeskEvent, ApplicationManifests } from "./core"
 
 const element = document.querySelector("[dock]")
@@ -53,8 +51,6 @@ const minimised = {
 
 /** @param {import("./core").TargetData} data */
 function add({ app, manifest }) {
-	if (manifest.service) { return }
-
 	const icon = document.createElement("button"),
 		image = document.createElement("img"),
 		name = document.createElement("p")

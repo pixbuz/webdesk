@@ -1,5 +1,5 @@
 // TODO: Make centerWindow toggle-able from settings
-// TODO: Windows identified with symbols?
+// TODO: Widonws not getting dragged first try
 
 import { WebdeskEvent, MessagingHub, activeCustomObject, openWindows } from "./core"
 
@@ -31,8 +31,8 @@ const Factory = new class {
 		titlebar.setAttribute("allowfullscreen", false)
 		titlebar.setAttribute("sandbox", `allow-scripts allow-same-origin`)
 		titlebar.setAttribute("title", `Application ${app}'s titlebar`)
-		titlebar.src = `${window.location.protocol}//${ manifest.path ? `${app}.` : "" }${window.location.hostname}/titlebar`
-		if (!manifest.path) console.log("nerd vvv")
+		titlebar.src = `${window.location.protocol}//${ manifest.titlebar ? `${app}.` : "" }${window.location.hostname}/titlebar`
+		if (!manifest.titlebar) console.log("nerd vvv")
 
 		titlebarWrapper.append(titlebar)
 		titlebarWrapper.classList.add("titlebarWrapper")
@@ -75,6 +75,7 @@ const Factory = new class {
 	}
 	loaded(id, iframe, promiseResolve) {
 		const message = { command: "init", data: { app: id.description, palette: activeCustomObject.palette, origin: window.location.origin } }
+		iframe.addEventListener("load", () => iframe.contentWindow.postMessage(message, iframe.src))
 		iframe.contentWindow.postMessage(message, iframe.src)
 		promiseResolve()
 	}

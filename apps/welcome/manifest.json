@@ -1,0 +1,6 @@
+{
+	"service": true,
+	"index": "index.html",
+	"icon": "icon.svg",
+	"script": "script.js"
+}

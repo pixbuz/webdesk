@@ -4,7 +4,6 @@
 
 // TODO: More private webdesk events
 // TODO: Error handling for database things
-// TODO: Intro window not opening for new users
 // TODO: Clock is not keeping time goofy
 // TODO: Make message types
 
@@ -170,7 +169,6 @@ const SWManager = new class {
 }
 const inits = new class {
 	async customization() {
-		WebdeskDB.createTable("_customs")
 		const response = await fetch("/style")
 		if (response.ok) {
 			localStorage.setItem("activeCustomization", "Default-Dark")
@@ -191,13 +189,13 @@ const inits = new class {
 				"content": "rgb(248, 248, 255)",
 				"contrast": "+1",
 			}
+			await WebdeskDB.createTable("_customs")
 			WebdeskDB.set("_customs", "Default-Light", { css: (await css), palette: lightPalette })
 			WebdeskDB.set("_customs", "Default-Dark", { css: (await css), palette: darkPalette })
 			loadCSS({ css: (await css), palette: darkPalette })
 		} else { /* Error stuff */ }
 	}
 	async background() {
-		WebdeskDB.createTable("_backgrounds")
 		localStorage.setItem("activeBackground", "Default-Dark")
 		const lightSVG = `
 			<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
@@ -241,6 +239,7 @@ const inits = new class {
 				</filter>
 				<rect width="100%" height="100%" filter="url(#grainy-texture)" />
 			</svg>`
+		await WebdeskDB.createTable("_backgrounds")
 		WebdeskDB.set("_backgrounds", "Default-Light", lightSVG)
 		WebdeskDB.set("_backgrounds", "Default-Dark", darkSVG)
 		loadBackground(darkSVG)
@@ -397,7 +396,7 @@ fetch("/api/getManifests").then(async (response) => {
 	Object.assign(ApplicationManifests, await response.json())
 	WebdeskEvent.MANIFESTS_READY.emit(ApplicationManifests)
 
-	if (newUser) setTimeout(() => WebdeskEvent.LAUNCHER_CLICK.emit({ app: "intro" }), 1000)
+	if (newUser) setTimeout(() => WebdeskEvent.LAUNCHER_CLICK.emit({ app: "welcome", manifest: ApplicationManifests["welcome"] }), 500)
 }).catch(error => console.log(error))
 
 document.adoptedStyleSheets.push(customStyleSheet)

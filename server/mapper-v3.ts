@@ -558,16 +558,13 @@ export class AppRoute extends BaseRoute {
 	public static getHashes() { return { data: JSON.stringify(AppRoute.hashes), type: MIMES.json } }
 
 	public static async create(name: string) {
+		log.verbose(`Attempting to create a new route for ${name}`)
 		try {
-			log.verbose(`Attempting to create a new route for ${name}`)
 			const manifestContents = await Deno.readTextFile(`./apps/${name}/manifest.json`)
 			const manifestObject = new ApplicationManifest(JSON.parse(manifestContents))
 			
-			// TODO: Idk make it a bit more understandable
-			if (!manifestObject.service) {
-				log.debug(`Adding ${name} to the manifest list`)
-				AppRoute.manifests[name] = manifestObject
-			}
+			log.verbose(`Adding ${name} to the manifest list`)
+			AppRoute.manifests[name] = manifestObject
 			
 			AppRoute.registred[name] = new AppRoute(name, manifestObject)
 			log.info(`Successfully created the route for application ${name}`)

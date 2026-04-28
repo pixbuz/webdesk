@@ -1,8 +1,32 @@
+:root {
+	--bg-dots: rgb(from var(--content) r g b / 10%);
+	--border-color: rgb(from var(--canvas)
+		calc(r + 5 * var(--contrast))
+		calc(g + 5 * var(--contrast))
+		calc(b + 10 * var(--contrast)));
+	--input-bg: rgb(from var(--canvas)
+		calc(r + 5 * var(--contrast))
+		calc(g + 5 * var(--contrast))
+		calc(b + 10 * var(--contrast)));
+	--hero-bg: linear-gradient(135deg,
+		rgb(from var(--canvas)
+			calc(r + 10 * var(--contrast))
+			calc(g + 10 * var(--contrast))
+			calc(b + 15 * var(--contrast))),
+		transparent);
+	
+	--radius-pill: 24px;
+	--radius-card: 12px;
+	--gap-main: 20px;
+	--transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	--transition-fast: all 0.2s ease;
+}
+
 * {
 	margin: 0;
 	padding: 0;
 	box-sizing: border-box;
-	font-family: 'Inter', system-ui, -apple-system, sans-serif;
+	font-family: 'Inter', system-ui, -apple-system;
 }
 
 body {
@@ -18,12 +42,12 @@ body {
 
 .hero {
 	width: 100%;
-	padding: 60px 20px 40px;
+	padding: 60px var(--gap-main) 40px;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	gap: 16px;
-	background: linear-gradient(135deg, rgb(from var(--canvas) calc(r + 10) calc(g + 10) calc(b + 15)), var(--canvas));
+	background: var(--hero-bg);
 	text-align: center;
 }
 
@@ -37,13 +61,13 @@ body {
 .hero input {
 	width: 100%;
 	max-width: 480px;
-	padding: 12px 20px;
-	border-radius: 24px;
-	border: 1px solid var(--card-border);
-	background: rgb(from var(--canvas) calc(r + 5) calc(g + 5) calc(b + 10));
+	padding: 12px var(--gap-main);
+	border-radius: var(--radius-pill);
+	border: 1px solid var(--border-color);
+	background: var(--input-bg);
 	color: var(--content);
 	font-size: 0.95rem;
-	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	transition: var(--transition-smooth);
 }
 
 .hero input:focus {
@@ -55,23 +79,23 @@ body {
 .latest {
 	margin: -20px auto 0;
 	max-width: 1200px;
-	padding: 32px 20px;
+	padding: 32px var(--gap-main);
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-	gap: 20px;
+	gap: var(--gap-main);
 }
 
 a.entry {
 	display: flex;
 	flex-direction: column;
 	background: var(--card-bg);
-	border-radius: 12px;
-	border: 1px solid var(--card-border);
+	border-radius: var(--radius-card);
+	border: 1px solid var(--border-color);
 	text-decoration: none;
 	color: inherit;
 	overflow: hidden;
 	cursor: pointer;
-	transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+	transition: var(--transition-fast), box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 a.entry:hover {
@@ -102,7 +126,7 @@ a.entry:active {
 }
 
 a.entry .info {
-	border-top: 1px solid var(--card-border);
+	border-top: 1px solid var(--border-color);
 	padding: 12px 16px;
 	box-sizing: border-box;
 	display: grid;
