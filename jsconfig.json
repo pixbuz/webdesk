@@ -8,7 +8,7 @@
 			"/core": ["./static/js/core.js"],
 			"/dock": ["./static/js/dock.js"],
 			"/launchers": ["./static/js/launchers.js"],
-			// "/sw": ["./static/js/sw.js"],
+			"/sw": ["./static/js/sw.js"],
 			"/ui": ["./static/js/ui.js"],
 			"/wm": ["./static/js/wm.js"],
 		}

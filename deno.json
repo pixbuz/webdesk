@@ -1,4 +1,6 @@
 {
-  "imports": {
-  }
+	"tasks": {
+		"dev": "deno run --watch -A server/main.ts",
+		"app": "deno run -A scripts/create-app.ts"
+	}
 }
