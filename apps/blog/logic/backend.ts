@@ -30,7 +30,7 @@ async function processEntry(name: string) {
 	} catch { /* Error stuff */ }
 	
 	const contentFragment = await marked.parse(content!)
-	const entryHTML = postHtmlBase.replace("Example Content", contentFragment)
+	const entryHTML = postHtmlBase.replace("you shouldn't see this but props if you do", contentFragment)
 
 	const imgMatch = contentFragment.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i)
 	const pMatch = contentFragment.match(/<p[^>]*>(.*?)<\/p>/is)

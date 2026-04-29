@@ -17,7 +17,7 @@ function addLauncher(name, manifest) {
 	title.innerText = name
 
 	launcherWrapper.setAttribute("launcher", name)
-	launcherWrapper.setAttribute("title", manifest.description == "undefined" ? name : manifest.description)
+	launcherWrapper.setAttribute("title", manifest.description)
 	launcherWrapper.append(icon, title)
 
 	space.appendChild(launcherWrapper)

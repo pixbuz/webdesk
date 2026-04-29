@@ -50,7 +50,7 @@ const minimised = {
 }
 
 /** @param {import("./core").TargetData} data */
-function add({ app, manifest }) {
+function add({ app, target }) {
 	const icon = document.createElement("button"),
 		image = document.createElement("img"),
 		name = document.createElement("p")
@@ -61,6 +61,9 @@ function add({ app, manifest }) {
 	icon.classList.add("focus")
 	icon.setAttribute("icon", app)
 	icon.append(name, image)
+	windowToIcon.set(target, icon)
+
+	icon.addEventListener("click", () => WebdeskEvent.WINDOW_MINIMISE_END.emit({ target }))
 
 	open.append(icon)
 }
@@ -68,7 +71,7 @@ function add({ app, manifest }) {
 /** @param {import("./core").TargetData} data */
 function updateClosedWindow({ target }) {
 	const icon = windowToIcon.get(target)
-	console.log(target, icon)
+	console.log(target, icon, windowToIcon)
 
 	if (icon) {
 		windowToIcon.delete(closed)
@@ -99,7 +102,7 @@ function updateClockElement({ update }) {
 
 WebdeskEvent.CLOCK_UPDATE.on(updateClockElement)
 
-WebdeskEvent.LAUNCHER_CLICK.on(add)
+WebdeskEvent.WINDOW_OPEN.on(add)
 WebdeskEvent.WINDOW_CLOSE.on(updateClosedWindow)
 
 WebdeskEvent.WINDOW_MINIMISE.on(minimised.add)

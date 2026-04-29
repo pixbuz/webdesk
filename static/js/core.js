@@ -380,13 +380,11 @@ export const MessagingHub = new class {
 	reciver({ origin, source, data }) {
 		const iframe = Array.from(document.querySelectorAll("iframe")).find(iframe => iframe.contentWindow === event.source)
 		
-		if (!iframe) return
+		if (!iframe) WebdeskEvent.MESSAGE.emit(data)
 
 		const appWindow = iframe.closest("[window]")
-
 		if (iframe.classList.contains("titlebar")) WebdeskEvent.TITLEBAR_MESSAGE.emit({ data, appWindow })
 		else if (iframe.classList.contains("content")) WebdeskEvent.CONTENT_MESSAGE.emit({ data, appWindow })
-		else WebdeskEvent.MESSAGE.emit(data)
 	}
 
 	constructor() { }
@@ -405,8 +403,10 @@ window.addEventListener("message", MessagingHub.reciver)
 
 if (newUser) inits.total()
 
-if (activeCustomName) WebdeskDB.get("_customs", activeCustomName).then(loadCSS)
-else inits.customization()
+// if (activeCustomName) WebdeskDB.get("_customs", activeCustomName).then(loadCSS)
+// else inits.customization()
 
 if (activeBackgroundName) WebdeskDB.get("_backgrounds", activeBackgroundName).then(loadBackground)
 else inits.background()
+
+inits.customization()

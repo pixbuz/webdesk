@@ -265,7 +265,7 @@
 			<text x="26" y="24" fill="#fff" font-family="inter" font-size="3px" font-weight="bold" xml:space="preserve">
 				<tspan>00/00/0000</tspan>
 			</text>
-			<text x="-3.5" y="16" fill="#000" font-family="inter" font-size="6px" font-weight="bold" xml:space="preserve">
+			<text x="-3.5" y="16" fill="#fff" font-family="inter" font-size="6px" font-weight="bold" xml:space="preserve">
 				<tspan>Example Title</tspan>
 			</text>
 		</g>

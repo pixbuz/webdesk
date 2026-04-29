@@ -1,28 +1,22 @@
-.NoConnection {
-	pointer-events: none !important;
-	backdrop-filter: blur(99px);
-	justify-content: center;
-	flex-flow: row nowrap;
-	align-items: center;
-	position: absolute;
-	overflow: hidden;
-	font-weight: 500;
-	color: #888;
-	display: none;
-	height: 2vmin;
-	padding: 1px;
-	width: 100%;
+[offline] {
 	z-index: 9;
+	position: absolute;
+	width: 100svw;
+	height: 2.5svh;
+	display: none;
+	flex-flow: row nowrap;
+	background: var(--canvas);
+	color: var(--content);
 	gap: 4px;
-	left: 0;
-	top: 0;
+	justify-content: center;
+	border-radius: 0 0 4px 4px;
 }
 
-.NoConnection:has(.visible) {
+[offline]:has(.visible) {
 	display: flex;
 }
 
-.NoConnection svg {
+[offline] svg {
 	stroke-linejoin: round;
 	stroke-linecap: round;
 	stroke: currentColor;
@@ -182,9 +176,24 @@
 	background: var(--canvas);
 }
 
-[window].loading {
+[window].loading,
+[window].minimised {
 	opacity: 0;
 	transition: none;
+	pointer-events: none;
+}
+
+[window].maximised,
+[window].maximised .contentWrapper {
+	top: 0 !important;
+	left: 0 !important;
+	width: 100svw !important;
+	height: 100svh !important;
+	max-width: 100svw;
+	max-height: 100svh;
+	border-radius: 0;
+	border: none;
+	padding: 0;
 }
 
 [window].moving {
@@ -216,8 +225,8 @@
 	min-width: 10svw;
 	max-height: 95svh;
 	max-width: 95svw;
-	height: 25svh;
-	width: 25svw;
+	height: 30svh;
+	width: 30svw;
 	pointer-events: none;
 	border-radius: 4px;
 	user-select: none;

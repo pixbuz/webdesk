@@ -24,7 +24,7 @@ const Factory = new class {
 			new Promise(resolve => content.addEventListener("load", () => Factory.loaded(windowIdentifier, content, resolve), { once: true })),
 		]).then(() => {
 			windowWrapper.classList.remove("loading")
-			WebdeskEvent.WINDOW_OPEN.emit({ symbol: windowIdentifier, element: windowWrapper })
+			WebdeskEvent.WINDOW_OPEN.emit({ app, target: windowWrapper })
 		})
 
 		titlebar.classList.add("titlebar")
@@ -93,7 +93,7 @@ const Factory = new class {
 const Animationer = new class {
 	#animationTimeout = 1000
 
-	/** @param {import("./core").OpenData} data */ open({ element: target }) { Animationer.runAnimation(target, "open") }
+	/** @param {import("./core").OpenData} data */ open({ target }) { Animationer.runAnimation(target, "open") }
 	/** @param {import("./core").TargetData} data */ unMaximise({ target }) { Animationer.runAnimation(target, "unmaximise") }
 	/** @param {import("./core").TargetData} data */ unMinimise({ target }) { Animationer.runAnimation(target, "unminimise") }
 	/** @param {import("./core").TargetData} data */ close({ target }) { Animationer.runAnimation(target, "close", () => { target.remove() }) }
