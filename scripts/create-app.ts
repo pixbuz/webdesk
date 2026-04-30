@@ -1,12 +1,11 @@
 let name: string, force: boolean
 
 if (Deno.args.includes("--force")) {
-	force = Deno.args.includes("--force")
-}
+	force = true
+	name = Deno.args[1]
+} else name = Deno.args[0]
 
-const [ name ] = Deno.args
 const path = `apps/${name}`
-const force = 
 
 if (Deno.args.length == 0) {
 	console.log("Specify an app name!")
@@ -19,33 +18,43 @@ try {
 		console.log("The app exists! Use --force to overwrite!")
 		Deno.exit(1)
 	} else await Deno.remove(path, { recursive: true })
-} catch (e) { }
+} catch (_e) { /*  */ }
 
 try {
 	Deno.mkdir(path)
 
-	const service = confirm("Is the app a service?")
-	const index = prompt("Application index file name:", `${name}.html`)
-	const style = prompt("Application style sheet file name:", `${name}.css`)
-	const script = prompt("Application js script file name:", `${name}.js`)
-	const icon = prompt("Application icon file name:", `${name}.png`)
-	const titlebar = prompt("Application custom titlebar file name:", `${name}-titlebar.html`)
+	console.log("%cIs the app a %cservice%c?", "color: white;", "color: blue; font-weight: 1000;", "color: white;")
+	const service = confirm()
 	
-	if (titlebar !== "") { Deno.writeTextFile(`${path}/${titlebar}`, "") }
-	if (index !== "") { Deno.writeTextFile(`${path}/${index}`, "") }
-	if (style !== "") { Deno.writeTextFile(`${path}/${style}`, "") }
-	if (script !== "") { Deno.writeTextFile(`${path}/${script}`, "") }
+	console.log("%cWhat's the app %cindex%c file name?", "color: white;", "color: blue; font-weight: 1000;", "color: white;")
+	const index = prompt("", `${name}.html`)
+	if (index !== "") Deno.writeTextFile(`${path}/${index}`, "")
+	
+	console.log("%cWhat's the app %cstyle sheet%c file name?", "color: white;", "color: blue; font-weight: 1000;", "color: white;")
+	const style = prompt("", `${name}.css`)
+	if (style !== "") Deno.writeTextFile(`${path}/${style}`, "")
+	
+	console.log("%cWhat's the app %cfrontend js script%c file name?", "color: white;", "color: blue; font-weight: 1000;", "color: white;")
+	const script = prompt("", `${name}.js`)
+	if (script !== "") Deno.writeTextFile(`${path}/${script}`, "")
+	
+	console.log("%cWhat's the app %cicon%c file name?", "color: white;", "color: blue; font-weight: 1000;", "color: white;")
+	const icon = prompt("", `${name}.png`)
+	
+	console.log("%cWhat's the app %ccustom html titlebar%c file name?", "color: white;", "color: blue; font-weight: 1000;", "color: white;")
+	const titlebar = prompt("", `${name}-titlebar.html`)
+	if (titlebar !== "") Deno.writeTextFile(`${path}/${titlebar}`, "")
 	
 	let manifest = "{\n"
-	manifest += `\t"service": ${service},\n`
-	manifest += `\t"titlebar": "${titlebar}",\n`
-	manifest += `\t"script": "${script}",\n`
-	manifest += `\t"style": "${style}",\n`
-	manifest += `\t"index": "${index}",\n`
 	manifest += `\t"icon": "${icon}",\n`
+	manifest += `\t"index": "${index}",\n`
+	manifest += `\t"style": "${style}",\n`
+	manifest += `\t"ignore": [],\n`
+	manifest += `\t"script": "${script}",\n`
 	manifest += `\t"routes": {},\n`
+	manifest += `\t"service": ${service},\n`
 	manifest += `\t"modules": [],\n`
-	manifest += `\t"ignore": []\n`
+	manifest += `\t"titlebar": "${titlebar}"\n`
 	manifest += `}\n`
 
 	Deno.writeTextFile(`${path}/manifest.json`, manifest)
