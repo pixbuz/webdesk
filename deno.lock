@@ -1,13 +1,7 @@
 {
   "version": "5",
-  "specifiers": {
-    "jsr:@std/media-types@^1.1.0": "1.1.0"
-  },
-  "jsr": {
-    "@std/media-types@1.1.0": {
-      "integrity": "c9d093f0c05c3512932b330e3cc1fe1d627b301db33a4c2c2185c02471d6eaa4"
-    }
-  },
+  "specifiers": {},
+  "jsr": {},
   "remote": {
     "https://esm.sh/marked@12.0.0": "3f2c4d66d5db8b47fd8b9b8085c74abf349969b9043ae62add3effed7c0b233e",
     "https://esm.sh/marked@12.0.0/denonext/marked.mjs": "da9d02cfda3aacc3bc1d8b305203a8b45487a3c6ff683cdc5f994a67e58a2bad",

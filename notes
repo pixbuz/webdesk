@@ -1,7 +1,3 @@
-- Different Color Palettes
-- Desktop Image
-- Preferences
-- Themes
 Make a file system(?)
 
 Hacked : ()
@@ -10,6 +6,18 @@ Hacked : ()
 maybe switching to webstorm was the play
 the endgame for webdesk is having everything handled by the sw: from app installs to other stuff, all local. The server is only used in order to install the app in the browser
 
-day 107 of working on webdesk 🙏
+day 108 of working on webdesk 🙏
 
 history: raw parameters -> event -> details -> data
+
+Lock in day 108 to get a fully functional version:
+- Customization app
+	- Change theme
+	- Download a theme
+	- Upload a theme
+	- Upload backgrounds
+- Blog dates not working
+- Dock minimise icon click if window is open
+- Actual terminal app
+- Animations
+- Code review
