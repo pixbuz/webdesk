@@ -6,7 +6,7 @@ let masterEntries = []
 let titlebarCom
 let webdeskCom
 
-async function init() {
+async function now() {
 	const res = await fetch("/api/getEntries")
 	const data = await res.json()
 	
@@ -135,4 +135,4 @@ function initStyle({ palette }) {
 
 window.addEventListener("message", com)
 
-init()
+now()

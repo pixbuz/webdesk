@@ -18,7 +18,7 @@ function com({ data: { command, data }, ports }) {
 	}
 }
 
-async function init() {
+async function now() {
 	commHistory = await webdeskDB.get("terminal", "history")
 
 	if (commHistory == undefined) {
@@ -66,4 +66,4 @@ document.addEventListener("keydown", async (event) => {
 	}
 })
 
-init()
+now()

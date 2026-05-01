@@ -5,5 +5,10 @@
 	"style": "blog.css",
 	"script": "logic/frontend.js",
 	"ignore": [ "entries", "logic", "viewer.html" ],
-	"modules": [ "logic/backend.ts" ]
+	"modules": [ "logic/backend.ts" ],
+	"routes": {
+		"viewer/viewer.html": "/viewer",
+		"viewer/viewer.css": "/viewer/css",
+		"viewer/viewer.js": "/viewer/js"
+	}
 }

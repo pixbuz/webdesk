@@ -77,7 +77,7 @@ class Cashier {
 	}
 }
 
-async function init() {
+async function now() {
 	try {
 		const response = await fetch("/api/appHashes")
 		const hashes = await response.json()
@@ -108,7 +108,7 @@ async function interceptor(event) {
 
 /** @param {MessageEvent} event */
 async function com(event) {
-	if (event.data === "checkHashes") { await init() }
+	if (event.data === "checkHashes") { await now() }
 	else { log(`Unknown command ${event.data}`) }
 }
 
@@ -120,7 +120,7 @@ function log(...stuff) {
 self.addEventListener("install", self.skipWaiting)
 self.addEventListener("fetch", (event) => { event.respondWith(interceptor(event)) })
 self.addEventListener("activate", (event) => { event.waitUntil((async () => {
-	await init()
+	await now()
 	await self.clients.claim()
 })())})
 self.addEventListener("message", com)

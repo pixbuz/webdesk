@@ -1,4 +1,4 @@
-import { Time, WebdeskEvent, ApplicationManifests } from "./core"
+import { Time, WebdeskEvent } from "./core"
 
 const element = document.querySelector("[dock]")
 const open = element.querySelector(".Open")
@@ -14,7 +14,7 @@ const clockPieces = {
 	year: clock.querySelector(".year"),
 }
 
-let mode, downDelay, upDelay
+// let mode, downDelay, upDelay
 const windowToIcon = new WeakMap()
 
 let focusedIcon
@@ -63,7 +63,7 @@ function add({ app, target }) {
 	icon.append(name, image)
 	windowToIcon.set(target, icon)
 
-	icon.addEventListener("click", () => WebdeskEvent.WINDOW_MINIMISE_END.emit({ target }))
+	icon.addEventListener("click", () => WebdeskEvent.ICON_CLICK.emit({ target, icon }))
 
 	open.append(icon)
 }
@@ -71,7 +71,6 @@ function add({ app, target }) {
 /** @param {import("./core").TargetData} data */
 function updateClosedWindow({ target }) {
 	const icon = windowToIcon.get(target)
-	console.log(target, icon, windowToIcon)
 
 	if (icon) {
 		windowToIcon.delete(closed)
@@ -100,6 +99,11 @@ function updateClockElement({ update }) {
 	})
 }
 
+function click({ target, icon }) {
+	if (target.classList.contains("minimised")) WebdeskEvent.WINDOW_MINIMISE_END.emit({ target })
+	else WebdeskEvent.WINDOW_MINIMISE.emit({ target })
+}
+
 WebdeskEvent.CLOCK_UPDATE.on(updateClockElement)
 
 WebdeskEvent.WINDOW_OPEN.on(add)
@@ -112,6 +116,8 @@ WebdeskEvent.WINDOW_MAXIMISE.on(maximised.add)
 WebdeskEvent.WINDOW_MAXIMISE_END.on(maximised.remove)
 
 WebdeskEvent.WINDOW_UPDATED_FOCUS.on(focus)
+
+WebdeskEvent.ICON_CLICK.on(click)
 
 Object.keys(clockPieces).forEach((piece) => {
 	clockPieces[piece].innerText = `${Time[piece]}`.padStart(2, 0)

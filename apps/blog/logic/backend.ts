@@ -1,6 +1,13 @@
 import { Marked, Token } from "https://esm.sh/marked@18.0.0"
 
-type EntryData = { html: string, cover: string, coverType: string, extract: string, date: string, link?: string }
+type EntryData = {
+	html: string,
+	cover: string,
+	coverType: string,
+	extract: string,
+	date: string,
+	link?: string
+}
 
 const marked = new Marked({
 	walkTokens(token: Token) {
@@ -13,15 +20,15 @@ const marked = new Marked({
 	}
 })
 
-const basePath = "apps/blog"
+const appPath = "apps/blog"
 const entries: Record<string, EntryData> = {}
-const svgFallbackCover = await Deno.readTextFile(`${basePath}/images/card.svg`)
-const postHtmlBase = await Deno.readTextFile(`${basePath}/viewer.html`)
+const svgFallbackCover = await Deno.readTextFile(`${appPath}/images/card.svg`)
+const postHtmlBase = await Deno.readTextFile(`${appPath}/viewer/viewer.html`)
 
 async function processEntry(name: string) {
 	if (name.includes("..") || name.includes("/")) { return }
 	
-	const filePath = `${basePath}/entries/${name}`
+	const filePath = `${appPath}/entries/${name}`
 	
 	let content: string, stats: Deno.FileInfo
 	try {
@@ -48,7 +55,7 @@ async function processEntry(name: string) {
 		.replace(/&gt;/g, '>')
 		.trim() : ""
 	
-	const creationDate = stats!.birthtime || new Date()
+	const creationDate = stats!.mtime!
 	const creationString = `${creationDate.getDate().toString().padStart(2, "0")}/${(creationDate.getMonth() + 1).toString().padStart(2, "0")}/${creationDate.getFullYear()}`
 	
 	if (!imageCover) {
@@ -63,7 +70,7 @@ async function processEntry(name: string) {
 }
 
 async function updateEntries() {
-	for await (const entry of Deno.readDir(`${basePath}/entries`)) {
+	for await (const entry of Deno.readDir(`${appPath}/entries`)) {
 		if (entry.isFile && entry.name.endsWith(".md")) {
 			await processEntry(entry.name)
 		}
@@ -85,7 +92,7 @@ export async function cover(request: Request) {
 		if (entry.link.includes("..")) { return { data: "forbidden", type: "text/plain" } }
 		
 		const cleanLink = entry.link.startsWith("/") ? entry.link.substring(1) : entry.link
-		const targetPath = `${basePath}/${cleanLink}`
+		const targetPath = `${appPath}/${cleanLink}`
 		
 		try {
 			const imageContents = await Deno.readFile(targetPath)

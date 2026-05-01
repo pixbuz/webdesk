@@ -326,47 +326,56 @@ export const WebdeskDB = new class {
 	}
 }
 export const Time = new class {
-	init = new Date()
-	seconds = this.init.getSeconds()
-	minutes = this.init.getMinutes()
-	hours = this.init.getHours()
-	day = this.init.getDate()
-	month = this.init.getMonth() + 1
-	year = this.init.getFullYear()
+	init() {
+		setTimeout(() => {
+			this.progress()
+			setInterval(this.progress, 1000)
+		}, 1000 - this.mills)
+		setInterval(this.sync, 5 * 60 * 1000)
+	}
+
+	sync() {
+		const now = new Date()
+		this.mills = now.getMilliseconds()
+		this.seconds = now.getSeconds()
+		this.minutes = now.getMinutes()
+		this.hours = now.getHours()
+		this.day = now.getDate()
+		this.month = now.getMonth() + 1
+		this.year = now.getFullYear()
+	}
 
 	progress() {
-		const changed = [ "seconds" ]
+		const update = [ "seconds" ]
 		Time.seconds++
 
 		if (Time.seconds >= 60) {
 			Time.seconds = 0
 			Time.minutes++
 
-			changed.push("minutes")
+			update.push("minutes")
 		}
 
 		if (Time.minutes >= 60) {
 			Time.minutes = 0
 			Time.hours++
 
-			changed.push("hours")
+			update.push("hours")
 		}
 
 		if (Time.hours >= 24) {
 			Time.hours = 0
 			Time.day++
 
-			changed.push("day")
+			update.push("day")
 		}
 
-		WebdeskEvent.CLOCK_UPDATE.emit({ update: changed })
+		WebdeskEvent.CLOCK_UPDATE.emit({ update })
 	}
 
 	constructor() {
-		setTimeout(() => {
-			Time.progress()
-			setInterval(Time.progress, 1000)
-		}, 1000 - this.init.getMilliseconds())
+		this.sync()
+		this.init()
 	}
 }
 export const MessagingHub = new class {
@@ -394,7 +403,7 @@ fetch("/api/getManifests").then(async (response) => {
 	Object.assign(ApplicationManifests, await response.json())
 	WebdeskEvent.MANIFESTS_READY.emit(ApplicationManifests)
 
-	if (newUser) setTimeout(() => WebdeskEvent.LAUNCHER_CLICK.emit({ app: "welcome", manifest: ApplicationManifests["welcome"] }), 500)
+	if (newUser) WebdeskEvent.LAUNCHER_CLICK.emit({ app: "welcome", manifest: ApplicationManifests["welcome"] })
 }).catch(error => console.log(error))
 
 document.adoptedStyleSheets.push(customStyleSheet)
@@ -403,10 +412,8 @@ window.addEventListener("message", MessagingHub.reciver)
 
 if (newUser) inits.total()
 
-// if (activeCustomName) WebdeskDB.get("_customs", activeCustomName).then(loadCSS)
-// else inits.customization()
+if (activeCustomName) WebdeskDB.get("_customs", activeCustomName).then(loadCSS)
+else inits.customization()
 
 if (activeBackgroundName) WebdeskDB.get("_backgrounds", activeBackgroundName).then(loadBackground)
 else inits.background()
-
-inits.customization()

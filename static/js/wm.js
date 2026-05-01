@@ -49,26 +49,11 @@ const Factory = new class {
 		windowWrapper.setAttribute("window", app)
 		windowWrapper.append(titlebarWrapper, contentWrapper)
 
-		windowWrapper.addEventListener("pointerdown", (event) => {
-			windowWrapper.setPointerCapture(event.pointerId)
+		windowWrapper.addEventListener("pointerdown", Factory.pointerDown)
+		windowWrapper.addEventListener("pointermove", Factory.pointerMove)
+		windowWrapper.addEventListener("pointerup", Factory.pointerUp)
 
-			WebdeskEvent.WINDOW_RESIZE_START.emit({ target: windowWrapper, x: event.x, y: event.y })
-		})
-		// ???
-
-		windowWrapper.addEventListener("pointermove", (event) => {
-			if (Resizer.inResize) WebdeskEvent.WINDOW_RESIZE.emit({ target: windowWrapper, x: event.x, y: event.y })
-		})
-		// ???
-
-		windowWrapper.addEventListener("pointerup", (event) => {
-			windowWrapper.releasePointerCapture(event.pointerId)
-
-			if (Resizer.inResize) WebdeskEvent.WINDOW_RESIZE_END.emit({ target: windowWrapper, x: event.x, y: event.y })
-		})
-		// ???
-
-		window.addEventListener("resize", () => { Mover.updatePositionIfCollision({ target: windowWrapper }) }) // ???
+		window.addEventListener("resize", () => { Mover.updatePositionIfCollision({ target: windowWrapper }) })
 
 		Factory.space.append(windowWrapper)
 		openWindows.set(windowIdentifier, windowWrapper)
@@ -83,10 +68,16 @@ const Factory = new class {
 	/** @param {import("./core").TargetData} data */ minimise({ target }) { target.classList.add("minimised") }
 	/** @param {import("./core").TargetData} data */ unMaximise({ target }) { target.classList.remove("maximised") }
 	/** @param {import("./core").TargetData} data */ unMinimise({ target }) { target.classList.remove("minimised") }
-	/** @param {import("./core").TargetData} data */
-	checkAction({ target }) {
-		if (target.classList.contains("minimised")) { Factory.unMinimise({ target }) }
-		else { Factory.minimise({ target }) }
+	pointerDown({ target, pointerId, x, y }) {
+		target.setPointerCapture(pointerId)
+		WebdeskEvent.WINDOW_RESIZE_START.emit({ target, x, y })
+	}
+	pointerMove({ target, pointerId, x, y }) {
+		if (Resizer.inResize) WebdeskEvent.WINDOW_RESIZE.emit({ target, x, y })
+	}
+	pointerUp({ target, pointerId, x, y }) {
+		target.releasePointerCapture(pointerId)
+		if (Resizer.inResize) WebdeskEvent.WINDOW_RESIZE_END.emit({ target, x, y })
 	}
 }
 
@@ -277,44 +268,43 @@ const Resizer = new class {
 	}
 }
 
-WebdeskEvent.ICON_CLICK.on(Factory.checkAction) // ???
 WebdeskEvent.LAUNCHER_CLICK.on(Factory.skeletonizeWindow)
 
 WebdeskEvent.WINDOW_MINIMISE.on(Factory.minimise)
+
 WebdeskEvent.WINDOW_MINIMISE_END.on(Factory.unMinimise)
+WebdeskEvent.WINDOW_MINIMISE_END.on(Focuser.focusWindow)
+WebdeskEvent.WINDOW_MINIMISE_END.on(Animationer.unMinimise)
 
 WebdeskEvent.WINDOW_MAXIMISE.on(Factory.maximise)
-WebdeskEvent.WINDOW_MAXIMISE_END.on(Factory.unMaximise)
 
+WebdeskEvent.WINDOW_MAXIMISE_END.on(Factory.unMaximise)
+WebdeskEvent.WINDOW_MAXIMISE_END.on(Focuser.focusWindow)
+WebdeskEvent.WINDOW_MAXIMISE_END.on(Animationer.unMaximise)
 
 WebdeskEvent.WINDOW_OPEN.on(Animationer.open)
-WebdeskEvent.WINDOW_MAXIMISE_END.on(Animationer.unMaximise)
-WebdeskEvent.WINDOW_MINIMISE_END.on(Animationer.unMinimise)
+WebdeskEvent.WINDOW_OPEN.on(Focuser.focusWindow)
+
 WebdeskEvent.WINDOW_CLOSE.on(Animationer.close)
+WebdeskEvent.WINDOW_CLOSE.on(Focuser.clearHistory)
 
 WebdeskEvent.TITLEBAR_MESSAGE.on(Titlebar.messageInterpreter)
 
-
+WebdeskEvent.WINDOW_UPDATED_FOCUS.on(Focuser.adjustZIndexes)
 WebdeskEvent.WINDOW_UPDATED_FOCUS.on(Titlebar.relayFocusChange)
 
-
-WebdeskEvent.WINDOW_UPDATED_FOCUS.on(Focuser.adjustZIndexes)
-WebdeskEvent.WINDOW_CLOSE.on(Focuser.clearHistory)
-
-WebdeskEvent.WINDOW_RESIZE_START.on(Focuser.focusWindow)
-WebdeskEvent.WINDOW_MOVE_START.on(Focuser.focusWindow)
-WebdeskEvent.WINDOW_OPEN.on(Focuser.focusWindow)
-WebdeskEvent.ICON_CLICK.on(Focuser.focusWindow)
-
-
 WebdeskEvent.WINDOW_MOVE_START.on(Mover.init)
-WebdeskEvent.WINDOW_MOVE.on(Mover.followCursor)
-WebdeskEvent.WINDOW_MOVE_END.on(Mover.reset)
+WebdeskEvent.WINDOW_MOVE_START.on(Focuser.focusWindow)
 
-WebdeskEvent.WINDOW_RESIZE_END.on(Mover.updatePositionIfCollision)
+WebdeskEvent.WINDOW_MOVE.on(Mover.followCursor)
+
+WebdeskEvent.WINDOW_MOVE_END.on(Mover.reset)
 WebdeskEvent.WINDOW_MOVE_END.on(Mover.updatePositionIfCollision)
 
-
 WebdeskEvent.WINDOW_RESIZE_START.on(Resizer.init)
+WebdeskEvent.WINDOW_RESIZE_START.on(Focuser.focusWindow)
+
 WebdeskEvent.WINDOW_RESIZE.on(Resizer.followCursor)
+
 WebdeskEvent.WINDOW_RESIZE_END.on(Resizer.reset)
+WebdeskEvent.WINDOW_RESIZE_END.on(Mover.updatePositionIfCollision)
