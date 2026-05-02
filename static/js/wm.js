@@ -1,7 +1,7 @@
 // TODO: Make centerWindow toggle-able from settings
 // TODO: Widonws not getting dragged first try
 
-import { WebdeskEvent, MessagingHub, activeCustomObject, openWindows } from "./core"
+import { WebdeskEvent, MessagingHub, activeCustomObject, openWindows, WebdeskRequest } from "./core"
 
 const Factory = new class {
 	space = document.querySelector(".Window.Space")
@@ -78,6 +78,21 @@ const Factory = new class {
 	pointerUp({ target, pointerId, x, y }) {
 		target.releasePointerCapture(pointerId)
 		if (Resizer.inResize) WebdeskEvent.WINDOW_RESIZE_END.emit({ target, x, y })
+	}
+	async messageInterpreter({ data: message, appWindow }) {
+		switch (message.command) {
+			case "save_custom": {
+				if (appWindow.getAttribute("window") !== "colors") return
+				WebdeskEvent.CUSTOMIZATION_SAVE_REQUEST.emit(message.data)
+				return
+			}
+			case "get_customs": {
+				const customs = await WebdeskRequest.CUSTOMIZATION_GET()
+				const target = appWindow.querySelector(".content")
+				target.contentWindow.postMessage({ command: "get_customs", data: customs }, target.src)
+				return
+			}
+		}
 	}
 }
 
@@ -289,6 +304,7 @@ WebdeskEvent.WINDOW_CLOSE.on(Animationer.close)
 WebdeskEvent.WINDOW_CLOSE.on(Focuser.clearHistory)
 
 WebdeskEvent.TITLEBAR_MESSAGE.on(Titlebar.messageInterpreter)
+WebdeskEvent.CONTENT_MESSAGE.on(Factory.messageInterpreter)
 
 WebdeskEvent.WINDOW_UPDATED_FOCUS.on(Focuser.adjustZIndexes)
 WebdeskEvent.WINDOW_UPDATED_FOCUS.on(Titlebar.relayFocusChange)

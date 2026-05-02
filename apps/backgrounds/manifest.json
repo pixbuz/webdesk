@@ -1,0 +1,11 @@
+{
+	"icon": "backgrounds.png",
+	"index": "backgrounds.html",
+	"style": "backgrounds.css",
+	"ignore": [],
+	"script": "backgrounds.js",
+	"routes": {},
+	"service": false,
+	"modules": [],
+	"titlebar": ""
+}

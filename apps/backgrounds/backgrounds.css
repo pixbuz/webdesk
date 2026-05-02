@@ -1,0 +1,23 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	font-family: system-ui, -apple-system;
+}
+
+:root {
+	--accent: rgb(64, 96, 248);
+	--success: rgb(64, 248, 96);
+	--error: rgb(248, 96, 64);
+	--canvas: rgb(14, 14, 18);
+	--content: rgb(248, 248, 255);
+	--contrast: +1;
+}
+
+html,
+body {
+	width: 100%;
+	height: 100%;
+	color: var(--content);
+	background: var(--canvas);
+}

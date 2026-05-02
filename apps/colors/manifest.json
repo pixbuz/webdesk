@@ -1,0 +1,15 @@
+{
+	"icon": "colors.svg",
+	"index": "colors.html",
+	"style": "colors.css",
+	"ignore": [
+		"preview.svg"
+	],
+	"script": "colors.js",
+	"routes": {},
+	"service": false,
+	"modules": [
+		"colors.ts"
+	],
+	"titlebar": ""
+}

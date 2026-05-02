@@ -1,16 +1,13 @@
-Make a file system(?)
+Day 88 of working on webdesk 🙏
 
-Hacked : ()
->:DDD
+Make a file system?
 
-maybe switching to webstorm was the play
-the endgame for webdesk is having everything handled by the sw: from app installs to other stuff, all local. The server is only used in order to install the app in the browser
-
-day 108 of working on webdesk 🙏
+maybe switching to webstorm was the play                                                                                                                                                                                                                                                                                                                                                                            Hacked : ()
+the endgame for webdesk is having everything handled by the sw: from app installs to other stuff, all local. The server is only used in order to install the app in the browser                                                                                                                                                                                                                                     >:DDD
 
 history: raw parameters -> event -> details -> data
 
-Lock in day 108 to get a fully functional version:
+Day 87: Lock in for v1
 - Customization app
 	- Change theme
 	- Download a theme

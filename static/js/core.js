@@ -2,10 +2,10 @@
 // NOTE: Observers tho?
 // NOTE: "event" variable ???
 
-// TODO: More private webdesk events
 // TODO: Error handling for database things
-// TODO: Clock is not keeping time goofy
-// TODO: Make message types
+// TODO: Make iframe message types
+// TODO: Inject a styling hook into apps
+// TODO: Webdesk events and webdesk (internal) requests
 
 /** @typedef {Object} EmptyData */
 /** @typedef {Object} ClockData
@@ -51,10 +51,12 @@ const offlineMessageElement = document.querySelector("#offline")
 const backgroundWrapper = document.querySelector("body > .Background")
 const customStyleSheet = new CSSStyleSheet()
 
-export let activeCustomObject
 export const openWindows = new Map()
 export const WebdeskEvent = {}
+export const WebdeskRequest = {}
 export const ApplicationManifests = {}
+
+export let activeCustomObject
 
 class WebdeskEventTemplate {
 	/** @type {((data: T) => void)[]} */
@@ -72,6 +74,36 @@ class WebdeskEventTemplate {
 
 	constructor(name) { WebdeskEvent[this.#name = name] = this }
 }
+
+class WebdeskInternalRequest {
+	#name
+
+	static #requestsHandler(name, data) {
+		switch (name) {
+			case "CUSTOMIZATION_GET": { return WebdeskDB.getAll("_customs", true) }
+		}
+	}
+
+	#emit(data) {
+		return WebdeskInternalRequest.#requestsHandler(this.#name, data)
+	}
+
+	constructor(name) {
+		const result = this.#emit.bind(this)
+		this.#name = name
+		return WebdeskRequest[name] = result
+	}
+}
+
+new WebdeskInternalRequest("CUSTOMIZATION_GET")
+new WebdeskInternalRequest("CUSTOMIZATION_SAVE")
+
+new WebdeskInternalRequest("BACKGROUND_GET")
+new WebdeskInternalRequest("BACKGROUND_SAVE")
+
+new WebdeskInternalRequest("TITLEBAR_CHANNEL")
+new WebdeskInternalRequest("CONTENT_CHANNEL")
+
 
 new WebdeskEventTemplate("MANIFESTS_READY")
 new WebdeskEventTemplate("LAUNCHER_CLICK")
@@ -107,15 +139,11 @@ new WebdeskEventTemplate("CLOCK_UPDATE")
 
 new WebdeskEventTemplate("CUSTOMIZATION_LOAD_REQUEST")
 new WebdeskEventTemplate("CUSTOMIZATION_LOADED")
-new WebdeskEventTemplate("CUSTOMIZATION_PREVIEW")
-new WebdeskEventTemplate("CUSTOMIZATION_PREVIEW_SAVE_REQUEST")
-new WebdeskEventTemplate("CUSTOMIZATION_PREVIEW_SAVED")
+new WebdeskEventTemplate("CUSTOMIZATION_SAVE_REQUEST")
 
 new WebdeskEventTemplate("BACKGROUND_LOAD_REQUEST")
 new WebdeskEventTemplate("BACKGROUND_LOADED")
-new WebdeskEventTemplate("BACKGROUND_REMOVE_ALL") // ???
-new WebdeskEventTemplate("BACKGROUND_UPLOAD_REQUEST")
-new WebdeskEventTemplate("BACKGROUND_UPLOADED")
+new WebdeskEventTemplate("BACKGROUND_SAVE_REQUEST")
 
 function filterHTMLElements(leaf) {
 	if (!leaf) { return }
@@ -141,7 +169,7 @@ async function loadCSS({ css, palette }) {
 	WebdeskEvent.CUSTOMIZATION_LOADED.emit(activeCustomObject)
 }
 
-async function loadBackground(background) {
+function loadBackground(background) {
 	backgroundWrapper.innerHTML = background
 }
 
@@ -250,7 +278,7 @@ const inits = new class {
 		inits.background()
 	}
 }
-export const WebdeskDB = new class {
+const WebdeskDB = new class {
 	version = 1
 	// Helper for the main functions for interacting with the database
 	async #run(tableName, mode, callback) {
@@ -270,8 +298,34 @@ export const WebdeskDB = new class {
 			} catch (err) { reject(err) }
 		})
 	}
+	async getAll(table, asObject = false) {
+		if (!asObject) return this.#run(table, 0, (store) => store.getAll())
+
+		// If asObject is true, we need to fetch both keys and values
+		const database = await WebdeskDB.ready
+
+		return new Promise((resolve, reject) => {
+			const tx = database.transaction(table, "readonly")
+			const store = tx.objectStore(table)
+
+			const keysReq = store.getAllKeys()
+			const valsReq = store.getAll()
+
+			tx.oncomplete = () => {
+				const keys = keysReq.result
+				const vals = valsReq.result
+
+				// "Zip" the two arrays into one object
+				const result = {}
+				keys.forEach((key, index) => result[key] = vals[index])
+
+				resolve(result)
+			}
+
+			tx.onerror = reject
+		})
+	}
 	get(table, key) { return WebdeskDB.#run(table, 0, (store) => store.get(key)) }
-	getAll(table) { return WebdeskDB.#run(table, 0, (store) => store.getAll()) }
 	set(table, key, value) { return WebdeskDB.#run(table, 1, (store) => store.put(value, key)) }
 	delete(table, key) { return WebdeskDB.#run(table, 1, (store) => store.delete(key)) }
 	// Adds new tables into the database
@@ -323,6 +377,20 @@ export const WebdeskDB = new class {
 		})
 
 		this.updateLock = Promise.resolve()
+	}
+}
+const CustomizationManager = new class {
+	async uploadCss({ name, custom }) {
+		const customizations = await WebdeskDB.getAll("_customs", true)
+		const savedCustomsNames = Object.keys(customizations)
+		
+		if (savedCustomsNames.includes(name)) return
+		
+		WebdeskDB.set("_customs", name, custom)
+	}
+
+	constructor () {
+		WebdeskEvent.CUSTOMIZATION_SAVE_REQUEST.on(this.uploadCss)
 	}
 }
 export const Time = new class {

@@ -1,6 +1,7 @@
 // TODO: Keep in cache only most requested files using a point system
 // TODO: Long / short relative path distinctions
 // TODO: Caching the heaviest file when point ties
+// TODO: API command responder shenanigans
 
 // NOTE: Symbols tho?
 // NOTE: Get set methods tho?
@@ -178,12 +179,13 @@ class BaseRoute {
 
 	private async calculateHash(endpoint: Endpoint, origin: RelativeFilePath) {
 		log.verbose(`Generating hash for ${origin}`)
-		const fileContents = await Deno.readFile(origin)
-		const hashArray = new Uint8Array(await crypto.subtle.digest("SHA-1", fileContents))
-		const hashText = Array.from(hashArray).map((byte) => { return byte.toString(16).padStart(2, "0") }).join("")
-
-		this.hashes[endpoint] = hashText
-		AppRoute.updateHashes(this.name, this.hashes)
+		try {
+			const fileContents = await Deno.readFile(origin)
+			const hashArray = new Uint8Array(await crypto.subtle.digest("SHA-1", fileContents))
+			const hashText = Array.from(hashArray).map(byte => byte.toString(16).padStart(2, "0")).join("")
+			this.hashes[endpoint] = hashText
+			AppRoute.updateHashes(this.name, this.hashes)
+		} catch (error) { log.printStack((error as Error).stack) }
 	}
 
 	private addFile(endpoint: Endpoint, origin: RelativeFilePath, isEndpoint: boolean = false) {
@@ -414,15 +416,18 @@ class BaseRoute {
 		try {
 			log.verbose(`Executing the logic for command "${apiCommand.name}" of application ${this.name}`)
 			const result = await apiCommand(request)
-			
+			console.log(result)
 			if (result instanceof Response) {
 				log.debug(`Command returned a standard response object, checking its headers`)
 				const origin = result.headers.get("origin")
 				if (!origin) { log.warn(`Command "${apiCommand.name}" returned a response missing the origin header which might cause CORs errors`) }
 				return result
-			} else {
+			} else if (result instanceof Object) {
 				log.debug(`Command returned a data object, wrapping it in a command response`)
 				return new CommandResponse(browserOrigin, result.data, result.type)
+			} else {
+				log.debug(`Command returned something, responding with a generic 200`)
+				return new SmartResponse(browserOrigin, undefined, null)
 			}
 		} catch (error) {
 			log.warn(`An error occurred while running the command "${apiCommand.name}", returning an empty response: ${(error as Error).message}`)
@@ -450,7 +455,8 @@ class BaseRoute {
 		log.verbose(`Cache miss, checking if it's tracked`)
 		if (this.origins.has(endpoint)) {
 			log.debug(`Reading the file and serving ${endpoint}`)
-			return new SmartResponse(origin, this.origins.get(endpoint), Deno.readFileSync(this.origins.get(endpoint)))
+			try { return new SmartResponse(origin, this.origins.get(endpoint), Deno.readFileSync(this.origins.get(endpoint))) }
+			catch (error) { log.printStack((error as Error).stack) }
 		}
 		
 		log.verbose(`No file found for ${endpoint}, checking it's an API command`)

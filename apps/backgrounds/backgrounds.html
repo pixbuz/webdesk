@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Backgrounds</title>
+		<link rel="stylesheet" href="/style">
+	</head>
+	<body>
+		<div class="addDialog" style="display: none;">
+			<div class="top">
+				<h1>Add a customization</h1>
+				<button class="close"></button>
+			</div>
+			<input type="file" multiple accept=".css">
+		</div>
+		<nav>
+			<button class="add">Add</button>
+			<div class="removes">
+				<button class="remove">Remove</button>
+				<button class="removeAll">Remove All</button>
+				<button class="select">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-chevron-up">
+						<path d="m18 15-6-6-6 6"/>
+					</svg>
+				</button>
+			</div>
+		</nav>
+		<script type="module" src="/js" async></script>
+	</body>
+</html>
