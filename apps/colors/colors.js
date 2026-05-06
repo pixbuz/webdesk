@@ -1,9 +1,5 @@
 // TODO: Hash checking to eliminate duplicate styles
 
-const removeButton = document.querySelector("button.remove")
-const removeAllButton = document.querySelector("button.removeAll")
-const selectButton = document.querySelector("button.select")
-const addButton = document.querySelector("button.add")
 const addDialog = document.querySelector(".addDialog")
 const gallery = document.querySelector(".gallery")
 // const socket = new WebSocket("/api/sock")
@@ -58,23 +54,7 @@ async function requestUpload({ target }, name) {
 	// const hashBytes = new Uint8Array(await crypto.subtle.digest("SHA-1", bytes))
 	// const hash = Array.from(hashBytes).map(byte => byte.toString(16).padStart(2, "0")).join("")
 	
-	window.parent.postMessage({ command: "save_custom", data: { name, custom } }, webdeskOrigin)
-}
-
-function com({ data: message }) {
-	switch(message.command) {
-		case "init": {
-			webdeskOrigin = message.data.origin
-			initStyle(message.data)
-			window.parent.postMessage({ command: "get_customs" }, webdeskOrigin)
-			return
-		}
-		case "get_customs": {
-			addPreviews(message.data)
-			return
-		}
-		case "palette": { return initStyle(message.data) }
-	}
+	window.sendWebdesk({ command: "save_custom", data: { name, custom } })
 }
 
 async function addPreviews(palettes) {
@@ -95,7 +75,7 @@ async function addPreviews(palettes) {
 		wrapper.setAttribute("custom", name)
 		wrapper.append(previewWrapper, customName)
 		
-		wrapper.addEventListener("click", () => window.parent.postMessage({ command: "set_custom", data: name }, webdeskOrigin))
+		wrapper.addEventListener("click", () => window.sendWebdesk({ command: "set_custom", data: name }))
 		gallery.append(wrapper)
 	}
 }
@@ -112,4 +92,8 @@ document.querySelectorAll("body nav button").forEach(button => {
 	button.addEventListener("click", buttonCallbacks[callback])
 })
 
-window.addEventListener("message", com)
+window.sendWebdesk({ command: "get_customs" })
+window.onmessage = ({ data: message }) => {
+	console.log(message)
+	if (message.command == "get_customs") addPreviews(message.data)
+}

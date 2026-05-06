@@ -2,10 +2,13 @@
 // TODO: Long / short relative path distinctions
 // TODO: Caching the heaviest file when point ties
 // TODO: API command responder shenanigans
+// TODO: Immutable mode where file changes don't change the server (better security 👌👍)
 
 // NOTE: Symbols tho?
+// NOTE: Angular feels like a dream rn but too late ig
 // NOTE: Get set methods tho?
 // NOTE: Service workers on applications are outside the scope of version 1
+// ^^^^ BUT HOOKS THO ?????
 
 import { log } from "./log.ts"
 import { config } from "../server.config.ts"
@@ -321,6 +324,10 @@ class BaseRoute {
 		}
 	}
 
+	protected addStylingHook() {
+		this.addFile("/stylehook", AppRoute.hookPath)
+	}
+
 	protected requestFileRemove(path: RelativeFilePath) {
 		const endpoint = this.origins.get(path)
 		log.verbose(`Checking if the file at ${path} is currently mapped to an active endpoint`)
@@ -559,6 +566,7 @@ export class AppRoute extends BaseRoute {
 	public static readonly manifests: Record<string, ApplicationManifest> = { }
 	public static readonly registred: Record<string, AppRoute> = { }
 	public static readonly hashes: Record<string, number> = { }
+	public static readonly hookPath: string = "static/js/hook.js"
 
 	public static getManifests() { return { data: JSON.stringify(AppRoute.manifests), type: MIMES.json } }
 	public static getHashes() { return { data: JSON.stringify(AppRoute.hashes), type: MIMES.json } }
@@ -584,6 +592,7 @@ export class AppRoute extends BaseRoute {
 		this.addAssetsFromAppFolder()
 		this.addMainAssets()
 		this.addCommands()
+		this.addStylingHook()
 	}
 
 	public fileUpdated(path: RelativeFilePath, kind: string) {

@@ -237,7 +237,6 @@ const inits = new class {
 	}
 	async total() {
 		localStorage.setItem("user", true)
-		inits.customization()
 		inits.background()
 	}
 }
@@ -377,7 +376,7 @@ const CustomizationManager = new class {
 			await WebdeskDB.createTable("_customs")
 			WebdeskDB.set("_customs", "Default-Light", { css: (await css), palette: lightPalette })
 			WebdeskDB.set("_customs", "Default-Dark", { css: (await css), palette: darkPalette })
-			this.loadCustom({ css: (await css), palette: darkPalette })
+			this.#loadCustom({ css: (await css), palette: darkPalette })
 		} else { /* Error stuff */ }
 	}
 	async uploadCss({ name, custom }) {
