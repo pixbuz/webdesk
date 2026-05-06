@@ -95,7 +95,7 @@ async function addPreviews(palettes) {
 		wrapper.setAttribute("custom", name)
 		wrapper.append(previewWrapper, customName)
 		
-		wrapper.addEventListener("click", () => loadCustom(name))
+		wrapper.addEventListener("click", () => window.parent.postMessage({ command: "set_custom", data: name }, webdeskOrigin))
 		gallery.append(wrapper)
 	}
 }
@@ -104,10 +104,6 @@ function initStyle({ palette }) {
 	const paletteRules = [ ]
 	for (const [ color, value ] of Object.entries(palette)) { paletteRules.push(`--${color}: ${value};`) }
 	document.body.setAttribute("style", `${paletteRules.join("")}`)
-}
-
-function loadCustom(name) {
-	console.log(name)
 }
 
 document.querySelectorAll("body nav button").forEach(button => {

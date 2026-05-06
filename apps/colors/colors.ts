@@ -6,11 +6,15 @@ export function preview(request: Request) {
 	const paletteEncoded = reqUrl.search.substring(1)
 	const paletteText = decodeURIComponent(paletteEncoded)
 	const palette = JSON.parse(paletteText)
-	let result = svgPreview
+	const preview = svgPreview
+		.replace("#f00", palette.canvas)
+		.replace("#0f0", palette.content)
+		.replace("#ff0", palette.error)
+		.replace("#00f", palette.accent)
+		.replace("#f0f", palette.success)
+		.replace("#fff", palette.content)
 
-	console.log(palette)
-
-	return { data: result, type: "image/svg+xml" }
+	return { data: preview, type: "image/svg+xml" }
 }
 
 export function sock(request: Request) {

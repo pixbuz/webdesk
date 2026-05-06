@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
-<svg width="16" height="16" version="1.1" viewBox="0 0 4.2333 4.2333" xmlns="http://www.w3.org/2000/svg">
- <g>
-  <rect x=".26458" y=".79375" width="3.7042" height="2.6458" rx=".26458" ry=".24053" fill="#f00" stroke="#fffd00" stroke-width=".13229"/>
-  <rect x="3.4396" y=".99219" width=".26458" height=".13229" rx=".033073" ry=".033073" fill="#01ff00"/>
-  <rect x="3.0427" y=".99219" width=".26458" height=".13229" rx=".033073" ry=".033073" fill="#0ff"/>
-  <rect x="2.6458" y=".99219" width=".26458" height=".13229" rx=".033073" ry=".033073" fill="#0100ff"/>
- </g>
- <path d="m0.79375 1.0583h1.0583" fill="none" stroke="#ff00fd" stroke-linecap="round" stroke-width=".13229"/>
+<svg version="1.1" viewBox="0 0 16 12" xmlns="http://www.w3.org/2000/svg">
+	<g transform="translate(0,-2)">
+		<g>
+			<rect x="1" y="3" width="14" height="10" rx="1" ry=".90909" fill="#f00" stroke="#0f0" stroke-width=".5"/>
+			<rect x="13" y="3.75" width="1" height=".5" rx=".125" ry=".125" fill="#ff0"/>
+			<rect x="11.5" y="3.75" width="1" height=".5" rx=".125" ry=".125" fill="#00f"/>
+			<rect x="10" y="3.75" width="1" height=".5" rx=".125" ry=".125" fill="#f0f"/>
+		</g>
+		<path d="m3 4h4" fill="none" stroke="#fff" stroke-linecap="round" stroke-width=".5"/>
+	</g>
 </svg>

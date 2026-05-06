@@ -416,7 +416,7 @@ class BaseRoute {
 		try {
 			log.verbose(`Executing the logic for command "${apiCommand.name}" of application ${this.name}`)
 			const result = await apiCommand(request)
-			console.log(result)
+			
 			if (result instanceof Response) {
 				log.debug(`Command returned a standard response object, checking its headers`)
 				const origin = result.headers.get("origin")

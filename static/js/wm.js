@@ -92,6 +92,11 @@ const Factory = new class {
 				target.contentWindow.postMessage({ command: "get_customs", data: customs }, target.src)
 				return
 			}
+			case "set_custom": {
+				if (appWindow.getAttribute("window") !== "colors") return
+				WebdeskEvent.CUSTOMIZATION_LOAD_REQUEST.emit(message.data)
+				return
+			}
 		}
 	}
 }

@@ -96,9 +96,11 @@ class WebdeskInternalRequest {
 }
 
 new WebdeskInternalRequest("CUSTOMIZATION_GET")
+new WebdeskInternalRequest("CUSTOMIZATION_SET")
 new WebdeskInternalRequest("CUSTOMIZATION_SAVE")
 
 new WebdeskInternalRequest("BACKGROUND_GET")
+new WebdeskInternalRequest("BACKGROUND_SET")
 new WebdeskInternalRequest("BACKGROUND_SAVE")
 
 new WebdeskInternalRequest("TITLEBAR_CHANNEL")
@@ -157,18 +159,6 @@ function filterHTMLElements(leaf) {
 	return serialized
 }
 
-async function loadCSS({ css, palette }) {
-	const paletteRules = []
-	for (const [ color, value ] of Object.entries(palette)) {
-		paletteRules.push(`--${color}: ${value};`)
-	}
-	const fullCSS = `:root { ${paletteRules.join("\n")} }\n${css}`
-	customStyleSheet.replace(fullCSS)
-
-	activeCustomObject = { css, palette }
-	WebdeskEvent.CUSTOMIZATION_LOADED.emit(activeCustomObject)
-}
-
 function loadBackground(background) {
 	backgroundWrapper.innerHTML = background
 }
@@ -196,33 +186,6 @@ const SWManager = new class {
 	}
 }
 const inits = new class {
-	async customization() {
-		const response = await fetch("/style")
-		if (response.ok) {
-			localStorage.setItem("activeCustomization", "Default-Dark")
-			const css = response.text()
-			const lightPalette = {
-				"accent": "rgb(64, 96, 248)",
-				"success": "rgb(64, 248, 96)",
-				"error": "rgb(248, 96, 64)",
-				"canvas": "rgb(248, 248, 255)",
-				"content": "rgb(26, 26, 46)",
-				"contrast": "-1",
-			}
-			const darkPalette = {
-				"accent": "rgb(64, 96, 248)",
-				"success": "rgb(64, 248, 96)",
-				"error": "rgb(248, 96, 64)",
-				"canvas": "rgb(14, 14, 18)",
-				"content": "rgb(248, 248, 255)",
-				"contrast": "+1",
-			}
-			await WebdeskDB.createTable("_customs")
-			WebdeskDB.set("_customs", "Default-Light", { css: (await css), palette: lightPalette })
-			WebdeskDB.set("_customs", "Default-Dark", { css: (await css), palette: darkPalette })
-			loadCSS({ css: (await css), palette: darkPalette })
-		} else { /* Error stuff */ }
-	}
 	async background() {
 		localStorage.setItem("activeBackground", "Default-Dark")
 		const lightSVG = `
@@ -380,6 +343,43 @@ const WebdeskDB = new class {
 	}
 }
 const CustomizationManager = new class {
+	async #loadCustom({ css, palette }) {
+		const paletteRules = []
+		for (const [ color, value ] of Object.entries(palette)) paletteRules.push(`--${color}: ${value};`)
+		const fullCSS = `:root { ${paletteRules.join("\n")} }\n${css}`
+		customStyleSheet.replace(fullCSS)
+		
+		activeCustomObject = { css, palette }
+		WebdeskEvent.CUSTOMIZATION_LOADED.emit(activeCustomObject)
+	}
+
+	async init() {
+		const response = await fetch("/style")
+		if (response.ok) {
+			localStorage.setItem("activeCustomization", "Default-Dark")
+			const css = response.text()
+			const lightPalette = {
+				"accent": "rgb(64, 96, 248)",
+				"success": "rgb(64, 248, 96)",
+				"error": "rgb(248, 96, 64)",
+				"canvas": "rgb(248, 248, 255)",
+				"content": "rgb(26, 26, 46)",
+				"contrast": "-1",
+			}
+			const darkPalette = {
+				"accent": "rgb(64, 96, 248)",
+				"success": "rgb(64, 248, 96)",
+				"error": "rgb(248, 96, 64)",
+				"canvas": "rgb(14, 14, 18)",
+				"content": "rgb(248, 248, 255)",
+				"contrast": "+1",
+			}
+			await WebdeskDB.createTable("_customs")
+			WebdeskDB.set("_customs", "Default-Light", { css: (await css), palette: lightPalette })
+			WebdeskDB.set("_customs", "Default-Dark", { css: (await css), palette: darkPalette })
+			this.loadCustom({ css: (await css), palette: darkPalette })
+		} else { /* Error stuff */ }
+	}
 	async uploadCss({ name, custom }) {
 		const customizations = await WebdeskDB.getAll("_customs", true)
 		const savedCustomsNames = Object.keys(customizations)
@@ -388,9 +388,17 @@ const CustomizationManager = new class {
 		
 		WebdeskDB.set("_customs", name, custom)
 	}
+	async loadRequest(customName) {
+		const data = await WebdeskDB.get("_customs", customName)
+		if (!data) return
+
+		localStorage.setItem("activeCustomization", customName)
+		CustomizationManager.#loadCustom(data)
+	}
 
 	constructor () {
 		WebdeskEvent.CUSTOMIZATION_SAVE_REQUEST.on(this.uploadCss)
+		WebdeskEvent.CUSTOMIZATION_LOAD_REQUEST.on(this.loadRequest)
 	}
 }
 export const Time = new class {
@@ -480,8 +488,8 @@ window.addEventListener("message", MessagingHub.reciver)
 
 if (newUser) inits.total()
 
-if (activeCustomName) WebdeskDB.get("_customs", activeCustomName).then(loadCSS)
-else inits.customization()
+if (activeCustomName) CustomizationManager.loadRequest(activeCustomName)
+else CustomizationManager.init()
 
 if (activeBackgroundName) WebdeskDB.get("_backgrounds", activeBackgroundName).then(loadBackground)
 else inits.background()
