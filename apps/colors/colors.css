@@ -54,7 +54,7 @@ nav button {
 	border: none;
 }
 
-.export {
+.download {
 	border: solid 2px rgb(from var(--content) calc(r - 24 * var(--contrast)) calc(g - 24 * var(--contrast)) calc(b - 24 * var(--contrast)));
 }
 
@@ -75,6 +75,7 @@ nav button {
 	background: var(--error);
 	color: var(--content);
 	flex-flow: row nowrap;
+	position: relative;
 	display: flex;
 }
 
@@ -83,13 +84,32 @@ nav button {
 	border: solid 2px var(--error);
 }
 
-.removes .remove,
-.removes .removeAll {
+.removes .remove {
 	padding-left: 4px;
 }
 
-.removes .removeAll {
+.removeAll {
+	border: solid 2px var(--error);
+	justify-content: center;
+	align-items: center;
+	color: var(--error);
+	background: black;
+	position: absolute;
+	width: max-content;
+	border-radius: 4px;
+	user-select: none;
+	translate: 0 100%;
+	cursor: pointer;
 	display: none;
+	height: 100%;
+	padding: 8px;
+	z-index: 5;
+	bottom: 0;
+	right: 0;
+}
+
+.removeAll.visible {
+	display: flex;
 }
 
 .removes .select {
@@ -117,6 +137,7 @@ nav button {
 	position: absolute;
 	padding: 16px;
 	width: 50svw;
+	z-index: 10;
 	left: 50%;
 	top: 50%;
 }
@@ -160,6 +181,16 @@ nav button {
 	width: 128px;
 }
 
+.gallery [custom] * {
+	pointer-events: none;
+	user-select: none;
+}
+
+.gallery [custom].active {
+	box-shadow: 0px 0px 8px rgb(from var(--accent) r g b / 25%);
+	border: solid 2px var(--accent);
+}
+
 .gallery [custom]:hover {
 	box-shadow: 0px 0px 8px rgb(from var(--accent) r g b / 25%);
 	border: solid 2px var(--accent);
@@ -186,6 +217,7 @@ nav button {
 	user-select: none;
 }
 
+.gallery [custom].active p,
 .gallery [custom]:hover p {
 	transition: 250ms linear;
 	border-top: solid 2px var(--accent);

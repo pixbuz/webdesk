@@ -1,7 +1,9 @@
 // NOTE: Generator functions tho?
 // NOTE: Observers tho?
 // NOTE: "event" variable ???
+// NOTE: One iframe with both content and titlebar?
 
+// TODO: Come up with a more materials and you theme system
 // TODO: Error handling for database things
 // TODO: Make iframe message types
 // TODO: Inject a styling hook into apps
@@ -45,7 +47,6 @@
  * @property {boolean} force */
 
 const newUser = localStorage.getItem("user") ? false : true
-const activeCustomName = localStorage.getItem("activeCustomization")
 const activeBackgroundName = localStorage.getItem("activeBackground")
 const offlineMessageElement = document.querySelector("#offline")
 const backgroundWrapper = document.querySelector("body > .Background")
@@ -56,6 +57,7 @@ export const WebdeskEvent = {}
 export const WebdeskRequest = {}
 export const ApplicationManifests = {}
 
+let activeCustomName = localStorage.getItem("activeCustomization")
 export let activeCustomObject
 
 class WebdeskEventTemplate {
@@ -76,35 +78,41 @@ class WebdeskEventTemplate {
 }
 
 class WebdeskInternalRequest {
+	static #responders = { }
 	#name
 
-	static #requestsHandler(name, data) {
-		switch (name) {
-			case "CUSTOMIZATION_GET": { return WebdeskDB.getAll("_customs", true) }
-		}
+	static #registerResponder(requestName, responder) {
+		if (WebdeskInternalRequest.#responders[requestName]) console.log(`Overwritten ${requestName} with ${responder.name}`)
+		WebdeskInternalRequest.#responders[requestName] = responder
 	}
 
-	#emit(data) {
-		return WebdeskInternalRequest.#requestsHandler(this.#name, data)
+	async #emit(data) {
+		const responder = WebdeskInternalRequest.#responders[this.#name]
+		if (!responder || !(responder instanceof Function)) return
+		
+		return await responder(data)
 	}
 
 	constructor(name) {
 		const result = this.#emit.bind(this)
+		result.register = (responder) => WebdeskInternalRequest.#registerResponder(name, responder)
 		this.#name = name
-		return WebdeskRequest[name] = result
+		WebdeskRequest[name] = result
 	}
 }
 
 new WebdeskInternalRequest("CUSTOMIZATION_GET")
 new WebdeskInternalRequest("CUSTOMIZATION_SET")
 new WebdeskInternalRequest("CUSTOMIZATION_SAVE")
+new WebdeskInternalRequest("CUSTOMIZATION_EXPORT")
+new WebdeskInternalRequest("CUSTOMIZATION_REMOVE")
+new WebdeskInternalRequest("CUSTOMIZATION_REINIT")
 
 new WebdeskInternalRequest("BACKGROUND_GET")
 new WebdeskInternalRequest("BACKGROUND_SET")
 new WebdeskInternalRequest("BACKGROUND_SAVE")
-
-new WebdeskInternalRequest("TITLEBAR_CHANNEL")
-new WebdeskInternalRequest("CONTENT_CHANNEL")
+new WebdeskInternalRequest("BACKGROUND_EXPORT")
+new WebdeskInternalRequest("BACKGROUND_REMOVE")
 
 
 new WebdeskEventTemplate("MANIFESTS_READY")
@@ -139,13 +147,7 @@ new WebdeskEventTemplate("ICON_CLICK")
 
 new WebdeskEventTemplate("CLOCK_UPDATE")
 
-new WebdeskEventTemplate("CUSTOMIZATION_LOAD_REQUEST")
 new WebdeskEventTemplate("CUSTOMIZATION_LOADED")
-new WebdeskEventTemplate("CUSTOMIZATION_SAVE_REQUEST")
-
-new WebdeskEventTemplate("BACKGROUND_LOAD_REQUEST")
-new WebdeskEventTemplate("BACKGROUND_LOADED")
-new WebdeskEventTemplate("BACKGROUND_SAVE_REQUEST")
 
 function filterHTMLElements(leaf) {
 	if (!leaf) { return }
@@ -158,7 +160,6 @@ function filterHTMLElements(leaf) {
 	}
 	return serialized
 }
-
 function loadBackground(background) {
 	backgroundWrapper.innerHTML = background
 }
@@ -342,12 +343,14 @@ const WebdeskDB = new class {
 	}
 }
 const CustomizationManager = new class {
-	async #loadCustom({ css, palette }) {
+	async #loadCustom(name, { css, palette }) {
 		const paletteRules = []
 		for (const [ color, value ] of Object.entries(palette)) paletteRules.push(`--${color}: ${value};`)
 		const fullCSS = `:root { ${paletteRules.join("\n")} }\n${css}`
 		customStyleSheet.replace(fullCSS)
 		
+		activeCustomName = name
+		localStorage.setItem("activeCustomization", name)
 		activeCustomObject = { css, palette }
 		WebdeskEvent.CUSTOMIZATION_LOADED.emit(activeCustomObject)
 	}
@@ -374,30 +377,55 @@ const CustomizationManager = new class {
 				"contrast": "+1",
 			}
 			await WebdeskDB.createTable("_customs")
-			WebdeskDB.set("_customs", "Default-Light", { css: (await css), palette: lightPalette })
-			WebdeskDB.set("_customs", "Default-Dark", { css: (await css), palette: darkPalette })
-			this.#loadCustom({ css: (await css), palette: darkPalette })
+			WebdeskDB.set("_customs", "Default Light", { css: (await css), palette: lightPalette })
+			WebdeskDB.set("_customs", "Default Dark", { css: (await css), palette: darkPalette })
+			CustomizationManager.#loadCustom("Default Dark", { css: (await css), palette: darkPalette })
+			return true
 		} else { /* Error stuff */ }
 	}
-	async uploadCss({ name, custom }) {
+	async getCustoms() {
+		const savedCustoms = await WebdeskDB.getAll("_customs", true)
+		savedCustoms[activeCustomName] = { active: true, ...savedCustoms[activeCustomName] }
+		return savedCustoms
+	}
+	async uploadCustom({ name, custom }) {
+		console.log(name, custom)
 		const customizations = await WebdeskDB.getAll("_customs", true)
 		const savedCustomsNames = Object.keys(customizations)
 		
-		if (savedCustomsNames.includes(name)) return
+		if (savedCustomsNames.includes(name)) return false
 		
 		WebdeskDB.set("_customs", name, custom)
+		return true
 	}
 	async loadRequest(customName) {
 		const data = await WebdeskDB.get("_customs", customName)
 		if (!data) return
 
-		localStorage.setItem("activeCustomization", customName)
-		CustomizationManager.#loadCustom(data)
+		CustomizationManager.#loadCustom(customName, data)
+	}
+	async removeCustom(_data) {
+		const customizations = await WebdeskDB.getAll("_customs", true)
+		const nextCustom = Object.keys(customizations).filter(customName => customName != activeCustomName).sort().at(0)
+		const removeCustom = activeCustomName
+
+		if (!nextCustom) return false
+
+		CustomizationManager.#loadCustom(nextCustom, customizations[nextCustom])
+		WebdeskDB.delete("_customs", removeCustom)
+		return true
+	}
+	exportCustom(_data) {
+		return { [activeCustomName]: activeCustomObject }
 	}
 
 	constructor () {
-		WebdeskEvent.CUSTOMIZATION_SAVE_REQUEST.on(this.uploadCss)
-		WebdeskEvent.CUSTOMIZATION_LOAD_REQUEST.on(this.loadRequest)
+		WebdeskRequest.CUSTOMIZATION_GET.register(this.getCustoms)
+		WebdeskRequest.CUSTOMIZATION_SET.register(this.loadRequest)
+		WebdeskRequest.CUSTOMIZATION_SAVE.register(this.uploadCustom)
+		WebdeskRequest.CUSTOMIZATION_EXPORT.register(this.exportCustom)
+		WebdeskRequest.CUSTOMIZATION_REMOVE.register(this.removeCustom)
+		WebdeskRequest.CUSTOMIZATION_REINIT.register(this.init)
 	}
 }
 export const Time = new class {

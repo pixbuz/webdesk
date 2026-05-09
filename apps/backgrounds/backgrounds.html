@@ -3,29 +3,38 @@
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Backgrounds</title>
+		<title>Colors</title>
 		<link rel="stylesheet" href="/style">
+		<script type="module" src="/stylehook" async></script>
 	</head>
 	<body>
 		<div class="addDialog" style="display: none;">
-			<div class="top">
-				<h1>Add a customization</h1>
-				<button class="close"></button>
-			</div>
-			<input type="file" multiple accept=".css">
+			<h1>Add a customization</h1>
+			<button class="close">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-x">
+					<path d="M18 6 6 18"/>
+					<path d="m6 6 12 12"/>
+				</svg>
+			</button>
+			<input type="file" multiple accept="application/json">
 		</div>
 		<nav>
+			<button class="download">Export</button>
 			<button class="add">Add</button>
 			<div class="removes">
 				<button class="remove">Remove</button>
-				<button class="removeAll">Remove All</button>
 				<button class="select">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-chevron-up">
 						<path d="m18 15-6-6-6 6"/>
 					</svg>
 				</button>
+				<div class="removeAll">
+					<p>Remove all</p>
+				</div>
 			</div>
 		</nav>
+		<div hr></div>
+		<div class="gallery"></div>
 		<script type="module" src="/js" async></script>
 	</body>
 </html>

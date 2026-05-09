@@ -5,7 +5,7 @@
 </p>
 
 > [!WARNING]
-> Webdesk is a WIP! Expect shenanigans ahead!!
+> Webdesk is a WIP! Expect shenanigans!!
 
 Webdesk is a passion project of mine with the aim of making an OS type experience in a browser, with the main objective of providing the maximum customization for the sake of beauty.
 
@@ -23,7 +23,8 @@ deno task dev
 ## Applications
 To create an application simply use `deno task app` and run through the wizard to create it
 
-## Dependencies
+## Shout outs
 
 - [Deno](https://deno.com/) - Backend server and application commands
 - [Marked](https://marked.js.org/) - Blog markdown entry to html translator
+- [Lucide.dev](https://lucide.dev/) - Icons across various applications

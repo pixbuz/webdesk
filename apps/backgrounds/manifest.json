@@ -1,11 +1,15 @@
 {
-	"icon": "backgrounds.png",
-	"index": "backgrounds.html",
-	"style": "backgrounds.css",
-	"ignore": [],
-	"script": "backgrounds.js",
+	"icon": "colors.svg",
+	"index": "colors.html",
+	"style": "colors.css",
+	"ignore": [
+		"preview.svg"
+	],
+	"script": "colors.js",
 	"routes": {},
 	"service": false,
-	"modules": [],
+	"modules": [
+		"colors.ts"
+	],
 	"titlebar": ""
 }

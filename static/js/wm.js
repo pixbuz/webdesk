@@ -10,7 +10,6 @@ const Factory = new class {
 
 	/** @param {import("./core").LauncherData} data */
 	async skeletonizeWindow({ app, manifest }) {
-		
 		const windowWrapper = document.createElement("article"),
 			contentWrapper = document.createElement("section"),
 			titlebarWrapper = document.createElement("header"),
@@ -40,7 +39,7 @@ const Factory = new class {
 
 		content.classList.add("content")
 		content.setAttribute("allowfullscreen", false)
-		content.setAttribute("sandbox", `allow-scripts allow-same-origin`)
+		content.setAttribute("sandbox", `allow-scripts allow-same-origin allow-downloads`)
 		content.setAttribute("title", `Application ${app}'s content`)
 		content.src = `${window.location.protocol}//${app}.${window.location.hostname}/`
 
@@ -81,21 +80,40 @@ const Factory = new class {
 		if (Resizer.inResize) WebdeskEvent.WINDOW_RESIZE_END.emit({ target, x, y })
 	}
 	async messageInterpreter({ data: message, appWindow }) {
+		const target = appWindow.querySelector(".content")
 		switch (message.command) {
+			case "export_custom": {
+				const custom = await WebdeskRequest.CUSTOMIZATION_EXPORT(message.data)
+				target.contentWindow.postMessage({ command: message.command, data: custom }, target.src)
+				return
+			}
 			case "save_custom": {
 				if (appWindow.getAttribute("window") !== "colors") return
-				WebdeskEvent.CUSTOMIZATION_SAVE_REQUEST.emit(message.data)
+				const success = await WebdeskRequest.CUSTOMIZATION_SAVE(message.data)
+				target.contentWindow.postMessage({ command: message.command, data: success }, target.src)
 				return
 			}
 			case "get_customs": {
-				const customs = await WebdeskRequest.CUSTOMIZATION_GET()
-				const target = appWindow.querySelector(".content")
-				target.contentWindow.postMessage({ command: "get_customs", data: customs }, target.src)
+				const customs = await WebdeskRequest.CUSTOMIZATION_GET(message.data)
+				target.contentWindow.postMessage({ command: message.command, data: customs }, target.src)
 				return
 			}
 			case "set_custom": {
 				if (appWindow.getAttribute("window") !== "colors") return
-				WebdeskEvent.CUSTOMIZATION_LOAD_REQUEST.emit(message.data)
+				const success = await WebdeskRequest.CUSTOMIZATION_SET(message.data)
+				target.contentWindow.postMessage({ command: message.command, data: success }, target.src)
+				return
+			}
+			case "remove_custom": {
+				if (appWindow.getAttribute("window") !== "colors") return
+				const success = await WebdeskRequest.CUSTOMIZATION_REMOVE(message.data)
+				target.contentWindow.postMessage({ command: message.command, data: success }, target.src)
+				return
+			}
+			case "reinit_custom": {
+				if (appWindow.getAttribute("window") !== "colors") return
+				const success = await WebdeskRequest.CUSTOMIZATION_REINIT(message.data)
+				target.contentWindow.postMessage({ command: message.command, data: success }, target.src)
 				return
 			}
 		}
@@ -103,7 +121,7 @@ const Factory = new class {
 }
 
 const Animationer = new class {
-	#animationTimeout = 1000
+	#animationTimeout = 0
 
 	/** @param {import("./core").OpenData} data */ open({ target }) { Animationer.runAnimation(target, "open") }
 	/** @param {import("./core").TargetData} data */ unMaximise({ target }) { Animationer.runAnimation(target, "unmaximise") }
@@ -132,6 +150,18 @@ const Titlebar = new class {
 			const titlebar = appWindow.querySelector(".titlebar")
 			const titlebarOrigin = titlebar.src
 			titlebar.contentWindow.postMessage({ command: "palette", data: palette }, titlebarOrigin)
+			/* TODO: FIX
+			 at wm:146:27
+    at Map.forEach (<anonymous>)
+    at relayCustomizationChange (wm:143:15)
+    at core:69:56
+    at Array.forEach (<anonymous>)
+    at WebdeskEventTemplate.emit (core:69:36)
+    at #loadCustom (core:354:37)
+    at loadRequest (core:403:35)
+    at async #emit (core:93:10)
+    at async messageInterpreter (wm:103:21)
+     */
 		})
 	}
 	/** @param {MessageEvent} messageEvent */
