@@ -93,7 +93,5 @@ document.querySelectorAll("body nav button").forEach(button => {
 })
 
 window.sendWebdesk({ command: "get_customs" })
-window.onmessage = ({ data: message }) => {
-	console.log(message)
-	if (message.command == "get_customs") addPreviews(message.data)
-}
+window.onmessage = ({ data: message }) => { if (message.command == "get_customs") addPreviews(message.data) }
+// TODO: Make this more dynamic

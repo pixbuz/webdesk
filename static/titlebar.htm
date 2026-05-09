@@ -72,11 +72,11 @@
 		</div>
 	</body>
 	<script>
-window.addEventListener("message", com, { once: true })
+window.addEventListener("message", com)
 
 function com({ data: message }) {
 	switch(message.command) {
-		case "css": return updatePalette(message.data)
+		case "palette": return updatePalette(message.data)
 		case "focus": return updateFocus(message.data)
 		case "init": return init(message.data)
 	}
@@ -100,22 +100,24 @@ function init({ app, palette, origin }) {
 	updatePalette(palette)
 
 	// IDEA: using right mouse click moves but doesn't update the window focus
-	document.body.addEventListener("pointermove", (event) => window.parent.postMessage({ command: "move", data: { x: event.screenX, y: event.screenY } }))
+	document.body.addEventListener("pointermove", sendPointerEvent)
 	document.body.addEventListener("pointerdown", sendPointerEvent)
 	document.body.addEventListener("pointerup", sendPointerEvent)
 }
 
 function sendPointerEvent(event) {
-	const data = { x: event.screenX, y: event.screenY }
-	let command
 	if (event.target.tagName === "BUTTON") return
-	else if (event.type === "pointerup") {
+	const data = { x: event.screenX, y: event.screenY }
+	let command = "move"
+	
+	if (event.type === "pointerup") {
 		document.body.releasePointerCapture(event.pointerId)
-		command = "move-end"
-	} else {
+		command += "-end"
+	} else if (event.type === "pointerdown") {
 		document.body.setPointerCapture(event.pointerId)
-		command = "move-start"
+		command += "-start"
 	}
+	
 	window.parent.postMessage({ command, data })
 }
 	</script>

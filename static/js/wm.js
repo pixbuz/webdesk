@@ -1,5 +1,6 @@
 // TODO: Make centerWindow toggle-able from settings
-// TODO: Widonws not getting dragged first try
+
+// NOTE: Is this a stateless architecture?
 
 import { WebdeskEvent, MessagingHub, activeCustomObject, openWindows, WebdeskRequest } from "./core"
 
@@ -118,19 +119,20 @@ const Animationer = new class {
 const Titlebar = new class {
 	/** @param {import("./core").FocusData} data */
 	relayFocusChange({ lost, gain }) {
-		if (gain && MessagingHub.getChannels(gain)) {
-			const messageChannel = MessagingHub.getChannels(gain).titlebar
-			messageChannel.postMessage({ command: "focus", data: true })
-		}
-		if (lost && MessagingHub.getChannels(lost)) {
-			const messageChannel = MessagingHub.getChannels(gain).titlebar
-			messageChannel.postMessage({ command: "focus", data: false })
-		}
+		// TODO
 	}
 	/** @param {import("./core").TargetData} data */
 	relayMaximise({ target }) {
 		if (target.classList.contains("maximised")) { WebdeskEvent.WINDOW_MAXIMISE_END.emit({ target }) }
 		else { WebdeskEvent.WINDOW_MAXIMISE.emit({ target }) }
+	}
+	/** @param {import("./core").something} data */
+	relayCustomizationChange({ palette }) {
+		openWindows.forEach(appWindow => {
+			const titlebar = appWindow.querySelector(".titlebar")
+			const titlebarOrigin = titlebar.src
+			titlebar.contentWindow.postMessage({ command: "palette", data: palette }, titlebarOrigin)
+		})
 	}
 	/** @param {MessageEvent} messageEvent */
 	messageInterpreter({ data: message, appWindow}) {
@@ -263,12 +265,12 @@ const Resizer = new class {
 		if (edges.left) {
 			width -= deltaX
 			left += deltaX
-		} else if (edges.right) { width += deltaX }
+		} else if (edges.right) width += deltaX
 
 		if (edges.top) {
 			height -= deltaY
 			top += deltaY
-		} else if (edges.bottom) { height += deltaY }
+		} else if (edges.bottom) height += deltaY
 
 		target.style.left = `${Math.round(left)}px`
 		target.style.top = `${Math.round(top)}px`
@@ -329,3 +331,5 @@ WebdeskEvent.WINDOW_RESIZE.on(Resizer.followCursor)
 
 WebdeskEvent.WINDOW_RESIZE_END.on(Resizer.reset)
 WebdeskEvent.WINDOW_RESIZE_END.on(Mover.updatePositionIfCollision)
+
+WebdeskEvent.CUSTOMIZATION_LOADED.on(Titlebar.relayCustomizationChange)
