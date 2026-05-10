@@ -1,5 +1,5 @@
 <p align="center">
-	<img src="images/center.png" width=256>
+	<a href="pizz.buzz"><img src="images/center.png" width=256></a>
 	<p align="center"><a href="pizz.buzz">Website</a> ▪ <a href="#">Docs</a></p>
 	<h1><strong>Webdesk</strong></h1>
 </p>

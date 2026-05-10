@@ -150,18 +150,6 @@ new WebdeskEventTemplate("CLOCK_UPDATE")
 
 new WebdeskEventTemplate("CUSTOMIZATION_LOADED")
 
-function filterHTMLElements(leaf) {
-	if (!leaf) { return }
-	const serialized = { }
-	for (const [ key, value ] of Object.entries(leaf)) {
-		if (Array.isArray(value)) { serialized[key] = value.map((element) => { if (element instanceof HTMLElement) { return "HTMLElement" } else { return element } })}
-		else if (Object.prototype.toString.call(value) === "[object Object]") { serialized[key] = filterHTMLElements(serialized[key]) }
-		else if (value instanceof HTMLElement) { serialized[key] = "HTMLElement" }
-		else { serialized[key] = value }
-	}
-	return serialized
-}
-
 const SWManager = new class {
 	loadInformation() {
 		navigator.storage.estimate().then(({ usage, quota }) => {
@@ -181,13 +169,7 @@ const SWManager = new class {
 		navigator.serviceWorker.addEventListener("message", this.com)
 		navigator.serviceWorker.register("/sw")
 			.then(registration => registration.active.postMessage("checkHashes"))
-			.catch(error => console.error(error))
-	}
-}
-const inits = new class {
-	async total() {
-		localStorage.setItem("user", true)
-		inits.background()
+			.catch(error => console.log("Service Worker registration failed"))
 	}
 }
 const WebdeskDB = new class {
@@ -555,14 +537,12 @@ fetch("/api/getManifests").then(async (response) => {
 	Object.assign(ApplicationManifests, await response.json())
 	WebdeskEvent.MANIFESTS_READY.emit(ApplicationManifests)
 
-	if (newUser) WebdeskEvent.LAUNCHER_CLICK.emit({ app: "welcome", manifest: ApplicationManifests["welcome"] })
+	if (newUser) setTimeout(() => WebdeskEvent.LAUNCHER_CLICK.emit({ app: "welcome", manifest: ApplicationManifests["welcome"] }), 500)
 }).catch(error => console.log(error))
 
 document.adoptedStyleSheets.push(customStyleSheet)
 
 window.addEventListener("message", MessagingHub.reciver)
-
-if (newUser) inits.total()
 
 if (activeCustomName) CustomizationManager.loadRequest(activeCustomName)
 else CustomizationManager.init()
