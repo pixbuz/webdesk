@@ -1,15 +1,12 @@
 {
-	"icon": "colors.svg",
-	"index": "colors.html",
-	"style": "colors.css",
-	"ignore": [
-		"preview.svg"
-	],
-	"script": "colors.js",
+	"icon": "backgrounds.svg",
+	"index": "backgrounds.html",
+	"style": "backgrounds.css",
+	"ignore": [],
+	"script": "backgrounds.js",
 	"routes": {},
 	"service": false,
-	"modules": [
-		"colors.ts"
-	],
-	"titlebar": ""
+	"modules": [],
+	"titlebar": "",
+	"description": "Add and change backgrounds"
 }

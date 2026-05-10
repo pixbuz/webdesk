@@ -1,4 +1,6 @@
 // TODO: Hash checking to eliminate duplicate styles
+// TODO: Image resizing to eliminate load delay
+// TODO: JSON objects that specify image type of background
 
 const addDialog = document.querySelector(".addDialog")
 const removeAllElement = document.querySelector(".removeAll")
@@ -7,11 +9,11 @@ const gallery = document.querySelector(".gallery")
 let webdeskOrigin
 
 function remove({ target }) {
-	window.sendWebdesk({ command: "remove_custom" })
+	window.sendWebdesk({ command: "remove_background" })
 }
 
 function removeAll(event) {
-	window.sendWebdesk({ command: "reinit_custom"})
+	window.sendWebdesk({ command: "reinit_background"})
 	removeAllElement.classList.remove("visible")
 }
 
@@ -22,22 +24,40 @@ function select({ target }) {
 }
 
 function download({ target }) {
-	window.sendWebdesk({ command: "export_custom" })
+	window.sendWebdesk({ command: "export_background" })
 }
 
-function downloadExportedCustom(data) {
-	const customName = Object.keys(data)[0]
-	const customData = Object.values(data)[0]
+function downloadExportedBackground(data) {
+	const backgroundName = Object.keys(data)[0]
+	const backgroundData = Object.values(data)[0]
 
-	const json = JSON.stringify(customData)
-	const blob = new Blob([json], { type: "application/json" })
+	let extension
+
+	if (backgroundData.startsWith(`<img src="data:image/`)) {
+		const content = backgroundData.substring(backgroundData.indexOf(`<img src="data:image/`) + 10, backgroundData.length - 4)
+		downloadImage(backgroundName, content, content.substring(11, backgroundData.lastIndexOf(`;base64`) - 10))
+	} else downloadSVG(backgroundName, backgroundData)
+}
+
+function downloadImage(name, data, extension) {
+	const a = document.createElement("a")
+	a.href = data
+	a.download = `${name}.${extension}`
+	a.click()
+	console.log(a)
+}
+
+function downloadSVG(name, data) {
+	const blob = new Blob([data], { type: "image/svg+xml;charset=utf-8" })
 	const url = URL.createObjectURL(blob)
-	
-	const a = document.createElement('a')
+	const a = document.createElement("a")
+
 	a.href = url
-	a.download = `${customName}.json`
+	a.download = `${name}.svg`
+
 	document.body.appendChild(a)
 	a.click()
+
 	document.body.removeChild(a)
 	URL.revokeObjectURL(url)
 }
@@ -47,68 +67,72 @@ function add({ target }) {
 	const fileInput = addDialog.querySelector("input")
 
 	closeButton.addEventListener("click", () => addDialog.style.display = "none")
-	fileInput.addEventListener("change", uploadCustomization)
+	fileInput.addEventListener("change", uploadBackground)
 
 	addDialog.style.display = "flex"
 }
 
-function uploadCustomization({ target }) {
+function uploadBackground({ target }) {
 	Object.values(target.files).forEach(file => {
-		if (file.type !== "application/json") return
+		if (!file.type.includes("image/")) return
 		const reader = new FileReader()
 		const name = file.name.substring(0, file.name.lastIndexOf("."))
-		reader.onload = (load) => requestUpload(load, name)
-		reader.readAsText(file)
+		const extension = file.name.substring(file.name.lastIndexOf(".") + 1)
+
+		if (extension.includes("svg")) {
+			reader.onload = (load) => requestSVGUpload(load, name)
+			reader.readAsText(file)
+		}
+
+		reader.onload = (load) => requestImageUpload(load, name)
+		reader.readAsDataURL(file)
 	})
 	addDialog.style.display = "none"
 }
 
-async function requestUpload({ target }, name) {
+async function requestSVGUpload({ target }, name) {
 	const encoder = new TextEncoder()
-	let custom, content
+	let background
 	
-	try {
-		content = target.result
-		custom = JSON.parse(content)
-		
-		if (!custom.css || typeof custom.css !== "string" || custom.css === "") throw "no css"
-		else if (!custom.palette || typeof custom.palette !== "object") throw "no palette"
-	} catch (error) { return console.log(error) }
+	background = target.result
 	
-	// const cleanCustom = content.replaceAll(/\s+/g, "")
-	// const bytes = encoder.encode(cleanCustom)
-	// const hashBytes = new Uint8Array(await crypto.subtle.digest("SHA-1", bytes))
-	// const hash = Array.from(hashBytes).map(byte => byte.toString(16).padStart(2, "0")).join("")
-	
-	window.sendWebdesk({ command: "save_custom", data: { name, custom } })
+	window.sendWebdesk({ command: "save_background", data: { name, background } })
 }
 
-async function addPreviews(palettes) {
-	for (const [ name, custom ] of Object.entries(palettes).sort()) {
+async function requestImageUpload({ target }, name) {
+	const encoder = new TextEncoder()
+	let background
+	
+	background = `<img src="${target.result}" />`
+	
+	window.sendWebdesk({ command: "save_background", data: { name, background } })
+}
+
+async function addPreviews(backgrounds) {
+	for (const [ name, background ] of Object.entries(backgrounds).sort()) {
+		if (name === "active") continue
+
 		const wrapper = document.createElement("div"),
 			previewWrapper = document.createElement("div"),
 			customName = document.createElement("p")
-		
-		const stringPalette = JSON.stringify(custom.palette)
-		const previewRequest = await fetch(`/api/preview?${stringPalette}`)
-		const preview = await previewRequest.text()
 
 		previewWrapper.classList.add("preview")
-		previewWrapper.innerHTML = preview
+		previewWrapper.innerHTML = background
 
 		customName.innerText = name
 
-		wrapper.setAttribute("custom", name)
+		wrapper.setAttribute("background", name)
 		wrapper.append(previewWrapper, customName)
-		if (custom.active) wrapper.classList.add("active")
 		
-		wrapper.addEventListener("click", customSelected)
+		wrapper.addEventListener("click", backgroundSelected)
 		gallery.append(wrapper)
 	}
+
+	gallery.querySelector(`[background="${backgrounds.active}"]`).classList.add("active")
 }
 
-function customSelected(event) {
-	window.sendWebdesk({ command: "set_custom", data: event.target.getAttribute("custom") })
+function backgroundSelected(event) {
+	window.sendWebdesk({ command: "set_background", data: event.target.getAttribute("background") })
 	gallery.querySelector(".active").classList.remove("active")
 	event.target.classList.add("active")
 }
@@ -116,7 +140,7 @@ function customSelected(event) {
 function uploadedPreview(success) {
 	if (!success) return
 	gallery.innerHTML = ""
-	window.sendWebdesk({ command: "get_customs" })
+	window.sendWebdesk({ command: "get_backgrounds" })
 }
 
 function initStyle({ palette }) {
@@ -131,13 +155,13 @@ document.querySelectorAll("body nav button").forEach(button => {
 	button.addEventListener("click", buttonCallbacks[callback])
 })
 
-window.sendWebdesk({ command: "get_customs" })
+window.sendWebdesk({ command: "get_backgrounds" })
 window.onmessage = function({ data: message }) {
 	switch (message.command) {
-		case "get_customs": { return addPreviews(message.data) }
-		case "export_custom": { return downloadExportedCustom(message.data) }
-		case "save_custom": { return uploadedPreview(message.data) }
-		case "remove_custom": { return uploadedPreview(message.data) }
-		case "reinit_custom": { return uploadedPreview(message.data) }
+		case "get_backgrounds": { return addPreviews(message.data) }
+		case "export_background": { return downloadExportedBackground(message.data) }
+		case "save_background": { return uploadedPreview(message.data) }
+		case "remove_background": { return uploadedPreview(message.data) }
+		case "reinit_background": { return uploadedPreview(message.data) }
 	}
 }

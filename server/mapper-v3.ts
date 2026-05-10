@@ -312,15 +312,17 @@ class BaseRoute {
 		
 		for (const moduleName of modules) {
 			log.verbose(`Importing module ${moduleName} to extract exports`)
-			const module = await import(`../${this.basePath}/${moduleName}`)
-			for (const [ name, value ] of Object.entries(module)) {
-				let endpoint = `/api/${name}`
-				if (differentModulesEndpoints) {
-					log.debug(`Using module-specific routing for command ${name} from ${moduleName}`)
-					endpoint = `/api/${moduleName}/${name}`
+			try {
+				const module = await import(`../${this.basePath}/${moduleName}`)
+				for (const [ name, value ] of Object.entries(module)) {
+					let endpoint = `/api/${name}`
+					if (differentModulesEndpoints) {
+						log.debug(`Using module-specific routing for command ${name} from ${moduleName}`)
+						endpoint = `/api/${moduleName}/${name}`
+					}
+					this.addCommand(name, value, endpoint)
 				}
-				this.addCommand(name, value, endpoint)
-			}
+			} catch (error) { log.warn(`Import of module ${moduleName} of ${this.name} failed: ${(error as Error).message}`) }
 		}
 	}
 

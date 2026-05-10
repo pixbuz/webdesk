@@ -11,5 +11,6 @@
 	"modules": [
 		"colors.ts"
 	],
-	"titlebar": ""
+	"titlebar": "",
+	"description": "Add and change the style of Webdesk"
 }

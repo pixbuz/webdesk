@@ -2,7 +2,7 @@
 
 // NOTE: Is this a stateless architecture?
 
-import { WebdeskEvent, MessagingHub, activeCustomObject, openWindows, WebdeskRequest } from "./core"
+import { WebdeskEvent, MessagingHub, activeCustomData, openWindows, WebdeskRequest } from "./core"
 
 const Factory = new class {
 	space = document.querySelector(".Window.Space")
@@ -59,7 +59,7 @@ const Factory = new class {
 		openWindows.set(windowIdentifier, windowWrapper)
 	}
 	loaded(id, iframe, promiseResolve) {
-		const message = { command: "init", data: { app: id.description, palette: activeCustomObject.palette, origin: window.location.origin } }
+		const message = { command: "init", data: { app: id.description, palette: activeCustomData.palette, origin: window.location.origin } }
 		iframe.addEventListener("load", () => iframe.contentWindow.postMessage(message, iframe.src))
 		iframe.contentWindow.postMessage(message, iframe.src)
 		promiseResolve()
@@ -113,6 +113,40 @@ const Factory = new class {
 			case "reinit_custom": {
 				if (appWindow.getAttribute("window") !== "colors") return
 				const success = await WebdeskRequest.CUSTOMIZATION_REINIT(message.data)
+				target.contentWindow.postMessage({ command: message.command, data: success }, target.src)
+				return
+			}
+			case "export_background": {
+				const custom = await WebdeskRequest.BACKGROUND_EXPORT(message.data)
+				target.contentWindow.postMessage({ command: message.command, data: custom }, target.src)
+				return
+			}
+			case "save_background": {
+				if (appWindow.getAttribute("window") !== "backgrounds") return
+				const success = await WebdeskRequest.BACKGROUND_SAVE(message.data)
+				target.contentWindow.postMessage({ command: message.command, data: success }, target.src)
+				return
+			}
+			case "get_backgrounds": {
+				const backgrounds = await WebdeskRequest.BACKGROUND_GET(message.data)
+				target.contentWindow.postMessage({ command: message.command, data: backgrounds }, target.src)
+				return
+			}
+			case "set_background": {
+				if (appWindow.getAttribute("window") !== "backgrounds") return
+				const success = await WebdeskRequest.BACKGROUND_SET(message.data)
+				target.contentWindow.postMessage({ command: message.command, data: success }, target.src)
+				return
+			}
+			case "remove_background": {
+				if (appWindow.getAttribute("window") !== "backgrounds") return
+				const success = await WebdeskRequest.BACKGROUND_REMOVE(message.data)
+				target.contentWindow.postMessage({ command: message.command, data: success }, target.src)
+				return
+			}
+			case "reinit_background": {
+				if (appWindow.getAttribute("window") !== "backgrounds") return
+				const success = await WebdeskRequest.BACKGROUND_REINIT(message.data)
 				target.contentWindow.postMessage({ command: message.command, data: success }, target.src)
 				return
 			}

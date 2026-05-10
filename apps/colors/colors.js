@@ -85,6 +85,8 @@ async function requestUpload({ target }, name) {
 
 async function addPreviews(palettes) {
 	for (const [ name, custom ] of Object.entries(palettes).sort()) {
+		if (name === "active") continue
+
 		const wrapper = document.createElement("div"),
 			previewWrapper = document.createElement("div"),
 			customName = document.createElement("p")
@@ -105,6 +107,8 @@ async function addPreviews(palettes) {
 		wrapper.addEventListener("click", customSelected)
 		gallery.append(wrapper)
 	}
+
+	gallery.querySelector(`[custom="${backgrounds.active}"]`).classList.add("active")
 }
 
 function customSelected(event) {

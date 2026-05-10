@@ -171,7 +171,7 @@ nav button {
 	gap: 8px;
 }
 
-.gallery [custom] {
+.gallery [background] {
 	border: solid 2px rgb(from var(--canvas) calc(r + 16 * var(--contrast)) calc(g + 16 * var(--contrast)) calc(b + 16 * var(--contrast)));
 	flex-flow: column nowrap;
 	border-radius: 8px;
@@ -181,35 +181,39 @@ nav button {
 	width: 128px;
 }
 
-.gallery [custom] * {
+.gallery [background] * {
 	pointer-events: none;
 	user-select: none;
 }
 
-.gallery [custom].active {
+.gallery [background].active {
 	box-shadow: 0px 0px 8px rgb(from var(--accent) r g b / 25%);
 	border: solid 2px var(--accent);
 }
 
-.gallery [custom]:hover {
+.gallery [background]:hover {
 	box-shadow: 0px 0px 8px rgb(from var(--accent) r g b / 25%);
 	border: solid 2px var(--accent);
 	transition: 250ms linear;
 	translate: 0 -4px;
 }
 
-.gallery [custom] .preview {
+.gallery [background] .preview {
+	object-fit: fill;
 	padding: 4px;
 	width: 100%;
 	flex: 1;
+	
 }
 
-.gallery [custom] .preview svg {
-	height: 100%;
-	width: 100%;
+.gallery [background] .preview * {
+	border-radius: 4px;
+	max-height: 128px;
+	max-width: 100%;
+	overflow: hidden;
 }
 
-.gallery [custom] p {
+.gallery [background] p {
 	border-top: solid 2px rgb(from var(--canvas) calc(r + 16 * var(--contrast)) calc(g + 16 * var(--contrast)) calc(b + 16 * var(--contrast)));
 	text-overflow: ellipsis;
 	margin-bottom: 4px;
@@ -217,8 +221,8 @@ nav button {
 	user-select: none;
 }
 
-.gallery [custom].active p,
-.gallery [custom]:hover p {
+.gallery [background].active p,
+.gallery [background]:hover p {
 	transition: 250ms linear;
 	border-top: solid 2px var(--accent);
 }

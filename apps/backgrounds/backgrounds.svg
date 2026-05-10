@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg width="16" height="16" version="1.1" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+	<defs>
+		<mask id="mask6" maskUnits="userSpaceOnUse">
+			<rect x="1.25" y="3.25" width="13.5" height="9.5" rx="1.5" ry="1.5" fill="#fff" stroke="#fff" stroke-linecap="round" stroke-width=".5"/>
+		</mask>
+	</defs>
+	<g mask="url(#mask6)">
+		<g>
+			<rect x="1.5" y="3.5" width="13" height="9" rx="1" ry="1" fill="#a1cfe6"/>
+			<circle cx="4.5" cy="6.5" r="1.5" fill="#ffd580" stroke="#ffd580" stroke-linecap="round" stroke-linejoin="round" stroke-width=".75"/>
+			<path d="m17 13-6-7-6 7" fill="#7bcc7b" stroke="#7bcc7b" stroke-linecap="round" stroke-linejoin="round" stroke-width=".75"/>
+		</g>
+		<rect x="1.25" y="3.25" width="13.5" height="9.5" rx="1.5" ry="1.5" fill="none" stroke="#000" stroke-linecap="round" stroke-width=".5"/>
+	</g>
+</svg>

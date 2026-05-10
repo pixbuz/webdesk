@@ -47,9 +47,7 @@
  * @property {boolean} force */
 
 const newUser = localStorage.getItem("user") ? false : true
-const activeBackgroundName = localStorage.getItem("activeBackground")
 const offlineMessageElement = document.querySelector("#offline")
-const backgroundWrapper = document.querySelector("body > .Background")
 const customStyleSheet = new CSSStyleSheet()
 
 export const openWindows = new Map()
@@ -58,7 +56,9 @@ export const WebdeskRequest = {}
 export const ApplicationManifests = {}
 
 let activeCustomName = localStorage.getItem("activeCustomization")
-export let activeCustomObject
+let activeBackgroundName = localStorage.getItem("activeBackground")
+export let activeCustomData
+export let activeBackgroundData
 
 class WebdeskEventTemplate {
 	/** @type {((data: T) => void)[]} */
@@ -113,6 +113,7 @@ new WebdeskInternalRequest("BACKGROUND_SET")
 new WebdeskInternalRequest("BACKGROUND_SAVE")
 new WebdeskInternalRequest("BACKGROUND_EXPORT")
 new WebdeskInternalRequest("BACKGROUND_REMOVE")
+new WebdeskInternalRequest("BACKGROUND_REINIT")
 
 
 new WebdeskEventTemplate("MANIFESTS_READY")
@@ -160,9 +161,6 @@ function filterHTMLElements(leaf) {
 	}
 	return serialized
 }
-function loadBackground(background) {
-	backgroundWrapper.innerHTML = background
-}
 
 const SWManager = new class {
 	loadInformation() {
@@ -187,55 +185,6 @@ const SWManager = new class {
 	}
 }
 const inits = new class {
-	async background() {
-		localStorage.setItem("activeBackground", "Default-Dark")
-		const lightSVG = `
-			<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-				<filter id="cool">
-					<feTurbulence baseFrequency="0.01" numOctaves="1" result="noise"/>
-					<feDiffuseLighting in="noise" lighting-color="#FFF" surfaceScale="2">
-						<feDistantLight azimuth="45" elevation="30" />
-					</feDiffuseLighting>
-				</filter>
-				<rect width="100%" height="100%" filter="url(#cool)" />
-			</svg>`
-		const darkSVG = `
-			<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-				<filter id="grainy-texture" x="0" y="0" width="100%" height="100%">
-					<feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch" result="rawNoise" />
-
-					<feColorMatrix in="rawNoise" type="matrix"
-						values="0.007 0.007 0.007 0 0
-							0.007 0.007 0.007 0 0
-							0.007 0.007 0.007 0 0
-							0 0 0 1 0" result="neutralBase" />
-
-					<feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="1" stitchTiles="stitch" result="highlightNoise" />
-					<feDisplacementMap in="highlightNoise" in2="rawNoise" scale="10" xChannelSelector="R" yChannelSelector="G" result="distortedHighlights" />
-					<feColorMatrix in="distortedHighlights" type="matrix"
-						values="10 -5 -5 0 0
-							-5 10 -5 0 0
-							-5 -5 10 0 0
-							0 0 0 1 0" result="vibrantHighlights" />
-
-					<feColorMatrix in="vibrantHighlights" type="matrix"
-						values="1 0 0 0 0
-							0 1 0 0 0
-							0 0 1 0 0
-							1 1 1 50 -42" result="finalGlints" />
-
-					<feMerge>
-						<feMergeNode in="neutralBase" />
-						<feMergeNode in="finalGlints" />
-					</feMerge>
-				</filter>
-				<rect width="100%" height="100%" filter="url(#grainy-texture)" />
-			</svg>`
-		await WebdeskDB.createTable("_backgrounds")
-		WebdeskDB.set("_backgrounds", "Default-Light", lightSVG)
-		WebdeskDB.set("_backgrounds", "Default-Dark", darkSVG)
-		loadBackground(darkSVG)
-	}
 	async total() {
 		localStorage.setItem("user", true)
 		inits.background()
@@ -351,14 +300,13 @@ const CustomizationManager = new class {
 		
 		activeCustomName = name
 		localStorage.setItem("activeCustomization", name)
-		activeCustomObject = { css, palette }
-		WebdeskEvent.CUSTOMIZATION_LOADED.emit(activeCustomObject)
+		activeCustomData = { css, palette }
+		WebdeskEvent.CUSTOMIZATION_LOADED.emit(activeCustomData)
 	}
 
 	async init() {
 		const response = await fetch("/style")
 		if (response.ok) {
-			localStorage.setItem("activeCustomization", "Default-Dark")
 			const css = response.text()
 			const lightPalette = {
 				"accent": "rgb(64, 96, 248)",
@@ -385,8 +333,7 @@ const CustomizationManager = new class {
 	}
 	async getCustoms() {
 		const savedCustoms = await WebdeskDB.getAll("_customs", true)
-		savedCustoms[activeCustomName] = { active: true, ...savedCustoms[activeCustomName] }
-		return savedCustoms
+		return { active: activeCustomName, ...savedCustoms }
 	}
 	async uploadCustom({ name, custom }) {
 		console.log(name, custom)
@@ -416,7 +363,7 @@ const CustomizationManager = new class {
 		return true
 	}
 	exportCustom(_data) {
-		return { [activeCustomName]: activeCustomObject }
+		return { [activeCustomName]: activeCustomData }
 	}
 
 	constructor () {
@@ -426,6 +373,108 @@ const CustomizationManager = new class {
 		WebdeskRequest.CUSTOMIZATION_EXPORT.register(this.exportCustom)
 		WebdeskRequest.CUSTOMIZATION_REMOVE.register(this.removeCustom)
 		WebdeskRequest.CUSTOMIZATION_REINIT.register(this.init)
+	}
+}
+const BackgroundManager = new class {
+	#backgroundWrapper = document.querySelector("body > .Background")
+	
+	#loadBackground(backgroundName, data) {
+		localStorage.setItem("activeBackground", activeBackgroundName = backgroundName)
+		this.#backgroundWrapper.innerHTML = activeBackgroundData = data
+	}
+
+	async init() {
+		const lightSVG = `
+			<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+				<filter id="cool">
+					<feTurbulence baseFrequency="0.01" numOctaves="1" result="noise"/>
+					<feDiffuseLighting in="noise" lighting-color="#FFF" surfaceScale="2">
+						<feDistantLight azimuth="45" elevation="30" />
+					</feDiffuseLighting>
+				</filter>
+				<rect width="100%" height="100%" filter="url(#cool)" />
+			</svg>`
+		const darkSVG = `
+			<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+				<filter id="grainy-texture" x="0" y="0" width="100%" height="100%">
+					<feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch" result="rawNoise" />
+
+					<feColorMatrix in="rawNoise" type="matrix"
+						values="0.007 0.007 0.007 0 0
+							0.007 0.007 0.007 0 0
+							0.007 0.007 0.007 0 0
+							0 0 0 1 0" result="neutralBase" />
+
+					<feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="1" stitchTiles="stitch" result="highlightNoise" />
+					<feDisplacementMap in="highlightNoise" in2="rawNoise" scale="10" xChannelSelector="R" yChannelSelector="G" result="distortedHighlights" />
+					<feColorMatrix in="distortedHighlights" type="matrix"
+						values="10 -5 -5 0 0
+							-5 10 -5 0 0
+							-5 -5 10 0 0
+							0 0 0 1 0" result="vibrantHighlights" />
+
+					<feColorMatrix in="vibrantHighlights" type="matrix"
+						values="1 0 0 0 0
+							0 1 0 0 0
+							0 0 1 0 0
+							1 1 1 50 -42" result="finalGlints" />
+
+					<feMerge>
+						<feMergeNode in="neutralBase" />
+						<feMergeNode in="finalGlints" />
+					</feMerge>
+				</filter>
+				<rect width="100%" height="100%" fill="#000" />
+				<rect width="100%" height="100%" filter="url(#grainy-texture)" />
+			</svg>`
+		await WebdeskDB.createTable("_backgrounds")
+		WebdeskDB.set("_backgrounds", "Default Light", lightSVG)
+		WebdeskDB.set("_backgrounds", "Default Dark", darkSVG)
+		BackgroundManager.#loadBackground("Default Dark", darkSVG)
+		return true
+	}
+	async getBackgrounds() {
+		const savedBackgrounds = await WebdeskDB.getAll("_backgrounds", true)
+		return { active: activeBackgroundName, ...savedBackgrounds }
+	}
+	async uploadBackground({ name, background }) {
+		const backgrounds = await WebdeskDB.getAll("_backgrounds", true)
+		const savedBackgroundsNames = Object.keys(backgrounds)
+		
+		if (savedBackgroundsNames.includes(name)) return false
+		
+		WebdeskDB.set("_backgrounds", name, background)
+		return true
+	}
+	async loadRequest(backgroundName) {
+		const data = await WebdeskDB.get("_backgrounds", backgroundName)
+		if (!data) return false
+
+		BackgroundManager.#loadBackground(backgroundName, data)
+		return true
+	}
+	async removeBackground(_data) {
+		const backgrounds = await WebdeskDB.getAll("_backgrounds", true)
+		const nextBackground = Object.keys(backgrounds).filter(customName => customName != activeBackgroundName).sort().at(0)
+		const removeBackground = activeBackgroundName
+
+		if (!nextBackground) return false
+
+		BackgroundManager.#loadBackground(nextBackground, backgrounds[nextBackground])
+		WebdeskDB.delete("_backgrounds", removeBackground)
+		return true
+	}
+	exportBackground(_data) {
+		return { [activeBackgroundName]: activeBackgroundData }
+	}
+
+	constructor () {
+		WebdeskRequest.BACKGROUND_GET.register(this.getBackgrounds)
+		WebdeskRequest.BACKGROUND_SET.register(this.loadRequest)
+		WebdeskRequest.BACKGROUND_SAVE.register(this.uploadBackground)
+		WebdeskRequest.BACKGROUND_EXPORT.register(this.exportBackground)
+		WebdeskRequest.BACKGROUND_REMOVE.register(this.removeBackground)
+		WebdeskRequest.BACKGROUND_REINIT.register(this.init)
 	}
 }
 export const Time = new class {
@@ -518,5 +567,5 @@ if (newUser) inits.total()
 if (activeCustomName) CustomizationManager.loadRequest(activeCustomName)
 else CustomizationManager.init()
 
-if (activeBackgroundName) WebdeskDB.get("_backgrounds", activeBackgroundName).then(loadBackground)
-else inits.background()
+if (activeBackgroundName) BackgroundManager.loadRequest(activeBackgroundName)
+else BackgroundManager.init()
