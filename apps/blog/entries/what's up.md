@@ -1,0 +1,3 @@
+Yeah, so I finally got Webdesk to a real version 1.0...
+
+ngl, I'm already thinking about what to improve in the next version, but it feels so good to finally have something running after 90+ days of work. Now that my head is clear of this project *for now*, I can finally lock in for exams ✌️
