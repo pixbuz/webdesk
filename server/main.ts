@@ -3,8 +3,8 @@ import { config } from "../server.config.ts"
 import { AppRoute, webdeskRoute } from "./mapper-v3.ts"
 
 const options = config.ssl ? {
-	cert: config.cert,
-	key: config.key,
+	cert: await Deno.readTextFile(config.cert),
+	key: await Deno.readTextFile(config.key),
 	port: config.port,
 	hostname: config.hostname,
 	handler: requestHandler,
@@ -33,26 +33,32 @@ try {
 } catch (error) { log.error(`Critical failure during app registration: ${(error as Error).message}`) }
 
 function requestHandler(browserRequest: Request, _connInfo: Deno.ServeHandlerInfo<Deno.NetAddr>) {
-	const requestURL = new URL(browserRequest.url)
-	log.verbose(`New request received. URL: ${browserRequest.url}, Method: ${browserRequest.method}`)
-	log.verbose(`Parsing hostname "${requestURL.hostname}" to find suborigin`)
-	const subOriginName = requestURL.hostname.substring(0, requestURL.hostname.lastIndexOf("."))
-	log.verbose(`Resulting sub-origin key: "${subOriginName}"`)
+	const requestURL = new URL(browserRequest.url);
+	log.verbose(`New request received. URL: ${browserRequest.url}, Method: ${browserRequest.method}`);
+	log.verbose(`Parsing hostname "${requestURL.hostname}" to find suborigin`);
 
-	const subOriginRoute = AppRoute.registred[subOriginName]
+	const parts = requestURL.hostname.split(".");
+	let subOriginName = "";
+
+	if (parts.length > 2 && !requestURL.hostname.match(/^\d{1,3}(\.\d{1,3}){3}$/)) {
+		subOriginName = parts.slice(0, -2).join("."); 
+	}
+
+	log.verbose(`Resulting sub-origin key: "${subOriginName}"`);
 
 	if (subOriginName === "") {
-		log.debug("Branch selected: Empty sub-origin detected. Routing to webdeskRoute.")
+		log.debug("Branch selected: Empty sub-origin detected. Routing to webdeskRoute.");
 		return webdeskRoute.respond(browserRequest);
 	}
 	
+	const subOriginRoute = AppRoute.registred[subOriginName];
+	
 	if (subOriginRoute) {
-		log.debug(`Branch selected: Sub-origin "${subOriginName}" matched a registered route.`)
+		log.debug(`Branch selected: Sub-origin "${subOriginName}" matched a registered route.`);
 		return subOriginRoute.respond(browserRequest);
 	}
 
-	// If we reach here, no route was found
-	log.warn(`Unexpected Request: No registered route found for sub-origin "${subOriginName}".`)
-	log.debug("Branch selected: Defaulting to empty Response (404-like behavior).")
+	log.warn(`Unexpected Request: No registered route found for sub-origin "${subOriginName}".`);
+	log.debug("Branch selected: Defaulting to empty Response (404-like behavior).");
 	return new Response(null, { status: 404 });
 }
