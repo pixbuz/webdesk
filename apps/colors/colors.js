@@ -108,7 +108,7 @@ async function addPreviews(palettes) {
 		gallery.append(wrapper)
 	}
 
-	gallery.querySelector(`[custom="${backgrounds.active}"]`).classList.add("active")
+	gallery.querySelector(`[custom="${palettes.active}"]`).classList.add("active")
 }
 
 function customSelected(event) {

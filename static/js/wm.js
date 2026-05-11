@@ -180,22 +180,9 @@ const Titlebar = new class {
 	}
 	/** @param {import("./core").something} data */
 	relayCustomizationChange({ palette }) {
-		openWindows.forEach(appWindow => {
-			const titlebar = appWindow.querySelector(".titlebar")
+		document.querySelectorAll(".titlebar").forEach(titlebar => {
 			const titlebarOrigin = titlebar.src
 			titlebar.contentWindow.postMessage({ command: "palette", data: palette }, titlebarOrigin)
-			/* TODO: FIX
-			 at wm:146:27
-    at Map.forEach (<anonymous>)
-    at relayCustomizationChange (wm:143:15)
-    at core:69:56
-    at Array.forEach (<anonymous>)
-    at WebdeskEventTemplate.emit (core:69:36)
-    at #loadCustom (core:354:37)
-    at loadRequest (core:403:35)
-    at async #emit (core:93:10)
-    at async messageInterpreter (wm:103:21)
-     */
 		})
 	}
 	/** @param {MessageEvent} messageEvent */

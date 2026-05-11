@@ -46,7 +46,7 @@
  * @property {Object} object
  * @property {boolean} force */
 
-const newUser = localStorage.getItem("user") ? false : true
+const newUser = localStorage.getItem("newUser") ? false : true
 const offlineMessageElement = document.querySelector("#offline")
 const customStyleSheet = new CSSStyleSheet()
 
@@ -162,7 +162,7 @@ const SWManager = new class {
 	}
 
 	com(event) {
-		if (event.data === "offline") { offlineMessageElement.classList.add("visible") }
+		if (event.data === "offline") offlineMessageElement.classList.add("visible")
 	}
 
 	constructor() {
@@ -344,9 +344,7 @@ const CustomizationManager = new class {
 		WebdeskDB.delete("_customs", removeCustom)
 		return true
 	}
-	exportCustom(_data) {
-		return { [activeCustomName]: activeCustomData }
-	}
+	exportCustom(_data) { return { [activeCustomName]: activeCustomData } }
 
 	constructor () {
 		WebdeskRequest.CUSTOMIZATION_GET.register(this.getCustoms)
@@ -446,9 +444,7 @@ const BackgroundManager = new class {
 		WebdeskDB.delete("_backgrounds", removeBackground)
 		return true
 	}
-	exportBackground(_data) {
-		return { [activeBackgroundName]: activeBackgroundData }
-	}
+	exportBackground(_data) { return { [activeBackgroundName]: activeBackgroundData } }
 
 	constructor () {
 		WebdeskRequest.BACKGROUND_GET.register(this.getBackgrounds)
@@ -537,7 +533,10 @@ fetch("/api/getManifests").then(async (response) => {
 	Object.assign(ApplicationManifests, await response.json())
 	WebdeskEvent.MANIFESTS_READY.emit(ApplicationManifests)
 
-	if (newUser) setTimeout(() => WebdeskEvent.LAUNCHER_CLICK.emit({ app: "welcome", manifest: ApplicationManifests["welcome"] }), 500)
+	if (newUser) {
+		localStorage.setItem("newUser", false)
+		setTimeout(() => WebdeskEvent.LAUNCHER_CLICK.emit({ app: "welcome", manifest: ApplicationManifests["welcome"] }), 500)
+	}
 }).catch(error => console.log(error))
 
 document.adoptedStyleSheets.push(customStyleSheet)
