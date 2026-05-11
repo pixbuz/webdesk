@@ -4,7 +4,7 @@ export const config = Object.freeze({
 	hostname: "0.0.0.0",
 	appFolder: "apps",
 	logLevel: 0,
-	port: 80,
+	port: 8000,
 	ssl: false,
 	cert: "",
 	key: "",
