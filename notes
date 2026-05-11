@@ -1,4 +1,4 @@
-Day 93 of working on webdesk 🙏
+Day 94 of working on webdesk 🙏
 
 Make a file system?
 
@@ -8,13 +8,7 @@ the endgame for webdesk is having everything handled by the sw: from app install
 history: raw parameters -> event -> details -> data
 
 Day 87: Lock in for v1
-- Customization app
-	- Change theme
-	- Download a theme
-	- Upload a theme
-	- Upload backgrounds
 - Terminal app
 	- Improve look
 	- Add commands
-- Animations
 - Code review
