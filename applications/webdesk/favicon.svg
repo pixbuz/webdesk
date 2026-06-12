@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg version="1.1" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+	<g>
+		<rect x="0" y="2.5" width="14" height="7" rx="1.3125" ry="1.3125">
+			<animate attributeName="fill"
+				values="
+					hsl(210, 100%, 67.5%);
+					hsl(255, 100%, 67.5%);
+					hsl(300, 100%, 67.5%);
+					hsl(345, 100%, 67.5%);
+					hsl(30, 100%, 67.5%);
+					hsl(75, 100%, 67.5%);
+					hsl(120, 100%, 67.5%);
+					hsl(165, 100%, 67.5%);
+					hsl(210, 100%, 67.5%);
+					"
+				dur="5s"
+				repeatCount="indefinite" />
+		</rect>
+		<rect x="2" y="6.5" width="14" height="7" rx="1.3125" ry="1.3125">
+			<animate attributeName="fill"
+				values="
+					hsl(210, 100%, 75%);
+					hsl(255, 100%, 75%);
+					hsl(300, 100%, 75%);
+					hsl(345, 100%, 75%);
+					hsl(30, 100%, 75%);
+					hsl(75, 100%, 75%);
+					hsl(120, 100%, 75%);
+					hsl(165, 100%, 75%);
+					hsl(210, 100%, 75%);
+					"
+				dur="5s"
+				repeatCount="indefinite" />
+		</rect>
+	</g>
+</svg>

@@ -1,0 +1,40 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Backend",
+			"type": "node",
+			"request": "launch",
+			"cwd": "${workspaceFolder}",
+			"runtimeExecutable": "deno",
+			"runtimeArgs": [
+				"run",
+				"dev",
+			],
+			"console": "integratedTerminal"
+		},
+		{
+			"request": "launch",
+			"name": "Frontend",
+			"type": "chrome",
+			"url": "http://localhost:8000",
+			"runtimeExecutable": "${userHome}/Desktop/chrome-win/chrome.exe",
+			// ^ Modify this to your chrome/chromium path
+			"userDataDir": "${workspaceFolder}/.chrome",
+			"webRoot": "${workspaceFolder}",
+			"runtimeArgs": [
+				"--auto-open-devtools-for-tabs",
+				"--incognito"
+			]
+		}
+	],
+	"compounds": [
+		{
+			"name": "Full Stack",
+			"configurations": ["Backend", "Frontend"]
+		}
+	]
+}

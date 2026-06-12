@@ -1,0 +1,10 @@
+name: Webdesk
+description: Kernel application
+frontend:
+  routes:
+    "/favicon.svg": "/favicon.ico"
+    "/services/": "/"
+backend:
+  level: 0
+  modules:
+    - index.ts

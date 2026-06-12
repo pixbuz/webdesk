@@ -1,0 +1,5 @@
+name: Dock Manager
+description: Adds a dock to Webdesk for keeping track of open apps & more!
+domain: dock
+backend:
+  level: 0

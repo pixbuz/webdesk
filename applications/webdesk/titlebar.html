@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+	<script>
+		let port
+		window.onmessage = () => { if (event.ports[0]) port = event.ports[0] }
+	</script>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Titlebar</title>
+		<style>
+			* {
+				padding: 0;
+				margin: 0;
+				box-sizing: border-box;
+				font-family: system-ui, -apple-system;
+				user-select: none;
+			}
+			html,
+			body {
+				width: 100svw;
+				height: 100svh;
+				overflow: hidden;
+			}
+			body {
+				display: flex;
+				flex-flow: row nowrap;
+				justify-content: center;
+				align-items: center;
+				padding: 0 8px;
+			}
+			body > * { flex: 1; }
+			/* body::after {
+				content: "";
+				width: 100%;
+				height: 1px;
+				background: red;
+				top: 50%;
+				translate: 0 -50%;
+				position: absolute;
+			}
+			body::before {
+				content: "";
+				width: 1px;
+				height: 100%;
+				background: red;
+				left: 50%;
+				translate: -50% 0;
+				position: absolute;
+			} */
+			button {
+				border-radius: 2px;
+				aspect-ratio: 3/2;
+				height: 100%;
+				border: none;
+			}
+			[iconWrap] {
+				display: flex;
+				justify-content: flex-start;
+				align-items: center;
+				height: 100%;
+			}
+			[icon] {
+				aspect-ratio: 1;
+				max-height: 100%;
+			}
+			[name] {
+				text-align: center;
+				line-height: 1;
+				transition: 0 1px;
+			}
+			[buttons] {
+				display: flex;
+				justify-content: flex-end;
+				align-items: center;
+				padding: 2px 0;
+				height: 100%;
+				gap: 4px;
+			}
+			[close] { background: var(--status-danger); }
+			[maximise] { background: var(--status-warning); }
+			[minimise] { background: var(--status-success); }
+			[close]:hover { background: rgb(from var(--status-danger) calc(r + 32) calc(g + 32) calc(b + 32)); }
+			[maximise]:hover { background: rgb(from var(--status-warning) calc(r + 32) calc(g + 32) calc(b + 32)); }
+			[minimise]:hover { background: rgb(from var(--status-success) calc(r + 32) calc(g + 32) calc(b + 32)); }
+		</style>
+	</head>
+	<body>
+		<div iconWrap>
+			<img src="" alt="Application Icon" icon>
+		</div>
+		<p name></p>
+		<div buttons>
+			<button minimise onclick="port.postMessage(`minimise`)"></button>
+			<button maximise onclick="port.postMessage(`maximise`)"></button>
+			<button close onclick="port.postMessage(`close`)"></button>
+		</div>
+	</body>
+</html>

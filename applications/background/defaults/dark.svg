@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+	<filter id="grainy-texture" x="0" y="0" width="100%" height="100%">
+		<feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch" result="animatedNoise" seed="20">
+			<animate
+				attributeName="seed"
+				values="1;2;3"
+				dur="0.3s"
+				calcMode="discrete"
+				repeatCount="indefinite"
+			/>
+		</feTurbulence>
+		<feColorMatrix in="animatedNoise" type="matrix"
+			values="0.007 0.007 0.007 0 0
+				0.007 0.007 0.007 0 0
+				0.007 0.007 0.007 0 0
+				0 0 0 1 0" result="neutralBase" />
+
+		<feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" result="staticMapNoise" seed="20" />
+		
+		<feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="2" result="highlightNoise" />
+		
+		<feDisplacementMap in="highlightNoise" in2="staticMapNoise" scale="10" xChannelSelector="R" yChannelSelector="G" result="distortedHighlights" />
+		
+		<feColorMatrix in="distortedHighlights" type="matrix"
+			values="10 -5 -5 0 0
+				-5 10 -5 0 0
+				-5 -5 10 0 0
+				0 0 0 1 0" result="vibrantHighlights" />
+		<feColorMatrix in="vibrantHighlights" type="matrix"
+			values="1 0 0 0 0
+				0 1 0 0 0
+				0 0 1 0 0
+				1 1 1 50 -42" result="finalGlints" />
+		<feMerge>
+			<feMergeNode in="neutralBase" />
+			<feMergeNode in="finalGlints" />
+		</feMerge>
+	</filter>
+	<rect width="100%" height="100%" fill="#000" />
+	<rect width="100%" height="100%" filter="url(#grainy-texture)" />
+</svg>

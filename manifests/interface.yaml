@@ -1,0 +1,9 @@
+name: Interface Manager
+description: Allows the customization of Webdesk's look and feel(?)
+domain: ui
+backend:
+  level: 0
+frontend:
+  index: index.html
+  icon: colors.svg
+  launcher: true

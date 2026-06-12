@@ -1,0 +1,9 @@
+name: Background Manager
+description: Allows the customization of Webdesk's backgrounds
+domain: bg
+backend:
+  level: 0
+frontend:
+  index: index.html
+  icon: backgrounds.svg
+  launcher: true

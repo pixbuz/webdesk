@@ -1,0 +1,4 @@
+name: Launcher Manager
+description: Adds and manages the application launchers on the page!
+backend:
+  level: 0

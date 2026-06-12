@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg version="1.1" viewBox="0 0 16 12" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<defs>
+		<linearGradient id="linearGradient8" x1="14" x2="2" y1="2" y2="14" gradientUnits="userSpaceOnUse">
+			<stop stop-color="#fff" offset=".5"/>
+			<stop offset=".5"/>
+		</linearGradient>
+	</defs>
+	<g transform="translate(0,-2)">
+		<rect y="2" width="16" height="12" fill="url(#linearGradient8)" background=""/>
+		<g stroke-linecap="round" stroke-linejoin="round" stroke-width=".25" launcher="">
+			<rect x="1" y="3" width="1" height="1" rx=".25" ry=".25" fill="#fff" class="icon"/>
+			<path d="m1.125 4.25h0.75" fill="none" stroke="#f00" class="text"/>
+			<rect x="14" y="12" width="1" height="1" rx=".25" ry=".25" fill="#000" class="icon"/>
+			<path d="m14.125 13.25h0.75" fill="none" stroke="#f00" class="text"/>
+		</g>
+		<g window="">
+			<rect x="3" y="4" width="8" height="5" fill="#0f0" stroke="#ff0" stroke-linecap="square" stroke-width=".125"/>
+			<g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width=".25" titlebar="">
+				<path d="m10.425 4.225h0.25" stroke="#00f" close=""/>
+				<path d="m9.825 4.225h0.25" stroke="#f0f" maximise=""/>
+				<path d="m9.225 4.225h0.25" stroke="#0ff" minimise=""/>
+			</g>
+		</g>
+		<g transform="translate(3,2)" window="" class="focus">
+			<rect x="3" y="4" width="8" height="5" fill="#0f0" stroke="#ff0" stroke-linecap="square" stroke-width=".125"/>
+			<g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width=".25" titlebar="">
+				<path d="m10.425 4.225h0.25" stroke="#00f" close=""/>
+				<path d="m9.825 4.225h0.25" stroke="#f0f" maximise=""/>
+				<path d="m9.225 4.225h0.25" stroke="#0ff" minimise=""/>
+			</g>
+		</g>
+		<rect x="6" y="13" width="4" height=".5" fill="#fff" dock=""/>
+	</g>
+</svg>

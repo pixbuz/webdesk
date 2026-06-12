@@ -1,0 +1,6 @@
+name: Sharing service
+description: Backend service that allows assets and scripts sharing. "Sharing is caring" yeah all right
+backend:
+  level: 0
+  modules:
+    - service.ts

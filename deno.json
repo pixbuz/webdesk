@@ -1,0 +1,13 @@
+{
+  "tasks": {
+    "dev": "deno run -A --watch --inspect backend/server/replyer.ts",
+    "addBanner": "deno run -RW devex/deploy.ts"
+  },
+  "imports": {
+    "@std/yaml": "jsr:@std/yaml@^1.1.1",
+    "@backend/": "./backend/",
+    "@utils/": "./backend/utils/",
+    "@server/": "./backend/server/",
+    "@apps/": "./applications/"
+  }
+}

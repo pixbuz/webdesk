@@ -1,0 +1,71 @@
+* {
+	margin: 0;
+	padding: 0;
+	position: relative;
+	box-sizing: border-box;
+	font-family: system-ui, -apple-system;
+}
+
+html,
+body {
+	width: 100svw;
+	height: 100svh;
+}
+
+body {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+[space] {
+	width: 100svw;
+	height: 100svh;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+[window] {
+	position: absolute;
+	z-index: 1;
+	top: 50%;
+	left: 50%;
+	translate: -75% -75%;
+}
+
+[window].focus {
+	z-index: 2;
+	translate: -25% -25%;
+}
+
+[dock] {
+	position: absolute;
+	width: 37.5svw !important;
+	height: 10svh !important;
+	bottom: 8px !important;
+}
+
+[launcher] {
+	overflow: hidden;
+	display: flex;
+	justify-content: space-evenly;
+	flex-flow: column nowrap;
+	align-items: center;
+}
+
+[launcher] .icon {
+	background: currentColor;
+	max-width: 100%;
+	padding: 8px;
+	aspect-ratio: 1;
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+[launcher] .name {
+	max-width: 100%;
+	text-overflow: ellipsis;
+	text-align: center;
+	font-size: xx-small;
+}

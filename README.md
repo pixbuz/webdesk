@@ -1,0 +1,1 @@
+This project uses icons from [Lucide](https://lucide.dev/), which are licensed under the [ISC License](https://github.com/lucide-icons/lucide/blob/main/LICENSE).
