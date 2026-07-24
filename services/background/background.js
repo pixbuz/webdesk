@@ -1,4 +1,5 @@
 import { log, IndexDB } from "@webdesk/"
+import { showNotification } from "@notify/"
 
 class Background extends HTMLElement {
 	image = document.createElement("img")
@@ -14,7 +15,6 @@ class Background extends HTMLElement {
 		this.image.fetchPriority = "high"
 		this.setAttribute("space", "background")
 		this.classList.add("space")
-		init()
 	}
 
 	constructor() { super() }
@@ -23,11 +23,11 @@ class Background extends HTMLElement {
 async function init() {
 	const activeBG = await IndexDB.get(dbTable, "active")
 	log.dbug(`Active background name:`, activeBG)
-	if (activeBG) loadBackground(activeBG)
-	else setup()
+	if (activeBG) return loadBackground(activeBG)
+	setup()
 }
 
-async function setup(params) {
+async function setup() {
 	await IndexDB.deleteTable(dbTable)
 	const createPromise = IndexDB.createTable(dbTable)
 	const defaults = {
@@ -42,7 +42,7 @@ async function setup(params) {
 		const fullfilled = await response
 		
 		if (!fullfilled.ok) {
-			log.warn("Unable to fetch a default background, it will be unavailable utill reset")
+			log.warn("Unable to fetch a default background, it will be unavailable until reset")
 			continue
 		}
 		
@@ -63,7 +63,7 @@ async function saveBackground(name, blob) {
 
 async function loadBackground(name) {
 	const backgroundBlob = await IndexDB.get(dbTable, name)
-	log.dbug(`Background "${name}" is ${backgroundBlob.size ?? "???"} bytes`)
+	log.verb(`Background "${name}" is ${backgroundBlob.size ?? "???"} bytes`)
 	
 	if (!backgroundBlob) {
 		log.warn(`Skipping request to load an empty background "${name}"`)
@@ -108,8 +108,21 @@ async function download(source, name) {
 
 async function upload(source, file) {
 	const { name, type } = file
-	const backgroundBlob = new Blob([file], { type: file.type })
-	await IndexDB.set(dbTable, name, backgroundBlob)
+	const backgroundBlob = new Blob([file], { type })
+	const backgrounds = await IndexDB.getAll(dbTable, true)
+	const existingNames = Object.keys(backgrounds)
+	let baseName = name.replace(/\.[^/.]+$/, "")
+	let counter = 1
+
+	while (existingNames.includes(baseName + counter)) { counter++ }
+
+	await IndexDB.set(dbTable, baseName + counter, backgroundBlob)
+	log.verb(`Uploaded background "${name}" as "${baseName + counter}"`)
+
+	source.postMessage({
+		type: "upload",
+		data: { name: baseName + counter, blob: backgroundBlob },
+	}, "*")
 }
 
 async function deleteBackground(source, name) {

@@ -40,6 +40,7 @@ body {
 [space="background"] img {
 	width: 100%;
 	height: 100%;
+	object-fit: cover;
 }
 
 [space="launcher"] {
@@ -54,6 +55,17 @@ body {
 
 [space="window"] { z-index: 3; }
 
+[space="notification"] {
+	padding: 8px;
+	z-index: 2;
+	display: flex;
+	justify-content: flex-end;
+	align-items: flex-end;
+	flex-flow: column wrap;
+	gap: 4px;
+	z-index: 30;
+}
+
 [launcher] {
 	width: 96px;
 	display: block;
@@ -64,11 +76,13 @@ body {
 	flex-flow: column nowrap;
 	align-items: center;
 	color: var(--text-primary);
+	padding-bottom: 8px;
+	border-radius: 8px;
 }
 
 [launcher]:hover {
 	background: rgba(255, 255, 255, 10%);
-	border-radius: 8px;
+	
 }
 
 [launcher] img {
@@ -210,4 +224,57 @@ body {
 	aspect-ratio: 1;
 	max-height: 100%;
 	cursor: pointer;
+}
+
+[notification] {
+	width: 15%;
+	height: 10%;
+	background: var(--background-window);
+	border: solid 4px var(--border-subtle);
+	color: var(--text-primary);
+	padding: 4px;
+	border-radius: 8px;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 8px;
+	overflow: hidden;
+}
+
+[notification] [icon] {
+	max-height: 75%;
+	aspect-ratio: 1;
+}
+
+[notification] [textwrapper] {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	height: 100%;
+}
+
+[notification] [heading] {
+	text-transform: capitalize;
+	font-size: large;
+	top: 0;
+}
+
+[notification] [caller] {
+	opacity: 50%;
+	font-size: smaller;
+}
+
+[notification] [message] {
+	margin-top: 4px;
+	font-size: small;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	word-wrap: break-word;
+	max-height: 3.3em;
+	line-height: 1.1em;
 }

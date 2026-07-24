@@ -44,7 +44,7 @@ async function saveCustomization(name, obj) {
 
 async function loadCustomization(name) {
 	const customizationObj = await IndexDB.get(dbTable, name)
-	log.dbug(`Customization to load:`, customizationObj)
+	log.verb(`Customization to load:`, customizationObj)
 	
 	if (!customizationObj || !customizationObj.customCSS) {
 		log.warn(`Skipping request to load an empty customization "${name}"`)
@@ -54,8 +54,8 @@ async function loadCustomization(name) {
 	activeCustom = customizationObj
 	style.innerHTML = compileCssVars(customizationObj.palette) + "\n" + (customizationObj.customCSS || "")
 	await IndexDB.set(dbTable, "active", name)
-	WebdeskEvent("CUSTOMIZATION LOADED", customizationObj)
 	log.verb(`Loaded customization "${name}"`)
+	WebdeskEvent("CUSTOMIZATION LOADED", customizationObj)
 }
 
 function compileCssVars(palette) {
@@ -65,7 +65,7 @@ function compileCssVars(palette) {
 	return css
 }
 
-async function download(name) {
+async function download(source, name) {
 	const customizationObj = await IndexDB.get(dbTable, name)
 	log.dbug(`Downloading customization "${name}"`)
 	
@@ -89,17 +89,28 @@ async function download(name) {
 	URL.revokeObjectURL(url)
 }
 
-async function upload(file) {
+async function upload(source, file) {
+	const { name, _type } = file
 	try {
 		const text = await file.text()
 		const customizationObj = JSON.parse(text)
-		
-		const name = file.name.replace(/\.[^/.]+$/, "")
-		await IndexDB.set(dbTable, name, customizationObj)
+		const customizations = await IndexDB.getAll(dbTable, true)
+		const existingNames = Object.keys(customizations)
+		let baseName = name.replace(/\.[^/.]+$/, "")
+		let counter = 1
+
+		while (existingNames.includes(baseName + counter)) { counter++ }
+
+		await IndexDB.set(dbTable, baseName + counter, customizationObj)
+		log.verb(`Uploaded customization "${name}" as "${baseName + counter}"`)
+		source.postMessage({
+			type: "upload",
+			data: { name: baseName + counter, customization: customizationObj },
+		}, "*")
 	} catch(error) { log.warn(`Failed to parse uploaded customization file:`, error) }
 }
 
-async function deleteCutomization(name) {
+async function deleteCustomization(source, name) {
 	await IndexDB.delete(dbTable, name)
 }
 
@@ -114,10 +125,10 @@ async function getAll(source) {
 function inbox({ data: { type, target, data }, source }) {
 	if (target.toUpperCase() !== "INTERFACE MANAGER") return
 	switch(type) {
-		case "getAll": return getAll(source)
-		case "upload": return upload(data)
-		case "delete": return deleteCutomization(data)
-		case "download": return download(data)
+		case "getAll": return getAll(source, data)
+		case "upload": return upload(source, data)
+		case "delete": return deleteCustomization(source, data)
+		case "download": return download(source, data)
 		case "set": return loadCustomization(data)
 		case "reinit": return setup()
 	}

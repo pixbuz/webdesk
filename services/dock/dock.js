@@ -20,10 +20,8 @@ class Time {
 		this.month = dateObj.getMonth() + 1
 		this.year = dateObj.getFullYear()
 		this.startMills = dateObj.getMilliseconds()
-		
-		WebdeskEvent("TIME UPDATED", this)
 	}
-	advance = () => {
+	increment = () => {
 		const totalSeconds = this.seconds + 1
 		const totalMinutes = this.minutes + Math.floor(totalSeconds / 60)
 		const totalHours = this.hours + Math.floor(totalMinutes / 60)
@@ -33,21 +31,26 @@ class Time {
 		this.hours = totalHours % 24
 
 		if (totalHours >= 24) this.sync()
-		else WebdeskEvent("TIME UPDATED", this)
+	}
+	progress = () => {
+		this.increment()
+		dock.updateClock(this)
 	}
 
 	constructor() {
 		this.sync()
+		dock.updateClock(this)
 		
 		setTimeout(() => {
-			this.advance()
-			setInterval(this.advance, 1000)
+			this.progress()
+			setInterval(this.progress, 1000)
 		}, 1000 - this.startMills)
 		setInterval(this.sync, Time.syncInterval)
 	}
 }
 
 class Dock extends HTMLElement {
+	time
 	openAppsElement = document.createElement("div")
 	timeWrapper = document.createElement("div")
 	timeElement = document.createElement("p")
@@ -58,7 +61,6 @@ class Dock extends HTMLElement {
 		dock.dateElement.innerText = `${day.toString().padStart(2, "0")}/${month.toString().padStart(2, "0")}/${year}`
 	}
 	setupClock() {
-		WebdeskEvent.on("TIME UPDATED", dock.updateClock)
 		this.time = new Time()
 		this.timeWrapper.setAttribute("time", "")
 		this.timeWrapper.append(this.timeElement, this.dateElement)
@@ -69,18 +71,19 @@ class Dock extends HTMLElement {
 
 		this.openAppsElement.setAttribute("open", "")
 	}
-	addApp({ domain, icon }) {
-		if (openApps.includes(domain)) return
+	addApp({ icon, name }) {
+		if (openApps.includes(name)) return
 		const iconElement = document.createElement("img")
-		openApps.push(domain)
+		openApps.push(name)
 		iconElement.src = icon
-		iconElement.setAttribute("icon", domain)
+		iconElement.setAttribute("icon", name)
 		iconElement.onclick = iconClick
 		dock.openAppsElement.append(iconElement)
 	}
-	removeApp({ domain }) {
-		const icon = dock.openAppsElement.querySelector(`[icon="${domain}"]`)
-		openApps.splice(openApps.indexOf(domain), 1)
+	removeApp({ name }) {
+		console.log(name)
+		const icon = dock.openAppsElement.querySelector(`[icon="${name}"]`)
+		openApps.splice(openApps.indexOf(name), 1)
 		if (icon) icon.remove()
 	}
 

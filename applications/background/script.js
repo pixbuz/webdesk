@@ -1,4 +1,5 @@
 import { log } from "@webdesk/"
+import { showNotification } from "@notify/"
 
 class Preview extends HTMLElement {
 	static #active
@@ -64,7 +65,7 @@ class Menu extends HTMLElement {
 	#close() {
 		menu.classList.remove("visible")
 	}
-	#setupButtonAppearence() {
+	#setupButtonAppearance() {
 		this.uploadButton.setAttribute("upload", "")
 		this.downloadButton.setAttribute("download", "")
 		this.deleteButton.setAttribute("delete", "")
@@ -85,12 +86,14 @@ class Menu extends HTMLElement {
 
 	connectedCallback() {
 		this.setAttribute("menu", "")
-		this.#setupButtonAppearence()
+		this.#setupButtonAppearance()
 
 		window.addEventListener("contextmenu", this.#open)
 		window.addEventListener("click", this.#close)
 
-		this.deleteButton.onclick = () => {
+		this.deleteButton.onclick = async () => {
+			const choice = await dialog.show("Delete background?")
+			if (!choice) return log.dbug("User canceled background deletion")
 			sendMessageToService("delete", previewTarget.name)
 			previewTarget.remove()
 		}
@@ -102,19 +105,20 @@ class Menu extends HTMLElement {
 		this.uploadButton.onclick = () => {
 			const input = document.createElement("input")
 			input.type = "file"
-			input.accept = "application/json"
+			input.accept = "image/*"
 		
-			input.onchange = (event) => {
+			input.onchange = event => {
 				const file = event.target.files[0]
 				if (!file) return
-
 				sendMessageToService("upload", file)
 			}
 		
 			input.click()
 		}
 
-		this.resetButton.onclick = () => {
+		this.resetButton.onclick = async () => {
+			const choice = await dialog.show("Reset all backgrounds?")
+			if (!choice) return log.dbug("User canceled background reset")
 			sendMessageToService("reinit")
 			setTimeout(() => sendMessageToService("getAll"), 100)
 		}
@@ -123,27 +127,88 @@ class Menu extends HTMLElement {
 	constructor() { super() }
 }
 
+class Dialog extends HTMLElement {
+	text = document.createElement("p")
+	choice = document.createElement("div")
+	confirm = document.createElement("button")
+	cancel = document.createElement("button")
+	close = document.createElement("button")
+	#clickRes
+	#click = new Promise(res => this.#clickRes = res)
+
+	#setupButtons() {
+		this.confirm.setAttribute("confirm", "")
+		this.confirm.innerHTML = "Ok"
+
+		this.cancel.setAttribute("cancel", "")
+		this.cancel.innerHTML = "Cancel"
+
+		this.close.setAttribute("close", "")
+		this.close.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`
+
+		this.addEventListener("click", event => this.#clickHandler(event))
+	}
+	#clickHandler({ target }) {
+		if (!target.closest("[choices]")) return
+		if (target.hasAttribute("confirm")) this.#clickRes(true)
+		else this.#clickRes(false)
+		this.#click = new Promise(res => this.#clickRes = res)
+	}
+	
+	async show(message) {
+		this.text.innerText = message
+		this.classList.add("visible")
+
+		const choice = await this.#click
+		this.classList.remove("visible")
+		return choice
+	}
+
+	connectedCallback() {
+		this.setAttribute("dialog", "")
+		this.choice.setAttribute("choices", "")
+
+		this.#setupButtons()
+
+		this.choice.append(this.confirm, this.cancel)
+		this.append(this.close, this.text, this.choice)
+	}
+
+	constructor() {
+		super()
+	}
+}
+
 function setup(backgrounds) {
 	const previews = [ ]
 	
 	for (const [ key, blob ] of Object.entries(backgrounds)) {
 		if (key === "active") continue
-		
-		const preview = document.createElement("bg-preview")
-		preview.name = key
-		preview.blob = blob
-		
-		if (key === backgrounds.active) Preview.active = preview
+		const preview = createPreview(key, blob)
 		previews.push(preview)
+		if (key === backgrounds.active) Preview.active = preview
 	}
 	
 	gallery.innerHTML = ""
 	gallery.append(...previews)
 }
 
+function createPreview(name, blob) {
+	const preview = document.createElement("bg-preview")
+	preview.name = name
+	preview.blob = blob
+	return preview
+}
+
+function upload({ name, blob }) {
+	const preview = createPreview(name, blob)
+	gallery.prepend(preview)
+}
+
 async function inbox({ data: { type, data }, source }) {
 	switch(type) {
 		case "getAll": return setup(data)
+		case "upload": return upload(data)
 	}
 }
 
@@ -157,18 +222,17 @@ function sendMessageToService(type, data = {}) {
 
 const gallery = document.querySelector("[gallery]")
 const menu = document.createElement("preview-menu")
+const dialog = document.createElement("bg-dialog")
 
 let previewTarget = null
 
 customElements.define("bg-preview", Preview)
 customElements.define("preview-menu", Menu)
+customElements.define("bg-dialog", Dialog)
 
 document.body.appendChild(menu)
+document.body.appendChild(dialog)
 
 window.onmessage = inbox
 
 sendMessageToService("getAll")
-
-// TODO: Overwrite dialog
-// TODO: Delete dialog
-// TODO: Reset dialog

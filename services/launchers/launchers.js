@@ -16,6 +16,7 @@ class Launcher extends HTMLElement {
 		if (request.ok) {
 			this.iconBlob = await request.blob()
 			this.iconElement.src = this.iconURL = URL.createObjectURL(this.iconBlob)
+			ApplicationsDomainToIconUrl[this.domain] = this.iconURL
 		} else this.iconElement.remove()
 	}
 
@@ -29,11 +30,15 @@ class Launcher extends HTMLElement {
 		this.nameElement.classList.add("text")
 		this.iconElement.classList.add("icon")
 		this.append(this.iconElement, this.nameElement)
+
+		ApplicationsDomainToName[this.domain] = this.name
 	}
 	
 	constructor() { super() }
 }
 
+export const ApplicationsDomainToName = { }
+export const ApplicationsDomainToIconUrl = { }
 customElements.define("webdesk-launcher", Launcher)
 
 log.verb("Launchers ready")

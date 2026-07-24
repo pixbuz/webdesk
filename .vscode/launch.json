@@ -21,7 +21,7 @@
 			"name": "Frontend",
 			"type": "chrome",
 			"url": "http://localhost:8000",
-			"runtimeExecutable": "${userHome}/Desktop/chrome-win/chrome.exe",
+			"runtimeExecutable": "C:\\Users\\pix\\Desktop\\chrome-win\\chrome.exe",
 			// ^ Modify this to your chrome/chromium path
 			"userDataDir": "${workspaceFolder}/.chrome",
 			"webRoot": "${workspaceFolder}",

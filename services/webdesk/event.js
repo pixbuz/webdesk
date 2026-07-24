@@ -3,10 +3,10 @@ import { log } from "/srv/log/"
 function on(name, callback, addInFront = false) {
 	if (addInFront) callbackMap[name] = [ callback, ...(callbackMap[name] || []) ]
 	else callbackMap[name] = [ ...(callbackMap[name] || []), callback ]
-	log.verb(`Registred "${callback.name}" for "${name}" events`)
+	log.info(`Registered "${callback.name}" for "${name}" events`)
 	return () => {
 		callbackMap[name] = callbackMap[name].filter(cb => cb !== callback)
-		log.verb(`Unregistred "${callback.name}" for "${name}" events`)
+		log.info(`UnRegistered "${callback.name}" for "${name}" events`)
 	}
 }
 
@@ -38,7 +38,7 @@ function on(name, callback, addInFront = false) {
 // }
 
 function emit(name, ...args) {
-	log.verb(`Triggered backend event "${name}" (${ callbackMap[name]?.length ?? 0 } callbacks)`)
+	log.dbug(`Triggered backend event "${name}" (${ callbackMap[name]?.length ?? 0 } callbacks) with data:`, ...args)
 	if (!callbackMap[name]) log.dbug(`No callback for event "${name}"`)
 	callbackMap[name]?.forEach(callback => {
 		try { callback(...args) }

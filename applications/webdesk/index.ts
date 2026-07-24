@@ -7,7 +7,7 @@ function returnIndex(_request: Request) {
 	const modules = Compiles.modules()
 	const importMap = Compiles.importMap()
 	
-	const lauchers = Object.values(Applications)
+	const launchers = Object.values(Applications)
 		.filter(app => app.frontend.launcher === true)
 		.map(app => `<webdesk-launcher name="${app.name}" launcher="${app.domain}"></webdesk-launcher>`)
 		.join("\n")
@@ -16,7 +16,7 @@ function returnIndex(_request: Request) {
 		.replace("<!-- INMAP -->", importMap)
 		.replace("<!-- PRELOAD -->", preloads)
 		.replace("<!-- MODULES -->", modules)
-		.replace("<!-- LAUNCHERS -->", lauchers)
+		.replace("<!-- LAUNCHERS -->", launchers)
 
 	return { content: index, mime: "text/html" }
 }

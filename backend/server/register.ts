@@ -136,7 +136,7 @@ class Application {
 			} catch (error) { log.warn(`Failed to import module "${moduleFile}" for application "${this.name}":\n${(error as Error).stack}`) }
 		})
 	}
-	private normalizeManifestProprieties(manifest: ApplicationManifest) {
+	private normalizeManifestProperties(manifest: ApplicationManifest) {
 		// Ensure files have an absolute file path from the app root
 		if (!this.frontend.index.startsWith("/")) this.frontend.index = "/" + this.frontend.index
 		if (!this.frontend.icon.startsWith("/")) this.frontend.icon = "/" + this.frontend.icon
@@ -210,17 +210,17 @@ class Application {
 	public constructor(private readonly folder: string, manifest: ApplicationManifest) {
 		Object.assign(this, manifest)
 
-		log.dbug(`Registring application "${this.name}"`)
+		log.dbug(`Registering application "${this.name}"`)
 		applications[this.domain] = this
 		
-		this.normalizeManifestProprieties(manifest)
+		this.normalizeManifestProperties(manifest)
 		if (exists(`${settings.assetsFolder}${folder}`)) this.populateAssetsLookupTable()
 		this.importModules()
 		
 		this.service = new Service(folder, this.domain, this.name)
 		this.cache = new Cache(this.domain, this.name)
 		
-		log.info(`Registred application "${this.name}" on domain "${this.domain}" (level ${this.backend.level})`)
+		log.info(`Registered application "${this.name}" on domain "${this.domain}" (level ${this.backend.level})`)
 		if (settings.freezeInstances) Object.freeze(this)
 	}
 }
@@ -234,7 +234,7 @@ class Service {
 			const absolutePath = `${settings.servicesFolder}${this.folder}${leaf}/${name}`
 			const defaultPathname = (leaf || "/") + (name.includes(".") ? name.slice(0, name.lastIndexOf(".")) : name)
 			if (name.startsWith("_")) {
-				log.verb(`Skipping registring of service "${name}" of application "${this.appName}" (prefix)`)
+				log.verb(`Skipping Registering of service "${name}" of application "${this.appName}" (prefix)`)
 				continue
 			} else if (isDirectory) {
 				this.indexServicesPathnames((leaf || "/") + name + "/")

@@ -14,7 +14,7 @@ export function emit(name: string, data: object) {
 
 export function register(name: string, callback: EventFunction) {
 	const cleanName = name.toUpperCase().trim()
-	log.dbug(`Registred ${callback.name} for "${cleanName}" events`)
+	log.dbug(`Registered ${callback.name} for "${cleanName}" events`)
 	ledger[cleanName] = [ ...(ledger[cleanName] || []), callback ]
 }
 

@@ -195,7 +195,7 @@ class Window extends HTMLElement {
 		log.info(`Closed window "${this.name}"`)
 		activeWindows.delete(this.domain)
 		this.classList.add("closing")
-		WebdeskEvent("WINDOW CLOSE", { domain: this.domain, appWindow: this })
+		WebdeskEvent("WINDOW CLOSE", { domain: this.domain, name: this.name, appWindow: this })
 
 		this.contentElement.contentWindow.postMessage({
 			sender: "WINDOW MANAGER",
@@ -253,8 +253,8 @@ function focus({ appWindow: focusWindow }) {
 	if (activityQueue.includes(focusWindow)) {
 		const focusWindowIndex = activityQueue.indexOf(focusWindow)
 		activityQueue.splice(focusWindowIndex, 1)
-		log.dbug(`Window interaction event recived, focus is "${focusWindow.name}" (was in queue position ${focusWindowIndex})`)
-	} else log.dbug(`Window interaction event recived, focus is "${focusWindow.name}" (new window)`)
+		log.dbug(`Window interaction event received, focus is "${focusWindow.name}" (was in queue position ${focusWindowIndex})`)
+	} else log.dbug(`Window interaction event received, focus is "${focusWindow.name}" (new window)`)
 	
 	activityQueue.forEach((queuedAppWindow, index) => {
 		log.dbug(`Updated z-index of window "${queuedAppWindow.name}"`)
@@ -282,7 +282,7 @@ function open({ name, domain, icon }) {
 	if (activeWindows.has(domain)) {
 		const appWindow = activeWindows.get(domain)
 		return appWindow.resume()
-	} else if (!domain) return log.warn(`Recived a request to open a window with no domain attached (${domain})`)
+	} else if (!domain) return log.warn(`received a request to open a window with no domain attached (${domain})`)
 	
 	const appWindow = Window.newWindow(domain, name, icon)
 	log.info(`Opened window of application "${name}" with domain "${domain}"`)
